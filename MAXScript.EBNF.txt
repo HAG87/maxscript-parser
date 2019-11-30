@@ -45,29 +45,29 @@ which is interpreted as follows:
 
 
 
-program           = { expr }+
+program = { expr }+
 
-expr              = simple_expr
-                  | variable_decls
-                  | assignment
-                  | if_expr
-                  | case_expr
-                  | try_expr
-                  | context_expr
-                  | while_loop
-                  | do_loop
-                  | for_loop
-                  | loop_exit
-                  | struct_def
-                  | function_def
-                  | utility_def
-                  | rollout_def
-                  | tool_def
-                  | rcmenu_def
-                  | macroscript_def
-                  | plugin_def
-                  | function_return
-                  | max_command
+expr = simple_expr
+    | variable_decls
+    | assignment
+    | if_expr
+    | case_expr
+    | try_expr
+    | context_expr
+    | while_loop
+    | do_loop
+    | for_loop
+    | loop_exit
+    | struct_def
+    | function_def
+    | utility_def
+    | rollout_def
+    | tool_def
+    | rcmenu_def
+    | macroscript_def
+    | plugin_def
+    | function_return
+    | max_command
 
 
 variable_decls    = ( `local` | [ `persistent` ] `global` ) decl { `,` decl }
