@@ -233,6 +233,7 @@ operand -> factor
 
 
 property -> operand . var_name # properties and indexes left associate
+
 index -> operand [ expr ]
 
 factor -> number
