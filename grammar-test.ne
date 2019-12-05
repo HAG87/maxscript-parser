@@ -19,27 +19,30 @@
 
 #===============================================================
 MAIN -> # var_name {% id %}
-#_br
-(
+# _ (main_expr) _
+#| LPAREN (main_expr) RPAREN
+ (
 	#Block
-	  struct_def
-
-	 | fn_def
-
-	 | rollout_def
-	 | typed_var_decl
-	 | if_expr
-	 | try_expr
-	 | while_loop
-	 | do_loop
-	 | for_loop
+	_expr
+#	  struct_def
 	#| utility_def
-)
-#_br
+#	 | fn_def
+
+#	 | rollout_def
+
+#	 | typed_var_decl
+#	 | if_expr
+#	 | try_expr
+#	 | while_loop
+#	 | do_loop
+#	 | for_loop
+
+) #_
+
 
 #{% function(d) {return d[1]} %}
 #===============================================================
-# EXPRESSIONS
+# EXPRESSIONS -- NEEDS ITERATOR
 #===============================================================
 
 # main_expr ->
@@ -85,9 +88,9 @@ arr_source ->
 #STRUCTURE DEFINITION
 struct_def ->
 "struct" __ var_name
-lparen
+LPAREN
 	members
-rparen
+RPAREN
 
 members -> member {% id %}
 		 | members _S comma _ member {% flatten %}
@@ -101,24 +104,22 @@ member -> var_name ( _ "=" expr):?
 # MISSING EXPR
 fn_def ->
 ("mapped" __ ):? ("function" | "fn" ) __ var_name ( __ args):? ( __ opt_args):? _ "=" expr
-
-# function_return -> "return" expr
 #===============================================================
 # UTILITY DEFINITION
 utility_def ->
 "utility" __ var_name _ string _ (opt_args):?
-lparen
+LPAREN
 	utility_clauses
-rparen
+RPAREN
 
 utility_clauses -> rollout_clauses {% id %}
 #===============================================================
 # ROLLOUT DEFINITION
 rollout_def ->
 				"rollout" _ var_name _ string _ (opt_args):?
-				lparen
+				LPAREN
 					   (rollout_clauses):?
-				rparen
+				RPAREN
 
 
 rollout_clauses -> rollout_clause
@@ -138,9 +139,9 @@ rollout_clause -> var_name
                # | event_handler
 item_group ->
 			"group" _ string
-			lparen
+			LPAREN
 					(rollout_item _ ):*
-			rparen
+			RPAREN
 
 rollout_item -> rollout_item_type __ var_name _ (string):? _ (opt_args):?
 
@@ -158,6 +159,7 @@ rollout_item_type ->
 # TOOL DEFINITION
 #===============================================================
 # MACROSCRIPT DEFINITION
+
 #===============================================================
 #PLUGIN DEFINITION
 #===============================================================
@@ -189,35 +191,72 @@ event_args   -> var_name
 
 #expr_sequence -> expr | expr_sequence ___ expr
 
-loop_expr -> expr
-			| loop_continue
-			| loop_exit
+P ->
+      LPAREN E RPAREN #{% TRUE %}
 
-expr ->  _ dcl_expr _
-		| lparen dcl_expr rparen
+E ->
+     null
+	|alphanum
+    | LPAREN E RPAREN E
+
+
+#loop_expr -> expr
+#			| loop_continue
+#			| loop_exit
+
+#fn_expr -> expr
+#		  | fn_return
+
+
+# Expression iterator
+expr -> _expr
+		| LPAREN _expr RPAREN
+		| expr ___ _expr
+
+
+_expr ->
+#	  	null
+		 _ context_free_expr _			#	{% ([fst, snd, trd]) => snd %}
+		| _LPAREN
+			_expr
+		 _RPAREN
+			_expr
 
 
 
+_LPAREN -> _ "("  {% (d) => null %}
 
+_RPAREN ->  ")" _ {% (d) => null %}
 
 
 simple_expr ->
 	_ dcl_expr _
-	| lparen dcl_expr rparen
+	| LPAREN simple_expr RPAREN
 
 
 
-# context_free_expr ->
-#
+
+context_free_expr ->
+
+	  var_decl	          {% id %}
+#	 | typed_var_decl
+ #   | fn_def
+#	 | if_expr
+#	 | try_expr
+#	 | while_loop
+#	 | do_loop
+#	 | for_loop
 
 dcl_expr  ->
-			var_name
-
-#typed_var_decl
+			#var_name
+			var_decl
 
 # MIXED CONTEXTUAL EXP
 loop_exit -> _ "exit" _ ("with" expr):?
 loop_continue -> _ "continue" _
+
+fn_return -> _ "return" _expr
+
 
 # OPERANDS -- REPLACE THIS
 operand ->
@@ -252,12 +291,11 @@ _block -> ANY {% id %}
 
 typed_var_decl -> _ ( "local" | ("persistent" __ ):? "global" ) __ var_decl ___
 
-var_decl ->  decl
+var_decl ->  decl						{% id %}
 		   | var_decl _S comma _ decl
 
-decl -> var_name _S ("=" expr ):?
-
-_decl -> var_name _S "=" expr
+decl -> var_name			{% (d) => ( {decl:d[0]} ) %}
+      | var_name _S "=" expr
 
 
 # FUNCTION CALLS
@@ -304,15 +342,15 @@ point2 -> "[" expr "," expr "]"
 # PARENS
 void_parens -> _ "(" _ ")" _
 
-lparen -> _ "(" _ {% (d) => null %}
+LPAREN -> _ "(" _ {% (d) => null %}
 
-rparen -> _ ")" _ {% (d) => null %}
+RPAREN -> _ ")" _ {% (d) => null %}
 
-__rparen -> _ ")" ___ {% (d) => null %}
+__RPAREN -> _ ")" ___ {% (d) => null %}
 
 
-lparen? -> null | _ "(" _ {% id %}
-rparen? -> null | _ ")" _ {% id %}
+LPAREN? -> null | _ "(" _ {% id %}
+RPAREN? -> null | _ ")" _ {% id %}
 #===============================================================
 # SEP
 comma -> "," {% (d) => null %}
