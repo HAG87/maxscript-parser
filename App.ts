@@ -14,7 +14,7 @@ let lexer = moo.compile({
     lparen:  '(',
     rparen:  ')',
     keyword: ['while', 'if', 'else', 'moo', 'cows'],
-    NL:      { match: /\n/, lineBreaks: true },
+    NL:      { match: /\r\n/, lineBreaks: true },
   })
 
 

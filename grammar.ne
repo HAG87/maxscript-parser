@@ -26,21 +26,21 @@ Main -> ( expr ):+
 
 expr ->
       _ simple_expr     _
-    | _ variable_decls  _
-    | _ assignment      _
-#     | _ if_expr         _
+    # | _ variable_decls  _
+    # | _ assignment      _
+    | _ if_expr         _
     | _ case_expr       _
-#     | _ while_loop      _
-#     | _ do_loop         _
-#     | _ for_loop        _
+    | _ while_loop      _
+    | _ do_loop         _
+    | _ for_loop        _
     | _ loop_exit       _
-#     | _ try_expr        _
+    | _ try_expr        _
     | _ context_expr    _
-#     | _ struct_def      _
-#     | _ function_def    _
+    | _ struct_def      _
+    | _ function_def    _
     | _ function_return _
     | _ utility_def     _
-#     | _ rollout_def     _
+    | _ rollout_def     _
     | _ tool_def        _
     | _ rcmenu_def      _
     | _ macroscript_def _
@@ -50,36 +50,40 @@ expr ->
 
 #===============================================================
 # variable_decls -> ( "local" | ("persistent"):? _ "global" ) decl ( "," decl ):?
+
 # decl -> var_name _ ("=" _ expr):?  # name and optional initial value
-# var_name ->  (alphanumeric | "_" ):?
-#             | "'" any_char_except_quote "'"
+
+var_name ->  (alphanumeric | "_" ):?
+            | "'" any_char_except_quote "'"
 #===============================================================
-assignment ->
-      destination _ "=" _ expr
-    | destination _ "+=" _ expr
-    | destination _ "-=" _ expr
-    | destination _ "*=" _ expr
-    | destination _ "/=" _ expr
-    | destination _ "->" _ var_name
-    | property
-    | index
+# assignment ->
+#       destination _ "=" _ expr
+#     | destination _ "+=" _ expr
+#     | destination _ "-=" _ expr
+#     | destination _ "*=" _ expr
+#     | destination _ "/=" _ expr
+
+#  destination  ->
+#       var_name
+#     | property
+#     | index
 #===============================================================
-# if_expr -> "if" expr "then" expr ( "else" expr ):?
-#         | "if" expr "do" expr
+if_expr -> "if" expr "then" expr ( "else" expr ):?
+        | "if" expr "do" expr
 #===============================================================
 # loops needs a better definition of loop-exit and loop-continue
 
-# while_loop -> "while" expr "do" expr
+while_loop -> "while" expr "do" expr
 
-# do_loop -> "do" expr "while" expr
+do_loop -> "do" expr "while" expr
 
-# for_loop -> "for" name ( "in" | "=" ) source ("do" | "collect") expr
+for_loop -> "for" name ( "in" | "=" ) source ("do" | "collect") expr
 
-# source -> expr "to" expr ("by" expr):? ("where" expr):?
-#         | expr ("where" expr):?
+source -> expr "to" expr ("by" expr):? ("where" expr):?
+        | expr ("where" expr):?
 
-# loop-exit ->"exit" ("with" expr):?
-# loop-continue -> "continue"
+loop-exit ->"exit" ("with" expr):?
+loop-continue -> "continue"
 #===============================================================
 # ATENTION! BRACKETS MANDATORY
 
@@ -89,23 +93,23 @@ case_expr -> "case" (expr):? "of" _OPEN (case_item):+ close_
 case_item -> (factor | "default") _ ":" expr
 #===============================================================
 # ERROR CHECK STATEMENT
-# try_expr -> "try" expr "catch" expr
+try_expr -> "try" expr "catch" expr
 #===============================================================
 # STRUCTURE DEFINITION
-# struct_def ->
-# "struct"
-# _OPEN
-#         member ("," _ member _):*
-# _CLOSE
+struct_def ->
+"struct"
+_OPEN
+        member ("," _ member _):*
+_CLOSE
 
-# member -> name _ ("=" _ expr):? # name and optional initial value
-        # | function_def
+member -> name _ ("=" _ expr):? # name and optional initial value
+        | function_def
 #===============================================================
 # FUNCTION DEFINITION
-# function_def -> ("mapped"):? _ ( "function" | "fn" ) _ var_name _ (arg _):* "=" expr
+function_def -> ("mapped"):? _ ( "function" | "fn" ) _ var_name _ (arg _):* "=" expr
 
-# arg -> var_name
-#         | var_name _ ":" _ (operand):?
+arg -> var_name
+        | var_name _ ":" _ (operand):?
 
 function_return -> "return" expr
 #===============================================================
@@ -213,26 +217,26 @@ tool_clause -> "local" _ decl ("," _ decl _):*
 tool_handler ->  "on" _ var_name _ var_name _ (var_name _ ):* "do" expr
 #===============================================================
 # PLUGIN DEFINITION ----- MISSING
-<plugin_def> -> plugin <var_name> <var_name> { <var_name>:<operand> } ( { <plugin_clause> }+ )
+plugin_def -> plugin var_name var_name {  var_name ":" operand  } ( {  plugin_clause }+ )
 
-<plugin_clause> -> local <decl> { , <decl> }
-<function_def>
-<struct_def>
-<parameters>
-<mousetool_def>
-<rollout_def>
-<plugin_handler>
+plugin_clause -> local decl { "," decl }
+                  function_def
+                  struct_def
+                  parameters
+                  mousetool_def
+                  rollout_def
+                  plugin_handler
 
-<parameters> -> parameters <var_name> { <var_name>:<operand> } ( { <param_clause> }+ )
+<parameters> -> parameters var_name { var_name ":" operand } ( { param_clause }+ )
 
-<param_clause> -> { <param_defs> }+
-{ <param_handler> }
+<aram_clause -> { param_defs }+
+                { param_handler }
 
-<param_defs> -> <var_name> { <var_name>:<operand> }
+param_defs -> var_name { var_name ":" operand }
 
-<param_handler> -> on <var_name> <var_name> { <var_name> } do <expr>
+param_handler -> "on" var_name var_name { var_name } "do" expr
 
-<plugin_handler> -> on <var_name> do <expr>
+plugin_handler -> "on" var_name "do" expr
 #===============================================================
 
 # EXPRESSIONS
@@ -282,8 +286,8 @@ compare_operand -> math_expr
 
 
 # FUNCTION CALL
-function_call -> operand "(" _ ")"
-                | operand _ (parameter _):* # up to an end of line or lower precedence token
+# function_call -> operand "(" _ ")"
+#                 | operand _ (parameter _):* # up to an end of line or lower precedence token
 
 # PARAMETERS
 parameter -> operand
@@ -295,15 +299,15 @@ operand ->  factor
           | index
 
 # PROPERTIES
-property -> operand "." var_name # properties and indexes left associate
+# property -> operand "." var_name # properties and indexes left associate
 
 #INDEX ACCESS
-index -> operand "[" expr "]"
+# index -> operand "[" expr "]"
 #===============================================================
 
 factor ->
-      number
-    | string
+      # number
+    # | string
     | path_name
     | var_name
     | "#" var_name
@@ -328,11 +332,8 @@ expr_seq -> ( expr ( ( ";" | EOL):? expr ):* ):?
 #===============================================================
 # VALUES
 # point2 -> "[" expr "," expr "]"
-
 # point3 -> "[" expr "," expr "," expr "]"
-
 # box2 -> "[" expr "," expr "," expr "," expr "]"
-
 
 array -> "#(" _ ")"
         | "#(" expr ( "," expr ):* ")"

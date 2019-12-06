@@ -6,7 +6,7 @@
 
 		const flatten = arr => [].concat(...arr);
 
-		var merge = function (d) {
+		const merge = function (d) {
 			var arr = [].concat(...d);
 			return arr.join('');
 		};
@@ -17,5 +17,3 @@
 		var emptyStr = function (d) { return ""; };
 %}
 
-#===============================================================
-#STRUCTURE DEFINITION
