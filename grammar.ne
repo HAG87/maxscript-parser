@@ -241,62 +241,62 @@ plugin_handler -> "on" var_name "do" expr
 
 # EXPRESSIONS
 simple_expr ->
-                operand
-              | math_expr
-              | compare_expr
-              | logical_expr
-              | function_call
+              #   operand
+              # | math_expr
+              # | compare_expr
+              # | logical_expr
+              # | function_call
               | expr_seq
 
-math_expr ->
-              math_operand "+" math_operand # standard arithmetic addition
-            | math_operand "-" math_operand # standard arithmetic subtraction
-            | math_operand "*" math_operand # standard arithmetic multiplication
-            | math_operand "/" math_operand # standard arithmetic division
-            | math_operand "^" math_operand # exponential, raise to the power
-            | math_operand "as" class # conversion between types
+# math_expr ->
+#               math_operand "+" math_operand # standard arithmetic addition
+#             | math_operand "-" math_operand # standard arithmetic subtraction
+#             | math_operand "*" math_operand # standard arithmetic multiplication
+#             | math_operand "/" math_operand # standard arithmetic division
+#             | math_operand "^" math_operand # exponential, raise to the power
+#             | math_operand "as" class # conversion between types
 
-math_operand ->
-                 operand
-               | function_call
-               | math_expr
+# math_operand ->
+#                  operand
+#                | function_call
+#                | math_expr
 
-logical_expr ->
-               logical_operand "or" logical_operand
-              |logical_operand "and" logical_operand
-              |"not" logical_operand
+# logical_expr ->
+#                logical_operand "or" logical_operand
+#               |logical_operand "and" logical_operand
+#               |"not" logical_operand
 
-logical_operand ->
-                    operand
-                  | compare_expr
-                  | function_call
-                  | logical_expr
+# logical_operand ->
+#                     operand
+#                   | compare_expr
+#                   | function_call
+#                   | logical_expr
 
-compare_expr ->
-                 compare_operand "==" compare_operand # equal
-               | compare_operand "!=" compare_operand # not equal
-               | compare_operand ">"  compare_operand # greater than
-               | compare_operand "<"  compare_operand # less than
-               | compare_operand ">=" compare_operand # greater than or equal
-               | compare_operand "<=" compare_operand # less than or equal
+# compare_expr ->
+#                  compare_operand "==" compare_operand # equal
+#                | compare_operand "!=" compare_operand # not equal
+#                | compare_operand ">"  compare_operand # greater than
+#                | compare_operand "<"  compare_operand # less than
+#                | compare_operand ">=" compare_operand # greater than or equal
+#                | compare_operand "<=" compare_operand # less than or equal
 
-compare_operand -> math_expr
-               | operand
-               | function_call
+# compare_operand -> math_expr
+#                | operand
+#                | function_call
 
 
 # FUNCTION CALL
 # function_call -> operand "(" _ ")"
 #                 | operand _ (parameter _):* # up to an end of line or lower precedence token
 
-# PARAMETERS
-parameter -> operand
-            |name _ ":" _ operand
+# # PARAMETERS
+# parameter -> operand
+#             |name _ ":" _ operand
 
-# DEFINITION OF OPERAND
-operand ->  factor
-          | property
-          | index
+# # DEFINITION OF OPERAND
+# operand ->  factor
+#           | property
+#           | index
 
 # PROPERTIES
 # property -> operand "." var_name # properties and indexes left associate
@@ -309,21 +309,21 @@ factor ->
       # number
     # | string
     | path_name
-    | var_name
-    | "#" var_name
+    # | var_name
+    # | "#" var_name
     | array
     | bitarray
-    | point3
-    | point2
-    | "true"
-    | "false"
-    | "on"
-    | "off"
-    | "ok"
-    | "undefined"
-    | "unsupplied"
-    # | "-"expr # unary minus THIS WILL NOT WORK!
-   # | expr_seq # expresion sequence, this needs to be addressed
+    # | point3
+    # | point2
+    # | "true"
+    # | "false"
+    # | "on"
+    # | "off"
+    # | "ok"
+    # | "undefined"
+    # | "unsupplied"
+    | "-"expr # unary minus THIS WILL NOT WORK!
+   | expr_seq # expresion sequence, this needs to be addressed
     | "?" # last Listener result
 
 #===============================================================

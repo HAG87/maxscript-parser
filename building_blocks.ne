@@ -1,26 +1,10 @@
-@{%
-	const flatten = arr => [].concat(...arr);
 
-	const merge = function (d) {
-		var arr = [].concat(...d);
-		return arr.join('');
-	};
-
-	const testAlphanum = function (d, l, reject) {
-		var re = new RegExp("^\\d+$");
-
-		// var str = merge(d);
-
-		if (re.test(d[0])) {
-            return reject;
-        } else {
-            return d[0];
-        }
-	};
-
-%}
 #===============================================================
-SCRIPT -> _ fn_call _ {% (d) => d[1] %}
+SCRIPT -> _ array _ {% (d) => d[1] %}
+
+#SCRIPT -> _ varName _ | SCRIPT varName #{% (d) => d[1] %}
+
+
 #<parens> ::= <matched>
 #          | <matched> <parens>
 
@@ -39,6 +23,27 @@ SCRIPT -> _ fn_call _ {% (d) => d[1] %}
 #_EOL -> wsnlchar:+
 #		| newline:+
 #		| _EOL ";" #| _EOL
+
+#array -> _array
+#{%
+#(d) => d
+#%}
+
+# TODO: FIX MATH EXPRESSION FOR ARRAYS
+
+array -> "#(" _ ")" {% d => "[]" %}
+		| "#(" array_expr ")"  #{% flatten %}
+#		| "#(" array ")"
+
+array_expr -> #EXPR ("," EXPR):*
+
+
+			  EXPR {% id %}
+			 |array_expr "," EXPR {% d => [d[0], d[2]] %}
+
+#===============================================================
+# ERROR CHECK STATEMENT
+try_expr -> "try" EXPR "catch" ( EXPR | void_parens)
 #===============================================================
 #ASSIGNMENT
 #===============================================================
@@ -60,22 +65,51 @@ assignOp ->
 #EXPRESSIONS
 #===============================================================
 #---------------------------------------------------------------
-
-#---------------------------------------------------------------
 EXPR ->  _ _expr _ {% (d) => d[1] %}
 
 _expr ->
 		DECLARATIONS  {% id %} #OK
 		| assignment  {% id %} #OK
-		| simple_expr {% id %} #OK
+		| simple_expr {% id %} #-----
+
+		#| if_expr
+		#| while_loop
+		#| do_loop
+		#| for_loop
+		#| loop_exit
+		#| case_expr
+		#| struct_def
+		 | try_expr
+
+		#| function_def
+		#| function_return
+		#| context_expr
+		#| max_command
+		#| utility_def
+		#| rollout_def
+		#| tool_def
+		#| rcmenu_def
+		#| macroscript_def
+		#| plugin_def
 #---------------------------------------------------------------
+#===============================================================
+
+#===============================================================
 simple_expr ->
-OPERAND
+				OPERAND         {% id %}
+				| fn_call       {% id %}
+				| math_expr     {% id %}
+				| compare_expr  {% id %}
+				| logical_expr  {% id %}
+
+				#<expr_seq>
+
+#<expr_seq> ::= ( <expr> { ( ; | <eol>) <expr> } )
 #===============================================================
 #DECLARATIONS
 #===============================================================
 DECLARATIONS ->
-				typed_var_decl
+				  typed_var_decl
 				| expl_gl
 #				| decl
 
@@ -90,45 +124,150 @@ var_decl ->  decl											{% id %}
 
 decl -> varName			        							{% (d) => ( {decl:d[0]} ) %}
       | varName _S "=" _ EXPR   							{% (d) => ( {decl:d[0], exp:d[4]} ) %}
-
 #===============================================================
 OPERAND ->
-factor
-| property
-| index
+factor			{% id %}
+| property		{% id %}
+| index			{% id %}
 #===============================================================
 # FUNCTION CALL
 # up to an end of line or lower precedence token
 
-fn_call -> OPERAND "(" _ ")"
-       #  | OPERAND _ (parameter _):*
+fn_call -> OPERAND "(" _ ")"			{% (d) => ({call:d[0]}) %}
+         | OPERAND (__ parameter):+ 	{% (d) => ({call:d[0], params:( dropNull(d[1]) ) }) %}
 
-parameter -> OPERAND
-            |param
+
+parameter -> OPERAND 	{% id %}
+            |param 		{% id %}
 #===============================================================
 # PROPERTIES
-property -> OPERAND "." varName {% (d) => ( {property:{parent:d[0], name:d[2]} } ) %}
+property -> OPERAND "." varName {% (d) => ({property:{parent:d[0], name:d[2]} }) %}
 #===============================================================
 # PARAMS
-param -> varName _S ":" _ ( OPERAND):? {% (d) => ( {param:d[0], value:d[4]} ) %}
+param -> varName _S ":" _ ( OPERAND ):? {% (d) => ({param:d[0], value:d[4]}) %}
 #===============================================================
 # INDEX
 index -> OPERAND "[" _ EXPR _ "]"
 #===============================================================
 #FACTOR -- THIS ARE THE BASIC VALUES - TOKENS
+
 factor ->
-		varName {% id %}
-		| number
-		| string
-		| box2
-		| point3
-		| point2
+		varName         {% id %}
+		| number        {% id %}
+		| string        {% id %}
+		| box2          {% id %}
+		| point3        {% id %}
+		| point2        {% id %}
+		| name_value    {% id %}
+		| bool          {% id %}
+		| void          {% id %}
+		| array         {% id %}
+#<path_name>
+#<var_name>
+
+
+#<bitarray>
+
+#- <expr> -- unary minus
+#<expr_seq>
+#? -- last Listener result
 #===============================================================
 # MATH EXPRESSIONS
-#math -> sum
-#sum -> sum ("+"|"-") product | product
-#product -> product ("*"|"/") exp | exp
-#exp -> number "^" exp | number # this is right associative!
+math_expr -> sum {% (d, l, reject) => Array.isArray(d[0]) && d[0].length >= 1 ? d[0] : reject %}
+
+sum -> sum _ ("+"|"-") _ product {% dropNull %}
+	 | product {% id %}
+
+product -> product _ ("*"|"/") _ exp {% dropNull %}
+		 | exp {% id %}
+
+# this is right associative!
+exp -> conversion _ "^" _ exp {% dropNull %}
+	| conversion {% id %}
+
+conversion -> math_operand __ "as" __ class {% dropNull %}
+			| math_operand {% id %}
+
+#math_expr ->
+#        	  math_operand _ "+" _ math_operand
+#        	| math_operand _ "-" _ math_operand
+#        	| math_operand _ "*" _ math_operand
+#        	| math_operand _ "/" _ math_operand
+#        	| math_operand _ "^" _ math_operand
+#			| math_operand _ "as" _ class {% dropNull %}
+#---------------------------------------------------------------
+math_operand ->
+			   OPERAND   {% id %}
+			 | fn_call {% id %}
+			#| math_expr
+#---------------------------------------------------------------
+class -> varName
+#===============================================================
+# LOGIC EXPRESSIONS
+logical_expr -> _logical_expr
+
+_logical_expr ->
+ logical_operand __ ("or" | "and") __ ("not" __):? logical_operand
+{% function(d) {
+	return {expr:'logic',
+			left:d[0],
+			type:(d[4] != null ? d[2][0] + ' ' + d[4][0] : d[2][0]),
+			right:d[5]};
+	}
+%}
+| _logical_expr __ ("or" | "and") __ ("not" __):? logical_operand
+{% function(d) {
+	return {
+		expr:'logic',
+		left:d[0],
+		type:(d[4] != null ? d[2][0] + ' ' + d[4][0] : d[2][0]),
+		right:d[5]};
+	}
+%}
+| "not" __ logical_operand
+{% function(d) {
+	return {expr:'logic',
+			type:'negation',
+			right:d[2]};
+	}
+%}
+#---------------------------------------------------------------
+# logical_expr -> _logical_expr #{% (d, l, reject) => Array.isArray(d[0]) ? d : reject  %}
+
+# _logical_expr -> _logical_expr __ ("or" | "and") __ negation {% function(d) {return {expr:'logic', left:d[0], type:d[2][0], right:d[4]};} %}
+# | negation {% id %}
+
+# negation ->
+# "not" __ logical_operand {% (d) => [d[0], d[2] ]%}
+# | logical_operand
+
+logical_operand ->
+                    OPERAND      {% id %}
+                  | compare_expr {% id %}
+                  | fn_call      {% id %}
+#===============================================================
+# COMPARE EXORESSIONS
+compare_expr ->
+                 compare_op _ "==" _ compare_op # equal
+               | compare_op _ "!=" _ compare_op # not equal
+               | compare_op _ ">"  _ compare_op # greater than
+               | compare_op _ "<"  _ compare_op # less than
+               | compare_op _ ">=" _ compare_op # greater than or equal
+               | compare_op _ "<=" _ compare_op # less than or equal
+
+compare_op ->
+                 OPERAND
+               | fn_call
+			   | math_expr
+#===============================================================
+# KEYWORDS
+keyword ->
+"about"      | "and"    | "animate"     | "as"         | "at"          | "by"     | "case"   |  "catch" | "collect" | "continue"
+| "coordsys" | "do"     | "dontcollect" | "else"       | "exit"        | "fn"     | "fn"     | "for"    | "from"    | "function"
+| "global"   | "if"     | "in"          | "local"      | "macroscript" | "mapped" | "max"    | "not"    | "of"      | "off"
+| "ok"       | "on"     | "or"          | "parameters" | "persistent"  | "plugin" | "rcmenu" | "return" | "rollout"
+| "set"      | "struct" | "then"        | "throw"      | "to"          | "tool"   | "try"    | "undo"   | "utility"
+| "when"     | "where"  | "while"       | "with"
 #===============================================================
 #ARRAY
 #===============================================================
@@ -140,16 +279,30 @@ point3 -> "[" EXPR "," EXPR "," EXPR "]"
 #---------------------------------------------------------------
 point2 -> "[" EXPR "," EXPR "]"
 {% (d) => (	{type: 'Point2', x:d[1], y:d[3]}) %}
+#---------------------------------------------------------------
+name_value -> "#" alphanum {% (d) => d[0] + d[1] %}
+#---------------------------------------------------------------
+bool -> ("true" | "on") {% (d) => true %}
+		| ("false" | "off") {% (d) => false %}
+#---------------------------------------------------------------
+void ->
+	     "undefined"  {% (d) => ({value:d[0]}) %}
+	   | "unsupplied" {% (d) => ({value:d[0]}) %}
+	   | "ok"         {% (d) => ({value:d[0]}) %}
+#---------------------------------------------------------------
+#---------------------------------------------------------------
+#---------------------------------------------------------------
+
 #===============================================================
 # TOKENS
 #===============================================================
-varName -> alphanum {% id %}
+varName -> alphanum {% dropKeyword %}
 #===============================================================
 #Strings
-string -> "\"" _string "\"" {% function(d) {return {'literal':d[1]}; } %}
+string -> "\"" _string "\"" {% (d) => ({'literal':d[1]}) %}
 
 _string ->
-	null {% function() {return ""; } %}
+	null {% (d) => "" %}
 	| _string _stringchar {% function(d) {return d[0] + d[1];} %}
 
 _stringchar ->
@@ -165,8 +318,8 @@ _stringchar ->
 #---------------------------------------------------------------
 number -> _number {% (d) => ({'literal':d[0]}) %}
 _number ->
-	_int {% id %}
-	| _float {% id %}
+	_int      {% id %}
+	| _float  {% id %}
 	| _double {% id %}
 #---------------------------------------------------------------
 _double -> _float "d" _int {% function(d) {return d[0] + d[1] + d[2]; }%}
@@ -184,8 +337,9 @@ _posint ->
 alphanum -> _alphanum {% testAlphanum %}
 _alphanum -> anchar:+ {% merge %}
 #===============================================================
-LPAREN ->  "(" {% (d) => null %}
+LPAREN ->  "("  {% (d) => null %}
 RPAREN ->  ")"  {% (d) => null %}
+void_parens -> "(" _ ")"
 #===============================================================
 anchar -> [A-Za-z_0-9]
 digit -> [0-9]
@@ -210,3 +364,58 @@ _S -> wschar:*      {% (d) => null %}
 _ -> wsnlchar:*     {% (d) => null %}
 __ -> wsnlchar:+    {% (d) => null %}
 ___ -> (wsnlchar:+ | ___ ";" ) {% (d) => null %}
+
+#===============================================================
+@{%
+
+	var keywords = [
+	"about"    , "and"    , "animate"     , "as"         , "at"          , "by"     , "case"   ,  "catch" , "collect" , "continue" ,
+	"coordsys" , "do"     , "dontcollect" , "else"       , "exit"        , "fn"     , "fn"     , "for"    , "from"    , "function" ,
+	"global"   , "if"     , "in"          , "local"      , "macroscript" , "mapped" , "max"    , "not"    , "of"      , "off"      ,
+	"ok"       , "on"     , "or"          , "parameters" , "persistent"  , "plugin" , "rcmenu" , "return" , "rollout" ,
+	"set"      , "struct" , "then"        , "throw"      , "to"          , "tool"   , "try"    , "undo"   , "utility" ,
+	"when"     , "where"  , "while"       , "with"       , "unsupplied"  , "undefined"
+
+	]
+
+	const dropKeyword = (d, l, r) => (keywords.includes(d[0]) ? r : d[0]);
+
+	const flatten = arr => [].concat(...arr);
+
+	const filterNulll = arr => arr.filter(e => e != null );
+
+	const merge = function (d) {
+		var arr = [].concat(...d);
+		return arr.join('');
+	};
+
+	const testAlphanum = function (d, l, reject) {
+		var re = new RegExp("^\\d+$");
+
+		// var str = merge(d);
+
+		if (re.test(d[0])) {
+            return reject;
+        } else {
+            return d[0];
+        }
+	};
+
+	function dropNull(d) {
+
+		var arr = d.map( e => {
+
+			//e.filter(e => e != null );
+
+			if (Array.isArray(e)) {
+				return filterNulll(e);
+			} else {
+				return e;
+			};
+
+		});
+
+		return arr;
+	};
+
+%}

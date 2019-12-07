@@ -16,4 +16,3 @@
 		var empty = function (d) { return []; };
 		var emptyStr = function (d) { return ""; };
 %}
-

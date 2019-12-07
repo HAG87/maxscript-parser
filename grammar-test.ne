@@ -60,7 +60,7 @@ if_expr ->
         | "if" expr "do" expr
 
 # ERROR CHECK STATEMENT
-try_expr -> "try" expr "catch" ( expr | void_parens)
+# try_expr -> "try" expr "catch" ( expr | void_parens)
 
 # loops needs a better definition of loop-exit and loop-continue
 # WHILE LOOP
@@ -259,10 +259,10 @@ fn_return -> _ "return" _expr
 
 
 # OPERANDS -- REPLACE THIS
-operand ->
-		var_name
-		| string
-		| int
+# operand ->
+# 		var_name
+# 		| string
+# 		| int
 
 
 #===============================================================
@@ -289,38 +289,38 @@ _block -> ANY {% id %}
 # FIX THESE
 # variable_decls -> ( "local" | ("persistent"):? __ "global" ) decl ( "," decl ):*
 
-typed_var_decl -> _ ( "local" | ("persistent" __ ):? "global" ) __ var_decl ___
+# typed_var_decl -> _ ( "local" | ("persistent" __ ):? "global" ) __ var_decl ___
 
-var_decl ->  decl						{% id %}
-		   | var_decl _S comma _ decl
+# var_decl ->  decl						{% id %}
+# 		   | var_decl _S comma _ decl
 
-decl -> var_name			{% (d) => ( {decl:d[0]} ) %}
-      | var_name _S "=" expr
+# decl -> var_name			{% (d) => ( {decl:d[0]} ) %}
+#       | var_name _S "=" expr
 
 
 # FUNCTION CALLS
 
 # PROPERTIES
 #===============================================================
-var_name -> alphanum {% id %}
+# var_name -> alphanum {% id %}
 #===============================================================
 
 #===============================================================
 #Basic values
 #===============================================================
 #Strings
-string -> "\"" _string "\"" {% function(d) {return {'literal':d[1]}; } %}
+# string -> "\"" _string "\"" {% function(d) {return {'literal':d[1]}; } %}
 
-_string ->
-	null {% function() {return ""; } %}
-	| _string _stringchar {% function(d) {return d[0] + d[1];} %}
+# _string ->
+# 	null {% function() {return ""; } %}
+# 	| _string _stringchar {% function(d) {return d[0] + d[1];} %}
 
-_stringchar ->
-	[^\\"] {% id %}
-	| "\\" [^] {% function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); } %}
+# _stringchar ->
+# 	[^\\"] {% id %}
+# 	| "\\" [^] {% function(d) {return JSON.parse("\"" + d[0] + d[1] + "\""); } %}
 
 
-names -> "#" [A-Za-z_0-9]:+
+# names -> "#" [A-Za-z_0-9]:+
 
 #===============================================================
 #Numers
@@ -328,9 +328,9 @@ names -> "#" [A-Za-z_0-9]:+
 #Others
 # DATAPAIR
 
-box2 -> "[" expr "," expr "," expr "," expr "]"
-point3 -> "[" expr "," expr "," expr "]"
-point2 -> "[" expr "," expr "]"
+# box2 -> "[" expr "," expr "," expr "," expr "]"
+# point3 -> "[" expr "," expr "," expr "]"
+# point2 -> "[" expr "," expr "]"
 #===============================================================
 # Collections
 # INDEX ACCESS
