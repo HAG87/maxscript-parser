@@ -1,9 +1,8 @@
-
+# MISSING UNARY MINUS!
 #===============================================================
-SCRIPT -> _ array _ {% (d) => d[1] %}
+SCRIPT -> _ for_loop _ {% (d) => d[1] %}
 
-#SCRIPT -> _ varName _ | SCRIPT varName #{% (d) => d[1] %}
-
+#SCRIPT -> simple_expr
 
 #<parens> ::= <matched>
 #          | <matched> <parens>
@@ -13,6 +12,7 @@ SCRIPT -> _ array _ {% (d) => d[1] %}
 
 #parens -> matched _
 #          | matched _ parens  {% id %}
+
 
 #matched ->
 #			"()"
@@ -24,22 +24,40 @@ SCRIPT -> _ array _ {% (d) => d[1] %}
 #		| newline:+
 #		| _EOL ";" #| _EOL
 
-#array -> _array
-#{%
-#(d) => d
-#%}
-
-# TODO: FIX MATH EXPRESSION FOR ARRAYS
-
-array -> "#(" _ ")" {% d => "[]" %}
-		| "#(" array_expr ")"  #{% flatten %}
-#		| "#(" array ")"
-
-array_expr -> #EXPR ("," EXPR):*
 
 
-			  EXPR {% id %}
-			 |array_expr "," EXPR {% d => [d[0], d[2]] %}
+# FOR LOOP
+# for i=1 to col.count | by -1 | where condition | (do | collect)
+# for i in col | where condition | (do | collect)
+
+for_loop -> "for" __ arr_source #_ #("where" EXPR ):? ("do" | "collect") #loop_expr
+
+arr_source ->
+			varName _S "=" _ simple_expr _ "to" EXPR #("by" EXPR):?
+			| varName _S "=" _ simple_expr _ "to" EXPR "by" EXPR
+#			| varName __ "in" EXPR
+
+
+#---------------------------------------------------------------
+loop_expr -> EXPR
+			| loop_continue
+			| loop_exit
+#---------------------------------------------------------------
+loop_exit -> _ "exit" _ ("with" EXPR):?
+loop_continue -> _ "continue" _
+
+
+
+
+
+#===============================================================
+# WHILE LOOP
+#---------------------------------------------------------------
+while_loop -> "while" EXPR "do" loop_expr
+#---------------------------------------------------------------
+# DO LOOP
+do_loop -> "do" EXPR "while" loop_expr
+#---------------------------------------------------------------
 
 #===============================================================
 # ERROR CHECK STATEMENT
@@ -64,8 +82,9 @@ assignOp ->
 #===============================================================
 #EXPRESSIONS
 #===============================================================
-#---------------------------------------------------------------
-EXPR ->  _ _expr _ {% (d) => d[1] %}
+
+# EXPRESIONS END WITH LINE BREAK, CONTEXT END; OR LOWER PRECEDENTE EXPRESSION....
+EXPR ->  _ _expr _  {% (d) => d[1] %}
 
 _expr ->
 		DECLARATIONS  {% id %} #OK
@@ -73,13 +92,13 @@ _expr ->
 		| simple_expr {% id %} #-----
 
 		#| if_expr
-		#| while_loop
-		#| do_loop
-		#| for_loop
-		#| loop_exit
+		| while_loop
+		| do_loop
+#		| for_loop
+
 		#| case_expr
 		#| struct_def
-		 | try_expr
+		| try_expr
 
 		#| function_def
 		#| function_return
@@ -125,10 +144,9 @@ var_decl ->  decl											{% id %}
 decl -> varName			        							{% (d) => ( {decl:d[0]} ) %}
       | varName _S "=" _ EXPR   							{% (d) => ( {decl:d[0], exp:d[4]} ) %}
 #===============================================================
-OPERAND ->
-factor			{% id %}
-| property		{% id %}
-| index			{% id %}
+OPERAND ->	  factor		{% id %}
+			| property		{% id %}
+			| index			{% id %}
 #===============================================================
 # FUNCTION CALL
 # up to an end of line or lower precedence token
@@ -162,32 +180,32 @@ factor ->
 		| bool          {% id %}
 		| void          {% id %}
 		| array         {% id %}
+		| bitarray      {% id %}
 #<path_name>
 #<var_name>
 
 
-#<bitarray>
+
 
 #- <expr> -- unary minus
 #<expr_seq>
 #? -- last Listener result
 #===============================================================
 # MATH EXPRESSIONS
-math_expr -> sum {% (d, l, reject) => Array.isArray(d[0]) && d[0].length >= 1 ? d[0] : reject %}
+math_expr -> sum 				 			{% (d, l, reject) => Array.isArray(d[0]) && d[0].length > 1 ? d[0] : reject %}
 
-sum -> sum _ ("+"|"-") _ product {% dropNull %}
-	 | product {% id %}
+sum -> sum _ ("+"|"-") _ product 			{% (d) => [(d[0][0]), (d[2][0]), d[4] ]%}
+	 | product #{% id %}
 
-product -> product _ ("*"|"/") _ exp {% dropNull %}
+product -> product _ ("*"|"/") _ exp 		{% (d) => [d[0], (d[2][0]), d[4] ]%}
 		 | exp {% id %}
 
 # this is right associative!
-exp -> conversion _ "^" _ exp {% dropNull %}
+exp -> conversion _ "^" _ exp 				{% (d) => [d[0], d[2], d[4] ]%}
 	| conversion {% id %}
 
-conversion -> math_operand __ "as" __ class {% dropNull %}
+conversion -> math_operand __ "as" __ class {% (d) => [d[0], d[2], d[4] ]%}
 			| math_operand {% id %}
-
 #math_expr ->
 #        	  math_operand _ "+" _ math_operand
 #        	| math_operand _ "-" _ math_operand
@@ -270,6 +288,20 @@ keyword ->
 | "when"     | "where"  | "while"       | "with"
 #===============================================================
 #ARRAY
+array -> "#(" _ ")" 			{% d => "[]" %}
+ 		| "#(" array_expr ")"  #{% flatten %}
+
+array_expr -> #EXPR ("," EXPR):*
+ 			  EXPR {% id %}
+ 			 |array_expr "," EXPR {% d => [d[0], d[2]] %}
+#---------------------------------------------------------------
+bitarray -> "#{" _ "}"				{% d => "#{}" %}
+		  | "#{" bitarray_inner "}" {% (d) => ({ bitarray:("#{" + d[1] + "}") }) %}
+
+bitarray_inner -> (bitarray_expr | _ "," _ bitarray_expr):+ {% d => merge(d[0]) %}
+
+bitarray_expr -> _posint {% id %}
+| _posint  ".."  _posint {% (d) => d.join('') %}
 #===============================================================
 # TYPES
 box2 -> "[" EXPR "," EXPR "," EXPR "," EXPR "]"

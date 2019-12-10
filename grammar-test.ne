@@ -64,10 +64,10 @@ if_expr ->
 
 # loops needs a better definition of loop-exit and loop-continue
 # WHILE LOOP
-while_loop -> "while" simple_expr "do" loop_expr
+# while_loop -> "while" simple_expr "do" loop_expr
 
 # DO LOOP
-do_loop -> "do" simple_expr "while" loop_expr
+# do_loop -> "do" simple_expr "while" loop_expr
 
 # FOR LOOP
 # for i=1 to col.count | by -1 | where condition | (do | collect)

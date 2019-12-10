@@ -31,10 +31,10 @@ expr ->
     | _ if_expr         _
     | _ case_expr       _
     | _ while_loop      _
-    | _ do_loop         _
-    | _ for_loop        _
+    # | _ do_loop         _
+    # | _ for_loop        _
     | _ loop_exit       _
-    | _ try_expr        _
+    # | _ try_expr        _
     | _ context_expr    _
     | _ struct_def      _
     | _ function_def    _
@@ -73,17 +73,17 @@ if_expr -> "if" expr "then" expr ( "else" expr ):?
 #===============================================================
 # loops needs a better definition of loop-exit and loop-continue
 
-while_loop -> "while" expr "do" expr
+# while_loop -> "while" expr "do" expr
 
-do_loop -> "do" expr "while" expr
+# do_loop -> "do" expr "while" expr
 
 for_loop -> "for" name ( "in" | "=" ) source ("do" | "collect") expr
 
 source -> expr "to" expr ("by" expr):? ("where" expr):?
         | expr ("where" expr):?
 
-loop-exit ->"exit" ("with" expr):?
-loop-continue -> "continue"
+# loop-exit ->"exit" ("with" expr):?
+# loop-continue -> "continue"
 #===============================================================
 # ATENTION! BRACKETS MANDATORY
 
@@ -311,8 +311,8 @@ factor ->
     | path_name
     # | var_name
     # | "#" var_name
-    | array
-    | bitarray
+    # | array
+    # | bitarray
     # | point3
     # | point2
     # | "true"
@@ -335,9 +335,11 @@ expr_seq -> ( expr ( ( ";" | EOL):? expr ):* ):?
 # point3 -> "[" expr "," expr "," expr "]"
 # box2 -> "[" expr "," expr "," expr "," expr "]"
 
-array -> "#(" _ ")"
-        | "#(" expr ( "," expr ):* ")"
+# array -> "#(" _ ")"
+#         | "#(" expr ( "," expr ):* ")"
 
+# bitarray -> "#{" "}"
+#           | "#{" ( expr | expr ". ." expr ):+ ( "," ( expr | expr ". ." expr ):+ ):* "}"
 #===============================================================
 # TOKENS -- REPLACE WITH MOOO
 # string -> "\"" (any_char_except_quote | "\\\"" | "\n" | "\r" | "\t" | "\*" | "\?" | "\\" | "\%" | "\x" (hex_digit):+):* "\""
