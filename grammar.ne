@@ -28,17 +28,17 @@ expr ->
       _ simple_expr     _
     # | _ variable_decls  _
     # | _ assignment      _
-    | _ if_expr         _
+    # | _ if_expr         _
     | _ case_expr       _
-    | _ while_loop      _
+    # | _ while_loop      _
     # | _ do_loop         _
     # | _ for_loop        _
-    | _ loop_exit       _
+    # | _ loop_exit       _
     # | _ try_expr        _
-    | _ context_expr    _
+    # | _ context_expr    _
     | _ struct_def      _
-    | _ function_def    _
-    | _ function_return _
+    # | _ function_def    _
+    # | _ function_return _
     | _ utility_def     _
     | _ rollout_def     _
     | _ tool_def        _
@@ -68,8 +68,8 @@ var_name ->  (alphanumeric | "_" ):?
 #     | property
 #     | index
 #===============================================================
-if_expr -> "if" expr "then" expr ( "else" expr ):?
-        | "if" expr "do" expr
+# if_expr -> "if" expr "then" expr ( "else" expr ):?
+        # | "if" expr "do" expr
 #===============================================================
 # loops needs a better definition of loop-exit and loop-continue
 
@@ -77,10 +77,10 @@ if_expr -> "if" expr "then" expr ( "else" expr ):?
 
 # do_loop -> "do" expr "while" expr
 
-for_loop -> "for" name ( "in" | "=" ) source ("do" | "collect") expr
+# for_loop -> "for" name ( "in" | "=" ) source ("do" | "collect") expr
 
-source -> expr "to" expr ("by" expr):? ("where" expr):?
-        | expr ("where" expr):?
+# source -> expr "to" expr ("by" expr):? ("where" expr):?
+        # | expr ("where" expr):?
 
 # loop-exit ->"exit" ("with" expr):?
 # loop-continue -> "continue"
@@ -88,12 +88,12 @@ source -> expr "to" expr ("by" expr):? ("where" expr):?
 # ATENTION! BRACKETS MANDATORY
 
 # PROGRAN FLOW CONTROL
-case_expr -> "case" (expr):? "of" _OPEN (case_item):+ close_
+# case_expr -> "case" (expr):? "of" _OPEN (case_item):+ CLOSE_
 
-case_item -> (factor | "default") _ ":" expr
+# case_item -> (factor | "default") _ ":" expr
 #===============================================================
 # ERROR CHECK STATEMENT
-try_expr -> "try" expr "catch" expr
+# try_expr -> "try" expr "catch" expr
 #===============================================================
 # STRUCTURE DEFINITION
 struct_def ->
@@ -106,29 +106,50 @@ member -> name _ ("=" _ expr):? # name and optional initial value
         | function_def
 #===============================================================
 # FUNCTION DEFINITION
-function_def -> ("mapped"):? _ ( "function" | "fn" ) _ var_name _ (arg _):* "=" expr
+# function_def -> ("mapped"):? _ ( "function" | "fn" ) _ var_name _ (arg _):* "=" expr
 
-arg -> var_name
-        | var_name _ ":" _ (operand):?
+# arg -> var_name
+#         | var_name _ ":" _ (operand):?
 
-function_return -> "return" expr
+# function_return -> "return" expr
 #===============================================================
 # CONTEXT EXPRESSION
-context_expr -> context ("," context ):? expr
+# The full syntax for <context_expr> is:
 
-# check if <logical_expr> has the on-off definition
-context ->
-             ("with"):? _ "animate" _ logical_expr
-            | "at"       _ "level"   _ operand
-            | "at"       _ "time"    _ operand
-            | "in"       _ operand
-            | ("in"):?   _ "coordsys" _ ("local" | "world" | "parent" | operand)
-            | "about"    _ ("pivot" | "selection" | "coordsys" | operand)
-            | ("with"):? _ "undo" _ logical_expr
-# MISSING
-            | "with" "redraw" logical_expr
+# <context> { , <context> } <expr>
+# where <context> is one of:
 
-set_context -> "set" context
+# [ with ] animate <boolean>
+# at level <node>
+# in <node>
+# at time <time>
+# [ in ] coordsys <coordsys>
+# about <center_spec>
+# [ with ] undo <boolean>
+# [ with ] redraw <boolean>
+# [ with ] quiet <bool>
+# [ with ] redraw <bool>
+# [ with ] printAllElements <bool>
+# [ with ] defaultAction <action>
+# [ with ] MXSCallstackCaptureEnabled <bool>
+# [ with ] dontRepeatMessages <bool>
+# [ with ] macroRecorderEmitterEnabled <bool>
+
+# context_expr -> context ("," context ):? expr
+
+# # check if <logical_expr> has the on-off definition
+# context ->
+#              ("with"):? _ "animate" _ (logical_expr | bool)
+#             | "at"       _ "level"   _ operand
+#             | "at"       _ "time"    _ operand
+#             | "in"       _ operand
+#             | ("in"):?   _ "coordsys" _ ("local" | "world" | "parent" | operand)
+#             | "about"    _ ("pivot" | "selection" | "coordsys" | operand)
+#             | ("with"):? _ "undo" _ (logical_expr | bool)
+# # MISSING
+#             | "with" "redraw" (logical_expr | bool)
+
+# set_context -> "set" context
 #===============================================================
 # UTILITY DEFINITION
 # utility_def ->

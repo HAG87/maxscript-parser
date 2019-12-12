@@ -1,6 +1,9 @@
 # MISSING UNARY MINUS!
+# block-expressions!!!
+# PARENSSS
+# ( <expr> { (; | <eol>) <expr> } )
 #===============================================================
-SCRIPT -> _ for_loop _ {% (d) => d[1] %}
+SCRIPT -> _ struct_def _ {% (d) => d[1] %}
 
 #SCRIPT -> simple_expr
 
@@ -13,7 +16,6 @@ SCRIPT -> _ for_loop _ {% (d) => d[1] %}
 #parens -> matched _
 #          | matched _ parens  {% id %}
 
-
 #matched ->
 #			"()"
 #		   | varName
@@ -23,33 +25,76 @@ SCRIPT -> _ for_loop _ {% (d) => d[1] %}
 #_EOL -> wsnlchar:+
 #		| newline:+
 #		| _EOL ";" #| _EOL
+#===============================================================
+# DEFINITIONS
+#===============================================================
+#STRUCTURE DEFINITION
+struct_def ->
+("struct" __) varName
+(_	LPAREN)
+		struct_members
+(_	RPAREN)
 
+ {% (d) => {
+ 	return {
+ 		type:'struct',
+ 		name:d[1],
+		members:d[3]
+ 	};
+ }%}
 
+struct_members ->
+			      member (comma member):*
+				{% (d) => {
+					var arr = d.flat(2);
+					arr = filterNull(arr)
+					return arr;
+				} %}
 
-# FOR LOOP
-# for i=1 to col.count | by -1 | where condition | (do | collect)
-# for i in col | where condition | (do | collect)
+#				  member 				  {% id %}
+#				| struct_members comma  member #{% flatten %}
 
-for_loop -> "for" __ arr_source #_ #("where" EXPR ):? ("do" | "collect") #loop_expr
+member -> decl         {% id %}
+		| fn_def       {% id %}
+#		| event_handler
+#===============================================================
+#FUNCTION DEFINITION
+fn_def ->
+("mapped" __ ):? ("function" | "fn" ) __ varName fn_arg:* fn_param:* _ "=" fn_expr
 
-arr_source ->
-			varName _S "=" _ simple_expr _ "to" EXPR #("by" EXPR):?
-			| varName _S "=" _ simple_expr _ "to" EXPR "by" EXPR
-#			| varName __ "in" EXPR
+{% (d) => {
+	return {
+		type: 'function',
+		name:d[3],
+		args:(d[4].length >= 1 ? d[4] : null),
+		params:(d[5].length >= 1 ? d[5] : null),
+		body:d[8]
+	};
+} %}
 
+fn_expr ->  EXPR
+		  | fn_return
 
+fn_arg -> __ varName {% d => d[1] %}
+fn_param -> __ param {% d => d[1] %}
 #---------------------------------------------------------------
-loop_expr -> EXPR
-			| loop_continue
-			| loop_exit
+fn_return -> "return" __ _expr _
+#===============================================================
+#EXPRESSIONS
+#===============================================================
+# IF EXPRESSION
+if_expr ->
+	 	  "if" EXPR "then" EXPR 			{% d => ({if:d[1], then:d[3]}) %}
+		| "if" EXPR "then" EXPR "else" EXPR {% d => ({if:d[1], then:d[3], else:d[5]}) %}
+        | "if" EXPR "do" EXPR 				{% d => ({if:d[1], do:d[3]}) %}
 #---------------------------------------------------------------
-loop_exit -> _ "exit" _ ("with" EXPR):?
-loop_continue -> _ "continue" _
+# CASE EXPRESSION
+case_expr -> "case" (EXPR):? "of" _ LPAREN case_col RPAREN
 
+case_col -> case_item
+		  | case_col EOL case_item
 
-
-
-
+case_item -> factor _S ":" EXPR {% d => ({[d[0]]:d[3]}) %}
 #===============================================================
 # WHILE LOOP
 #---------------------------------------------------------------
@@ -58,10 +103,61 @@ while_loop -> "while" EXPR "do" loop_expr
 # DO LOOP
 do_loop -> "do" EXPR "while" loop_expr
 #---------------------------------------------------------------
+# FOR LOOP
+# for i=1 to col.count | by -1 | where condition | (do | collect)
+# for i in col | where condition | (do | collect)
 
+for_loop ->
+"for" __ arr_source  ("do" | "collect") loop_expr {% d => [d[0], d[2], d[3][0], d[4]] %}
+
+arr_source ->
+              arr_var __ arr_trgt arr_cond:?           {% d => [d[0], d[2], d[3]] %}
+			| arr_var __ arr_trgt arr_step arr_cond:?  {% d => [d[0], d[2], d[3], d[4]] %}
+			| varName __ arr_src  arr_cond:?           {% d => [d[0], d[2], d[3]] %}
+
+arr_var ->   varName _S "=" _ simple_expr {% d => ({[d[0]]:d[4]}) %}
+arr_cond ->  "where" EXPR {% d => ({[d[0]]:d[1]}) %}
+arr_step ->  "by" EXPR    {% d => ({[d[0]]:d[1]}) %}
+arr_trgt ->  "to" EXPR    {% d => ({[d[0]]:d[1]}) %}
+arr_src ->   "in" EXPR    {% d => ({[d[0]]:d[1]}) %}
+#---------------------------------------------------------------
+loop_expr -> EXPR
+			| loop_continue
+			| loop_exit
+#---------------------------------------------------------------
+loop_exit -> _ "exit" _ ("with" EXPR):?
+loop_continue -> _ "continue" _
 #===============================================================
 # ERROR CHECK STATEMENT
 try_expr -> "try" EXPR "catch" ( EXPR | void_parens)
+#===============================================================
+# CONTEXT EXPRESSION
+context_expr -> context (_S "," _ context):* __ EXPR
+
+context ->
+			("at" | "set") __ "level" __ OPERAND
+			# this will have conflicts with for loop
+			| ("set"  __ ):? "in" __ OPERAND
+#			| ("at" | "set") __ "time" __ time
+			# this will have conflicts with for loop
+			| ("in" __ | "set" __ ):? "coordsys" __ ("local" | "world" | "parent" | OPERAND)
+			| ("set"  __ ):? "about" __ ("pivot" | "selection" | "coordsys" | OPERAND)
+			| ("with" __ | "set" __  ):? context_keywords1 __ (logical_expr | bool)
+			| ("with" __ | "set" __  ):? context_keywords2 __ def_actions
+
+
+context_keywords1 -> "animate"
+				  | "undo"
+				  | "redraw"
+				  | "quiet"
+				  | "printAllElements"
+				  | "MXSCallstackCaptureEnabled"
+				  | "dontRepeatMessages"
+				  | "macroRecorderEmitterEnabled"
+
+context_keywords2 -> "defaultAction"
+
+def_actions -> "#logmsg" | "#logToFile" | "#abort"
 #===============================================================
 #ASSIGNMENT
 #===============================================================
@@ -83,7 +179,8 @@ assignOp ->
 #EXPRESSIONS
 #===============================================================
 
-# EXPRESIONS END WITH LINE BREAK, CONTEXT END; OR LOWER PRECEDENTE EXPRESSION....
+# EXPRESIONS END WITH LINE BREAK, CONTEXT END; OR LOWER PRECEDENTE EXPRESSION.... EXPRESSION BLOCK!!!
+
 EXPR ->  _ _expr _  {% (d) => d[1] %}
 
 _expr ->
@@ -91,28 +188,26 @@ _expr ->
 		| assignment  {% id %} #OK
 		| simple_expr {% id %} #-----
 
-		#| if_expr
+		| if_expr
+		| case_expr
 		| while_loop
 		| do_loop
-#		| for_loop
+		| for_loop
 
-		#| case_expr
-		#| struct_def
 		| try_expr
 
-		#| function_def
-		#| function_return
-		#| context_expr
-		#| max_command
+		| fn_def
+
+		| context_expr
+
+		#| struct_def
 		#| utility_def
 		#| rollout_def
 		#| tool_def
 		#| rcmenu_def
 		#| macroscript_def
 		#| plugin_def
-#---------------------------------------------------------------
-#===============================================================
-
+		#| max_command
 #===============================================================
 simple_expr ->
 				OPERAND         {% id %}
@@ -142,7 +237,7 @@ var_decl ->  decl											{% id %}
 		   | var_decl _S "," _ decl 						{% (d) => ([].concat(d[0], d[4])) %}
 
 decl -> varName			        							{% (d) => ( {decl:d[0]} ) %}
-      | varName _S "=" _ EXPR   							{% (d) => ( {decl:d[0], exp:d[4]} ) %}
+      | varName _S "=" EXPR     							{% (d) => ( {decl:d[0], exp:d[3]} ) %}
 #===============================================================
 OPERAND ->	  factor		{% id %}
 			| property		{% id %}
@@ -181,8 +276,8 @@ factor ->
 		| void          {% id %}
 		| array         {% id %}
 		| bitarray      {% id %}
-#<path_name>
-#<var_name>
+# | path_name
+
 
 
 
@@ -312,7 +407,7 @@ point3 -> "[" EXPR "," EXPR "," EXPR "]"
 point2 -> "[" EXPR "," EXPR "]"
 {% (d) => (	{type: 'Point2', x:d[1], y:d[3]}) %}
 #---------------------------------------------------------------
-name_value -> "#" alphanum {% (d) => d[0] + d[1] %}
+name_value -> "#" alphanum {% (d) => ({nameLiteral:(d[0] + d[1])}) %}
 #---------------------------------------------------------------
 bool -> ("true" | "on") {% (d) => true %}
 		| ("false" | "off") {% (d) => false %}
@@ -322,20 +417,20 @@ void ->
 	   | "unsupplied" {% (d) => ({value:d[0]}) %}
 	   | "ok"         {% (d) => ({value:d[0]}) %}
 #---------------------------------------------------------------
+# Time
 #---------------------------------------------------------------
-#---------------------------------------------------------------
-
+# Paths
 #===============================================================
 # TOKENS
 #===============================================================
 varName -> alphanum {% dropKeyword %}
 #===============================================================
 #Strings
-string -> "\"" _string "\"" {% (d) => ({'literal':d[1]}) %}
+string -> ("@"):? "\"" _string "\"" {% (d) => ({'literal':d[1]}) %}
 
 _string ->
 	null {% (d) => "" %}
-	| _string _stringchar {% function(d) {return d[0] + d[1];} %}
+	| _string _stringchar {% (d) => d[0] + d[1] %}
 
 _stringchar ->
 	[^\\"] {% id %}
@@ -372,6 +467,8 @@ _alphanum -> anchar:+ {% merge %}
 LPAREN ->  "("  {% (d) => null %}
 RPAREN ->  ")"  {% (d) => null %}
 void_parens -> "(" _ ")"
+
+comma -> "," _ {% (d) => null %}
 #===============================================================
 anchar -> [A-Za-z_0-9]
 digit -> [0-9]
@@ -406,7 +503,8 @@ ___ -> (wsnlchar:+ | ___ ";" ) {% (d) => null %}
 	"global"   , "if"     , "in"          , "local"      , "macroscript" , "mapped" , "max"    , "not"    , "of"      , "off"      ,
 	"ok"       , "on"     , "or"          , "parameters" , "persistent"  , "plugin" , "rcmenu" , "return" , "rollout" ,
 	"set"      , "struct" , "then"        , "throw"      , "to"          , "tool"   , "try"    , "undo"   , "utility" ,
-	"when"     , "where"  , "while"       , "with"       , "unsupplied"  , "undefined"
+	"when"     , "where"  , "while"       , "with"       , "unsupplied"  , "undefined",
+	"true"     , "false"
 
 	]
 
@@ -414,7 +512,7 @@ ___ -> (wsnlchar:+ | ___ ";" ) {% (d) => null %}
 
 	const flatten = arr => [].concat(...arr);
 
-	const filterNulll = arr => arr.filter(e => e != null );
+	const filterNull = arr => arr.filter(e => e != null );
 
 	const merge = function (d) {
 		var arr = [].concat(...d);
@@ -434,13 +532,13 @@ ___ -> (wsnlchar:+ | ___ ";" ) {% (d) => null %}
 	};
 
 	function dropNull(d) {
-
+		// This doesn't work well, map doesn't change the array dimension.... I need to delete the null items. better use filter or something
 		var arr = d.map( e => {
 
 			//e.filter(e => e != null );
 
 			if (Array.isArray(e)) {
-				return filterNulll(e);
+				return filterNull(e);
 			} else {
 				return e;
 			};

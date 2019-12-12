@@ -55,9 +55,9 @@ MAIN -> # var_name {% id %}
 # STATEMENTS
 #===============================================================
 #IF EXPRESSION
-if_expr ->
-		  "if" expr "then" expr ( "else" expr ):?
-        | "if" expr "do" expr
+# if_expr ->
+# 		  "if" expr "then" expr ( "else" expr ):?
+#         | "if" expr "do" expr
 
 # ERROR CHECK STATEMENT
 # try_expr -> "try" expr "catch" ( expr | void_parens)
@@ -73,11 +73,11 @@ if_expr ->
 # for i=1 to col.count | by -1 | where condition | (do | collect)
 # for i in col | where condition | (do | collect)
 
-for_loop -> "for" __ arr_source _ ("where" simple_expr ):? ("do" | "collect") loop_expr
+# for_loop -> "for" __ arr_source _ ("where" simple_expr ):? ("do" | "collect") loop_expr
 
-arr_source ->
-			var_name _ "=" simple_expr "to" simple_expr ("by" simple_expr):?
-			| var_name __ "in" simple_expr
+# arr_source ->
+# 			var_name _ "=" simple_expr "to" simple_expr ("by" simple_expr):?
+# 			| var_name __ "in" simple_expr
 #===============================================================
 # NEED TO COMBINE THE WORK ON BLOCK WITH EXPR
 #===============================================================
@@ -102,8 +102,9 @@ member -> var_name ( _ "=" expr):?
 #===============================================================
 #FUNCTION DEFINITION
 # MISSING EXPR
-fn_def ->
-("mapped" __ ):? ("function" | "fn" ) __ var_name ( __ args):? ( __ opt_args):? _ "=" expr
+# fn_def ->
+# ("mapped" __ ):? ("function" | "fn" ) __ var_name ( __ args):? ( __ opt_args):? _ "=" expr
+# fn_return -> _ "return" _expr
 #===============================================================
 # UTILITY DEFINITION
 utility_def ->
@@ -191,13 +192,13 @@ event_args   -> var_name
 
 #expr_sequence -> expr | expr_sequence ___ expr
 
-P ->
-      LPAREN E RPAREN #{% TRUE %}
+# P ->
+    #   LPAREN E RPAREN #{% TRUE %}
 
-E ->
-     null
-	|alphanum
-    | LPAREN E RPAREN E
+# E ->
+    #  null
+	# |alphanum
+    # | LPAREN E RPAREN E
 
 
 #loop_expr -> expr
@@ -224,9 +225,9 @@ _expr ->
 
 
 
-_LPAREN -> _ "("  {% (d) => null %}
+# _LPAREN -> _ "("  {% (d) => null %}
 
-_RPAREN ->  ")" _ {% (d) => null %}
+# _RPAREN ->  ")" _ {% (d) => null %}
 
 
 simple_expr ->
@@ -252,10 +253,8 @@ dcl_expr  ->
 			var_decl
 
 # MIXED CONTEXTUAL EXP
-loop_exit -> _ "exit" _ ("with" expr):?
-loop_continue -> _ "continue" _
-
-fn_return -> _ "return" _expr
+# loop_exit -> _ "exit" _ ("with" expr):?
+# loop_continue -> _ "continue" _
 
 
 # OPERANDS -- REPLACE THIS
