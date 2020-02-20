@@ -29,21 +29,21 @@ expr ->
     # | _ variable_decls  _
     # | _ assignment      _
     # | _ if_expr         _
-    | _ case_expr       _
+#     | _ case_expr       _
     # | _ while_loop      _
     # | _ do_loop         _
     # | _ for_loop        _
     # | _ loop_exit       _
     # | _ try_expr        _
     # | _ context_expr    _
-    | _ struct_def      _
+#     | _ struct_def      _
     # | _ function_def    _
     # | _ function_return _
     | _ utility_def     _
     | _ rollout_def     _
     | _ tool_def        _
     | _ rcmenu_def      _
-    | _ macroscript_def _
+#     | _ macroscript_def _
     | _ plugin_def      _
     | _ max_command     _
 
@@ -96,14 +96,14 @@ var_name ->  (alphanumeric | "_" ):?
 # try_expr -> "try" expr "catch" expr
 #===============================================================
 # STRUCTURE DEFINITION
-struct_def ->
-"struct"
-_OPEN
-        member ("," _ member _):*
-_CLOSE
+# struct_def ->
+# "struct"
+# _OPEN
+#         member ("," _ member _):*
+# _CLOSE
 
-member -> name _ ("=" _ expr):? # name and optional initial value
-        | function_def
+# member -> name _ ("=" _ expr):? # name and optional initial value
+#         | function_def
 #===============================================================
 # FUNCTION DEFINITION
 # function_def -> ("mapped"):? _ ( "function" | "fn" ) _ var_name _ (arg _):* "=" expr
@@ -152,48 +152,48 @@ member -> name _ ("=" _ expr):? # name and optional initial value
 # set_context -> "set" context
 #===============================================================
 # UTILITY DEFINITION
-# utility_def ->
-# "utility" _ var_name _ string _ (var_name _ ":" _ operand _):*
-# _OPEN
-#         (utility_clause _ ):+
-# _CLOSE
+utility_def ->
+"utility" _ var_name _ string _ (var_name _ ":" _ operand _):*
+_OPEN
+        (utility_clause _ ):+
+_CLOSE
 
 #THIS HAS AN ORPHAN <rollout> rule
-# utility_clause -> rollout_clause #| rollout
+utility_clause -> rollout_clause #| rollout
 #===============================================================
 # ROLLOUT DEFINITION
-# rollout_def ->
-# "rollout" _ var_name _ string _ (var_name _ ":" _ operand _):*
-# _OPEN
-#         (rollout_clause _):+
-# _CLOSE
+rollout_def ->
+"rollout" _ var_name _ string _ (var_name _ ":" _ operand _):*
+_OPEN
+        (rollout_clause _):+
+_CLOSE
 
 #ROLLOUT CLAUSE
 # CHECK THE DECL THING
-# rollout_clause ->
-#                   "local" _ decl ("," _ decl _):*
-#                 | function_def    _
-#                 | struct_def      _
-#                 | mousetool       _
-#                 | item_group      _
-#                 | rollout_item    _
-#                 | rollout_handler _
+rollout_clause ->
+                  "local" _ decl ("," _ decl _):*
+                | function_def    _
+                | struct_def      _
+                | mousetool       _
+                | item_group      _
+                | rollout_item    _
+                | rollout_handler _
 
-# item_group ->
-# "group" _ string
-# _OPEN
-#         (rollout_item _ ):*
-# _CLOSE
+item_group ->
+"group" _ string
+_OPEN
+        (rollout_item _ ):*
+_CLOSE
 
-#rollout_item -> item_type _ var_name _ (string):? _ (var_name _ ":" _ operand _):*
+rollout_item -> item_type _ var_name _ (string):? _ (var_name _ ":" _ operand _):*
 
-#rollout_handler -> "on" _ var_name _ var_name _ (var_name _):* "do" expr
+rollout_handler -> "on" _ var_name _ var_name _ (var_name _):* "do" expr
 
-# item_type ->
-#         "angle" | "bitmap" | "button" | "checkbox" | "checkbutton" | "colorPicker" | "combobox" |
-#         "curvecontrol" | "dotnetcontrol" | "dropdownList" | "edittext" | "groupBox" | "hyperLink" |
-#         "imgTag" | "label" | "listbox" | "mapbutton" | "materialbutton" | "multilistbox" | "pickbutton" |
-#         "popUpMenu" | "progressbar" | "radiobuttons" | "slider" | "spinner" | "SubRollout" | "timer"
+item_type ->
+        "angle" | "bitmap" | "button" | "checkbox" | "checkbutton" | "colorPicker" | "combobox" |
+        "curvecontrol" | "dotnetcontrol" | "dropdownList" | "edittext" | "groupBox" | "hyperLink" |
+        "imgTag" | "label" | "listbox" | "mapbutton" | "materialbutton" | "multilistbox" | "pickbutton" |
+        "popUpMenu" | "progressbar" | "radiobuttons" | "slider" | "spinner" | "SubRollout" | "timer"
 #===============================================================
 # RC MENU
 rcmenu_def ->
@@ -217,11 +217,11 @@ rcmenu_item_type-> "menuitem"
                  | "submenu"
 #===============================================================
 # MACROSCRIPT DEFINITION
-macroscript_def ->
-"macroscript" _ var_name _ string _ (var_name _ ":" _ operand _):*
-_OPEN
-        expr_seq
-_CLOSE
+# macroscript_def ->
+# "macroscript" _ var_name _ string _ (var_name _ ":" _ operand _):*
+# _OPEN
+#         expr_seq
+# _CLOSE
 #===============================================================
 # MOUSETOOL DEFINITION
 mousetool_def -> "tool" var_name _ (var_name _ ":" _ operand _):*

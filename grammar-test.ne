@@ -86,18 +86,18 @@ MAIN -> # var_name {% id %}
 #(mapped):? __ (function 1 fn) __ var_name __ (arg _):* "=" expr
 #===============================================================
 #STRUCTURE DEFINITION
-struct_def ->
-"struct" __ var_name
-LPAREN
-	members
-RPAREN
+# struct_def ->
+# "struct" __ var_name
+# LPAREN
+# 	members
+# RPAREN
 
-members -> member {% id %}
-		 | members _S comma _ member {% flatten %}
+# members -> member {% id %}
+# 		 | members _S comma _ member {% flatten %}
 
-member -> var_name ( _ "=" expr):?
-		| fn_def
-		| event_handler
+# member -> var_name ( _ "=" expr):?
+# 		| fn_def
+# 		| event_handler
 
 #===============================================================
 #FUNCTION DEFINITION
