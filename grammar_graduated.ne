@@ -3,7 +3,7 @@
 # PARENSSS
 # ( <expr> { (; | <eol>) <expr> } )
 #===============================================================
-SCRIPT -> _ item_group _ {% (d) => d[1] %}
+SCRIPT -> _ EXPRBB _ {% (d) => d[1] %}
 
 #rollout roll_caca "rollout caca" width:50 height:30 ()
 
@@ -29,9 +29,25 @@ SCRIPT -> _ item_group _ {% (d) => d[1] %}
 #_EOL -> wsnlchar:+
 #		| newline:+
 #		| _EOL ";" #| _EOL
+
+#EXPRBBB -> EXPRBB
+#| (LPAREN _) EXPRBB (_ RPAREN)
+
+EXPRBB ->
+		EXPRB 					{% id %}
+		| EXPRBB EOL EXPRB {% (d) => [].concat(d[0], d[2]) %}
+		| (LPAREN _) EXPRBB (_ RPAREN) {% (d) => d[1] %}
+
+#| EXPRBB EOL EXPRB
 #===============================================================
-# EXPRESSION SEQUENCES
-EXPR ->  _ _expr   #{% (d) => d[1] %}
+# EXPRESSION SEQUENCES - NEEDS WORK
+EXPRB ->
+		_expr {% id %}
+		| (LPAREN _) EXPRB  (_	RPAREN) {% (d) => d[1] %}
+
+#| EXPRB EOL _expr
+
+EXPR ->  _ _expr   {% (d) => d[1] %}
 | EXPR EOL _expr
 
 expr_seq ->  _ simple_expr   #{% (d) => d[1] %}
@@ -44,11 +60,11 @@ plugin_def ->
 "plugin" __ varName __ varName __ plugin_args
 (_	LPAREN)
 		# REPLACE THIS WITH LEFT RECURSION
-       #(plugin_clause):*
+       (plugin_clause):*
 (_	RPAREN)
 
 plugin_clause ->  DECLARATIONS  {% id %}
-                | function_def  {% id %}
+                | fn_def        {% id %}
                 | struct_def    {% id %}
                 | plugin_parameter
                 | mousetool_def
@@ -62,7 +78,7 @@ plugin_parameter -> "parameters" __ varName __ plugin_args
 (_	LPAREN)
 		# REPLACE THIS WITH LEFT RECURSION
        # (param_clauses):*
-	   param_clauses
+ 	   param_clauses
 (_	RPAREN)
 
 param_clauses -> param_clause
@@ -71,9 +87,9 @@ param_clauses -> param_clause
 param_clause -> param_defs
                 | event_handler
 
-param_defs -> param
-#param_handler -> "on" var_name var_name { var_name } "do" expr
+param_defs -> varName __ param_wrapper
 
+#param_handler -> "on" var_name var_name { var_name } "do" expr
 #===============================================================
 # UTILITY DEFINITION
 utility_def ->
@@ -112,7 +128,7 @@ rollout_clause ->
 				| event_handler {% id %}
 				| fn_def        {% id %}
 				| struct_def    {% id %}
-                | mousetool     {% id %}
+                | mousetool_def {% id %}
                 | item_group    {% id %}
 
 item_group -> "group" _ string
@@ -121,15 +137,15 @@ item_group -> "group" _ string
 (_	RPAREN)
 {% d => ([{group:d[2]},d[4]])%}
 
-# group_items ->
-#			rollout_item
-#			| group_items _ rollout_item
+ group_items ->
+			rollout_item
+			| group_items _ rollout_item
 
 rollout_item ->
-			  item_type __ varName              {% (d) => ({[d[0]]:d[2]})%}
-			| item_type __ varName _ (string | varName)     {% (d) => ({[d[0]]:d[2], text:d[4][0]})%}
-			| item_type __ varName  __ param_wrapper {% (d) => ({[d[0]]:d[2], params:d[5})%}
-			| item_type __ varName _ (string | varName) _ param_wrapper {% (d) => ({[d[0]]:d[2], text:d[4][0], params:d[6]})%}
+			  item_type __ varName                                             {% (d) => ({[d[0]]:d[2]})%}
+			| item_type __ varName ( _ string | __ varName)                    {% (d) => ({[d[0]]:d[2], text:d[3]})%}
+			| item_type __ varName  __ param_wrapper                           {% (d) => ({[d[0]]:d[2], params:d[4]})%}
+			| item_type __ varName (_ string _ | __ varName __ ) param_wrapper {% (d) => ({[d[0]]:d[2], text:filterNull(d[3]), params:d[4]})%}
 
 param_wrapper -> param  {% id %}
 				| param_wrapper _ param
@@ -149,7 +165,7 @@ item_type ->
 mousetool_def ->
 "tool" __ varName _ string   tool_params
 (_	LPAREN)
-        (tool_clause _):+
+        (tool_clause _):*
 (_	RPAREN)
 
 tool_clause ->  DECLARATIONS  {% id %}
@@ -164,7 +180,7 @@ tool_params -> _ param {% d => d[1] %}
 rcmenu_def ->
 "rcmenu" __ varName
 (_	LPAREN)
-        (rcmenu_clause _):+
+       (rcmenu_clause _):*
 (_	RPAREN)
 
 rcmenu_clause ->  DECLARATIONS  {% id %}
@@ -173,7 +189,7 @@ rcmenu_clause ->  DECLARATIONS  {% id %}
                 | rcmenu_item   {% id %}
                 | event_handler {% id %}
 
-rcmenu_item -> rcmenu_item_type __ param_wrapper {% (d) => ({[d[0]]:d[2], params:d[5})%}
+rcmenu_item -> rcmenu_item_type __ param_wrapper {% (d) => ({rc_menuitem:d[0], params:d[5]})%}
 
 rcmenu_item_type-> "menuitem"
                  | "separator"
@@ -185,7 +201,7 @@ rcmenu_item_type-> "menuitem"
 macroscript_def ->
 "macroscript" __ varName __ (mc_param):+
 (_	LPAREN)
-       mc_expr
+       (mc_expr):*
 (_	RPAREN)
 
 mc_param -> varName _S ":" _ (string | resource | bool | array) {% (d) => ({param:d[0], value:d[4][0]}) %}
@@ -248,7 +264,8 @@ fn_param -> __ param {% d => d[1] %}
 fn_return -> "return" __ _expr _
 #===============================================================
 # EVENT HANDLER
-event_handler ->"on" __ event_args __ ("do" | "return") __ EXPR {% (d) => ({event_args:d[2], event_body:d[6]}) %}
+event_handler ->
+"on" __ event_args __ ("do" | "return") __ EXPR {% (d) => ({event_args:d[2], event_body:d[6]}) %}
 
 event_args ->
 			varName {% (d) => ({event_name:d[0]}) %}
@@ -353,26 +370,24 @@ assignOp ->
 #===============================================================
 #EXPRESSIONS
 #===============================================================
-
 # EXPRESIONS END WITH LINE BREAK, CONTEXT END; OR LOWER PRECEDENTE EXPRESSION.... EXPRESSION BLOCK!!!
 
 # EXPR ->  _ _expr _  {% (d) => d[1] %}
 
-
 _expr ->
-		 simple_expr {% id %} #-----
-		| fn_def
+		 simple_expr {% id %}
+#		| fn_def
 		| struct_def
-		#| utility_def
+		| utility_def
 		| rollout_def
-		#| tool_def
-		#| rcmenu_def
+		| mousetool_def
+		| rcmenu_def
 		| macroscript_def
-		#| plugin_def
-		#| max_command
+		| plugin_def
+
 #===============================================================
 simple_expr ->
-				OPERAND         {% id %} #OK
+				  OPERAND       {% id %} #OK
 				| DECLARATIONS  {% id %} #OK
 				| assignment    {% id %} #OK
 				| fn_call       {% id %}
@@ -386,7 +401,8 @@ simple_expr ->
 				| for_loop		{% id %}
 				| try_expr      {% id %}
 				| context_expr  {% id %}
-
+				| fn_def
+				| max_command
 				#<expr_seq>
 
 #<expr_seq> ::= ( <expr> { ( ; | <eol>) <expr> } )
@@ -411,6 +427,7 @@ var_decl ->  decl											{% id %}
 decl -> varName			        							{% (d) => ( {decl:d[0]} ) %}
       | varName _S "=" EXPR     							{% (d) => ( {decl:d[0], exp:d[3]} ) %}
 #===============================================================
+# WARNING: OPERAN HAS CIRCULAR RECURSION
 OPERAND ->	  factor		{% id %}
 			| property		{% id %}
 			| index			{% id %}
@@ -429,10 +446,10 @@ parameter -> OPERAND 	{% id %}
 property -> OPERAND "." varName {% (d) => ({property:{parent:d[0], name:d[2]} }) %}
 #===============================================================
 # PARAMS
-#varName _S ":" _ ( OPERAND ):? {% (d) => ({param:d[0], value:d[4]}) %}
-param ->
-		  varName _S ":" {% (d) => ({param:d[0]}) %}
-		| varName _S ":" _ OPERAND {% (d) => ({param:d[0], value:d[4]}) %}
+param -> varName _S ":" _ ( OPERAND ):? {% (d) => ({param:d[0], value:d[4]}) %}
+#param ->
+#		  varName _S ":" {% (d) => ({param:d[0]}) %}
+#		| varName _S ":" _ OPERAND {% (d) => ({param:d[0], value:d[4]}) %}
 #===============================================================
 # INDEX
 index -> OPERAND "[" _ EXPR _ "]"
@@ -451,14 +468,11 @@ factor ->
 		| void          {% id %}
 		| array         {% id %}
 		| bitarray      {% id %}
-	  # | path_name
+	    | path_name
 
-
-
-
-
-#- <expr> -- unary minus
-#<expr_seq>
+# IMPLEMENT THIS
+#-  <expr> -- unary minus
+# | <expr_seq>
 #? -- last Listener result
 #===============================================================
 # MATH EXPRESSIONS
@@ -487,7 +501,7 @@ conversion -> math_operand __ "as" __ class {% (d) => [d[0], d[2], d[4] ]%}
 math_operand ->
 			   OPERAND   {% id %}
 			 | fn_call {% id %}
-			#| math_expr
+			#| math_expr #CHECK IF THIS IS NECESSARY
 #---------------------------------------------------------------
 class -> varName
 #===============================================================
@@ -560,7 +574,10 @@ keyword ->
 | "curvecontrol" | "dotnetcontrol" | "dropdownList" | "edittext"       | "groupBox"     | "hyperLink"   | "imgTag"
 | "label"        | "listbox"       | "mapbutton"    | "materialbutton" | "multilistbox" | "pickbutton"  | "popUpMenu"
 | "progressbar"  | "radiobuttons"  | "slider"       | "spinner"        | "SubRollout"   | "timer"
+#---------------------------------------------------------------
+max_command -> "max" (__ varName):+ #_ EOL
 #===============================================================
+# REPLACE EXPR WITH exp_seq
 #ARRAY
 array -> "#(" _ ")" 			{% d => "[]" %}
  		| "#(" array_expr ")"  #{% flatten %}
@@ -579,6 +596,8 @@ bitarray_expr -> _posint {% id %}
 #===============================================================
 # TYPES
 box2 -> "[" EXPR "," EXPR "," EXPR "," EXPR "]"
+#---------------------------------------------------------------
+path_name -> "$" varName {% (d) => d.join('') %}
 #---------------------------------------------------------------
 point3 -> "[" EXPR "," EXPR "," EXPR "]"
 {% (d) => (	{type: 'Point3', x:d[1], y:d[3], z:d[5]}) %}
@@ -652,12 +671,6 @@ void_parens -> "(" _ ")"
 
 comma -> "," _ {% (d) => null %}
 #===============================================================
-anchar -> [A-Za-z_0-9]
-digit -> [0-9]
-wsnlchar -> [ \t\v\f\r\n] {% id %}
-wschar -> [ \t\v\f]       {% id %}
-newline -> [\r\n]         {% id %}
-#===============================================================
 #SYNTAX
 EOL -> _S ( newline | (";"):+) _ {% (d) => null %}
 
@@ -677,6 +690,12 @@ __ -> wsnlchar:+    {% (d) => null %}
 ___ -> (wsnlchar:+ | ___ ";" ) {% (d) => null %}
 
 #===============================================================
+anchar -> [A-Za-z_0-9]
+digit -> [0-9]
+wsnlchar -> [ \t\v\f\r\n] {% id %}
+wschar -> [ \t\v\f]       {% id %}
+newline -> [\r\n]         {% id %}
+#===============================================================
 @{%
 
 	var keywords = [
@@ -686,7 +705,7 @@ ___ -> (wsnlchar:+ | ___ ";" ) {% (d) => null %}
 	"ok"       , "on"     , "or"          , "parameters" , "persistent"  , "plugin" , "rcmenu" , "return" , "rollout" ,
 	"set"      , "struct" , "then"        , "throw"      , "to"          , "tool"   , "try"    , "undo"   , "utility" ,
 	"when"     , "where"  , "while"       , "with"       , "unsupplied"  , "undefined",
-	"true"     , "false",
+	"true"     , "false"  ,
 	"angle",        "bitmap",        "button",       "checkbox",       "checkbutton",    "colorPicker", "combobox",
     "curvecontrol", "dotnetcontrol", "dropdownList", "edittext",       "groupBox",       "hyperLink",   "imgTag",
     "label",        "listbox",       "mapbutton",    "materialbutton", "multilistbox",   "pickbutton",  "popUpMenu",
