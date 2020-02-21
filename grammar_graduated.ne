@@ -39,21 +39,72 @@ expr_seq ->  _ simple_expr   #{% (d) => d[1] %}
 #===============================================================
 # DEFINITIONS
 #===============================================================
-# UTILITY DEFINITION
 # PLUGIN DEFINITION
-# RC MENU DEFINITION
-# TOOL - MOUSE TOOL DEFINITION
+plugin_def ->
+"plugin" __ varName __ varName __ plugin_args
+(_	LPAREN)
+		# REPLACE THIS WITH LEFT RECURSION
+       #(plugin_clause):*
+(_	RPAREN)
+
+plugin_clause ->  DECLARATIONS  {% id %}
+                | function_def  {% id %}
+                | struct_def    {% id %}
+                | plugin_parameter
+                | mousetool_def
+                | rollout_def
+                | event_handler
+
+plugin_args -> _ param {% d => d[1] %}
+				| plugin_args __ param
+
+plugin_parameter -> "parameters" __ varName __ plugin_args
+(_	LPAREN)
+		# REPLACE THIS WITH LEFT RECURSION
+       # (param_clauses):*
+	   param_clauses
+(_	RPAREN)
+
+param_clauses -> param_clause
+				| param_clauses __ param_clause
+
+param_clause -> param_defs
+                | event_handler
+
+param_defs -> param
+#param_handler -> "on" var_name var_name { var_name } "do" expr
+
+#===============================================================
+# UTILITY DEFINITION
+utility_def ->
+"utility" __ varName _ string   utility_params
+(_	LPAREN)
+		# REPLACE THIS WITH LEFT RECURSION
+       (utility_clause):*
+(_	RPAREN)
+# {% (d) => ({utility:d[2]})%}
+
+utility_params -> _ param {% d => d[1] %}
+				| utility_params __ param
+
+utility_clause ->
+			  rollout_clause  {% id %}
+			| rollout_def     {% id %}
 #===============================================================
 # ROLLOUT DEFINITION
-rollout_def -> "rollout" __ varName _ string   rollout_params
+rollout_def ->
+"rollout" __ varName _ string   rollout_params
 (_	LPAREN)
-      rollout_clause
+	  # REPLACE THIS WITH LEFT RECURSION
+      (rollout_clause):*
 (_	RPAREN)
 # {% (d) => ({rollout:d[2]})%}
 
 rollout_params -> _ param {% d => d[1] %}
 				| rollout_params __ param
 
+rollout_clauses -> rollout_clause
+				| rollout_clauses __ rollout_clause
 
 rollout_clause ->
 				  DECLARATIONS  {% id %}
@@ -61,16 +112,15 @@ rollout_clause ->
 				| event_handler {% id %}
 				| fn_def        {% id %}
 				| struct_def    {% id %}
-#                | mousetool     {% id %}
-#                | item_group    {% id %}
+                | mousetool     {% id %}
+                | item_group    {% id %}
 
-
-#
 item_group -> "group" _ string
 (_	LPAREN)
          ( _ rollout_item ):*
 (_	RPAREN)
-{% d => ({group:d[2]})%}
+{% d => ([{group:d[2]},d[4]])%}
+
 # group_items ->
 #			rollout_item
 #			| group_items _ rollout_item
@@ -78,7 +128,7 @@ item_group -> "group" _ string
 rollout_item ->
 			  item_type __ varName              {% (d) => ({[d[0]]:d[2]})%}
 			| item_type __ varName _ (string | varName)     {% (d) => ({[d[0]]:d[2], text:d[4][0]})%}
-			| item_type __ varName ( _ param):+
+			| item_type __ varName  __ param_wrapper {% (d) => ({[d[0]]:d[2], params:d[5})%}
 			| item_type __ varName _ (string | varName) _ param_wrapper {% (d) => ({[d[0]]:d[2], text:d[4][0], params:d[6]})%}
 
 param_wrapper -> param  {% id %}
@@ -95,7 +145,41 @@ item_type ->
 	| "label"        | "listbox"       | "mapbutton"    | "materialbutton" | "multilistbox" | "pickbutton"  | "popUpMenu"
 	| "progressbar"  | "radiobuttons"  | "slider"       | "spinner"        | "SubRollout"   | "timer"
 #===============================================================
-# MAX COMMAND
+# TOOL - MOUSE TOOL DEFINITION
+mousetool_def ->
+"tool" __ varName _ string   tool_params
+(_	LPAREN)
+        (tool_clause _):+
+(_	RPAREN)
+
+tool_clause ->  DECLARATIONS  {% id %}
+              | fn_def        {% id %}
+              | struct_def    {% id %}
+              | event_handler  {% id %}
+
+tool_params -> _ param {% d => d[1] %}
+			 | tool_params __ param
+#===============================================================
+# RC MENU DEFINITION
+rcmenu_def ->
+"rcmenu" __ varName
+(_	LPAREN)
+        (rcmenu_clause _):+
+(_	RPAREN)
+
+rcmenu_clause ->  DECLARATIONS  {% id %}
+    	    	| fn_def        {% id %}
+				| struct_def    {% id %}
+                | rcmenu_item   {% id %}
+                | event_handler {% id %}
+
+rcmenu_item -> rcmenu_item_type __ param_wrapper {% (d) => ({[d[0]]:d[2], params:d[5})%}
+
+rcmenu_item_type-> "menuitem"
+                 | "separator"
+                 | "submenu"
+#===============================================================
+# MAX COMMAND ???
 #===============================================================
 # MACROSCRIPT DEFINITION
 macroscript_def ->
@@ -280,7 +364,7 @@ _expr ->
 		| fn_def
 		| struct_def
 		#| utility_def
-		#| rollout_def
+		| rollout_def
 		#| tool_def
 		#| rcmenu_def
 		| macroscript_def

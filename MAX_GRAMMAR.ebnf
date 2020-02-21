@@ -92,7 +92,7 @@ set_context -> set context
 
 utility_def -> "utility" var_name string { var_name:operand } ( { utility_clause }+ )
 
-utility_clause -> rollout
+utility_clause -> rollout_def
                     rollout_clause
 
 rollout_def -> "rollout" var_name string { var_name:operand } ( { rollout_clause }+ )

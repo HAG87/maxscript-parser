@@ -39,12 +39,12 @@ expr ->
 #     | _ struct_def      _
     # | _ function_def    _
     # | _ function_return _
-    | _ utility_def     _
-    | _ rollout_def     _
-    | _ tool_def        _
-    | _ rcmenu_def      _
+#     | _ utility_def     _
+#     | _ rollout_def     _
+#     | _ tool_def        _
+#     | _ rcmenu_def      _
 #     | _ macroscript_def _
-    | _ plugin_def      _
+#     | _ plugin_def      _
     | _ max_command     _
 
 
@@ -53,8 +53,8 @@ expr ->
 
 # decl -> var_name _ ("=" _ expr):?  # name and optional initial value
 
-var_name ->  (alphanumeric | "_" ):?
-            | "'" any_char_except_quote "'"
+# var_name ->  (alphanumeric | "_" ):?
+#             | "'" any_char_except_quote "'"
 #===============================================================
 # assignment ->
 #       destination _ "=" _ expr
@@ -152,69 +152,69 @@ var_name ->  (alphanumeric | "_" ):?
 # set_context -> "set" context
 #===============================================================
 # UTILITY DEFINITION
-utility_def ->
-"utility" _ var_name _ string _ (var_name _ ":" _ operand _):*
-_OPEN
-        (utility_clause _ ):+
-_CLOSE
+# utility_def ->
+# "utility" _ var_name _ string _ (var_name _ ":" _ operand _):*
+# _OPEN
+#         (utility_clause _ ):+
+# _CLOSE
 
-#THIS HAS AN ORPHAN <rollout> rule
-utility_clause -> rollout_clause #| rollout
+# #THIS HAS AN ORPHAN <rollout> rule
+# utility_clause -> rollout_clause #| rollout
 #===============================================================
 # ROLLOUT DEFINITION
-rollout_def ->
-"rollout" _ var_name _ string _ (var_name _ ":" _ operand _):*
-_OPEN
-        (rollout_clause _):+
-_CLOSE
+# rollout_def ->
+# "rollout" _ var_name _ string _ (var_name _ ":" _ operand _):*
+# _OPEN
+#         (rollout_clause _):+
+# _CLOSE
 
-#ROLLOUT CLAUSE
-# CHECK THE DECL THING
-rollout_clause ->
-                  "local" _ decl ("," _ decl _):*
-                | function_def    _
-                | struct_def      _
-                | mousetool       _
-                | item_group      _
-                | rollout_item    _
-                | rollout_handler _
+# #ROLLOUT CLAUSE
+# # CHECK THE DECL THING
+# rollout_clause ->
+#                   "local" _ decl ("," _ decl _):*
+#                 | function_def    _
+#                 | struct_def      _
+#                 | mousetool       _
+#                 | item_group      _
+#                 | rollout_item    _
+#                 | rollout_handler _
 
-item_group ->
-"group" _ string
-_OPEN
-        (rollout_item _ ):*
-_CLOSE
+# item_group ->
+# "group" _ string
+# _OPEN
+#         (rollout_item _ ):*
+# _CLOSE
 
-rollout_item -> item_type _ var_name _ (string):? _ (var_name _ ":" _ operand _):*
+# rollout_item -> item_type _ var_name _ (string):? _ (var_name _ ":" _ operand _):*
 
-rollout_handler -> "on" _ var_name _ var_name _ (var_name _):* "do" expr
+# rollout_handler -> "on" _ var_name _ var_name _ (var_name _):* "do" expr
 
-item_type ->
-        "angle" | "bitmap" | "button" | "checkbox" | "checkbutton" | "colorPicker" | "combobox" |
-        "curvecontrol" | "dotnetcontrol" | "dropdownList" | "edittext" | "groupBox" | "hyperLink" |
-        "imgTag" | "label" | "listbox" | "mapbutton" | "materialbutton" | "multilistbox" | "pickbutton" |
-        "popUpMenu" | "progressbar" | "radiobuttons" | "slider" | "spinner" | "SubRollout" | "timer"
+# item_type ->
+#         "angle" | "bitmap" | "button" | "checkbox" | "checkbutton" | "colorPicker" | "combobox" |
+#         "curvecontrol" | "dotnetcontrol" | "dropdownList" | "edittext" | "groupBox" | "hyperLink" |
+#         "imgTag" | "label" | "listbox" | "mapbutton" | "materialbutton" | "multilistbox" | "pickbutton" |
+#         "popUpMenu" | "progressbar" | "radiobuttons" | "slider" | "spinner" | "SubRollout" | "timer"
 #===============================================================
 # RC MENU
-rcmenu_def ->
-"rcmenu" _ var_name _
-_OPEN
-        (rcmenu_clause _):+
-_CLOSE
+# rcmenu_def ->
+# "rcmenu" _ var_name _
+# _OPEN
+#         (rcmenu_clause _):+
+# _CLOSE
 
-rcmenu_clause -> "local" _ decl ("," _ decl _):*
-                | function_def
-                | struct_def
-                | rcmenu_item
-                | rcmenu_handler
+# rcmenu_clause -> "local" _ decl ("," _ decl _):*
+#                 | function_def
+#                 | struct_def
+#                 | rcmenu_item
+#                 | rcmenu_handler
 
-rcmenu_handler -> "on" var_name var_name "do" expr
+# rcmenu_handler -> "on" var_name var_name "do" expr
 
-rcmenu_item -> rcmenu_item_type var_name string (var_name _ ":" _ operand _):*
+# rcmenu_item -> rcmenu_item_type var_name string (var_name _ ":" _ operand _):*
 
-rcmenu_item_type-> "menuitem"
-                 | "separator"
-                 | "submenu"
+# rcmenu_item_type-> "menuitem"
+#                  | "separator"
+#                  | "submenu"
 #===============================================================
 # MACROSCRIPT DEFINITION
 # macroscript_def ->
@@ -224,18 +224,18 @@ rcmenu_item_type-> "menuitem"
 # _CLOSE
 #===============================================================
 # MOUSETOOL DEFINITION
-mousetool_def -> "tool" var_name _ (var_name _ ":" _ operand _):*
-_OPEN
-        (tool_clause _):+
-_CLOSE
+# mousetool_def -> "tool" var_name _ (var_name _ ":" _ operand _):*
+# _OPEN
+#         (tool_clause _):+
+# _CLOSE
 
 
-tool_clause -> "local" _ decl ("," _ decl _):*
-              | function_def
-              | struct_def
-              | tool_handler
+# tool_clause -> "local" _ decl ("," _ decl _):*
+#               | function_def
+#               | struct_def
+#               | tool_handler
 
-tool_handler ->  "on" _ var_name _ var_name _ (var_name _ ):* "do" expr
+# tool_handler ->  "on" _ var_name _ var_name _ (var_name _ ):* "do" expr
 #===============================================================
 # PLUGIN DEFINITION ----- MISSING
 plugin_def -> plugin var_name var_name {  var_name ":" operand  } ( {  plugin_clause }+ )
@@ -250,7 +250,7 @@ plugin_clause -> local decl { "," decl }
 
 <parameters> -> parameters var_name { var_name ":" operand } ( { param_clause }+ )
 
-<aram_clause -> { param_defs }+
+param_clause -> { param_defs }+
                 { param_handler }
 
 param_defs -> var_name { var_name ":" operand }
