@@ -91,6 +91,19 @@ param_defs -> varName __ param_wrapper
 
 #param_handler -> "on" var_name var_name { var_name } "do" expr
 #===============================================================
+# MACROSCRIPT DEFINITION
+macroscript_def ->
+"macroscript" __ varName __ (mc_param):+
+(_	LPAREN)
+       (mc_expr):*
+(_	RPAREN)
+
+mc_param -> varName _S ":" _ (string | resource | bool | array) {% (d) => ({param:d[0], value:d[4][0]}) %}
+
+mc_expr -> #  _ null {% (d) => null %}
+		     _ event_handler  {% id %}
+		   | expr_seq {% id %}
+#===============================================================
 # UTILITY DEFINITION
 utility_def ->
 "utility" __ varName _ string   utility_params
@@ -194,21 +207,6 @@ rcmenu_item -> rcmenu_item_type __ param_wrapper {% (d) => ({rc_menuitem:d[0], p
 rcmenu_item_type-> "menuitem"
                  | "separator"
                  | "submenu"
-#===============================================================
-# MAX COMMAND ???
-#===============================================================
-# MACROSCRIPT DEFINITION
-macroscript_def ->
-"macroscript" __ varName __ (mc_param):+
-(_	LPAREN)
-       (mc_expr):*
-(_	RPAREN)
-
-mc_param -> varName _S ":" _ (string | resource | bool | array) {% (d) => ({param:d[0], value:d[4][0]}) %}
-
-mc_expr -> #  _ null {% (d) => null %}
-		     _ event_handler  {% id %}
-		   | expr_seq {% id %}
 #===============================================================
 #STRUCTURE DEFINITION
 struct_def ->
@@ -616,8 +614,10 @@ void ->
 	   | "ok"         {% (d) => ({value:d[0]}) %}
 #---------------------------------------------------------------
 # Time
+#INCOMPLETE
 #---------------------------------------------------------------
 # Paths
+#INCOMPLETE
 #===============================================================
 # TOKENS
 #===============================================================
@@ -672,7 +672,7 @@ void_parens -> "(" _ ")"
 comma -> "," _ {% (d) => null %}
 #===============================================================
 #SYNTAX
-EOL -> _S ( newline | (";"):+) _ {% (d) => null %}
+EOL -> ( _S newline | _ (";"):+) _ {% (d) => null %}
 
 # Whitespace
 blank -> (newline _):+ {% (d) => null %}
