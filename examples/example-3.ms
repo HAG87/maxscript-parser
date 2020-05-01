@@ -7,7 +7,7 @@ Version: 1.4
 Date: 07-03-2014
 Tested on: 3D Max 2014
 */
-(	
+(
 	struct Detach (_node,_poly,_selection,_faces)
 	local _detach = Detach()
 	local returnElems, flattenArr, EleRandomizer, EleDetacher, setSelection
@@ -25,7 +25,7 @@ Tested on: 3D Max 2014
 		(
 			label lbl_s "Seed" align:#left
 			spinner spn_Seed "" width:70 align:#center range:[0,1000,150]
-			label lbl_p "Percent" align:#left 
+			label lbl_p "Percent" align:#left
 			spinner spn_Percent "" width:70 height:16 align:#center range:[0,100,50]
 			label lbl_id "Mat ID's" align:#left
 			spinner spn_ID "" width:70 height:16 align:#center range:[0,100,1] type:#integer
@@ -49,20 +49,20 @@ Tested on: 3D Max 2014
 		on btn_c rightclick do	(popUpMenu _dock rollout:roll_rndElem)
 		on btn_Select pressed do  setSelection sel: roll_rndElem.pk_obj.object
 		on btn_Detach pressed do (if _detach._node!=undefined then  EleDetacher _detach._node _detach._poly _detach._selection _detach._faces roll_rndElem.spn_ID.value unit:false)
-		on btn_DetachAll pressed do (if _detach._node!=undefined then EleDetacher _detach._node _detach._poly _detach._selection _detach._faces roll_rndElem.spn_ID.value unit:true) 
+		on btn_DetachAll pressed do (if _detach._node!=undefined then EleDetacher _detach._node _detach._poly _detach._selection _detach._faces roll_rndElem.spn_ID.value unit:true)
 	)--End Rollout
 	rcmenu _dock
 	(
 		menuitem rc_dl "Dock Left"
 		menuitem rc_dr "Dock Right"
-		separator b	
+		separator b
 		menuitem rc_ud "Undock"
 		on rc_dl picked do(
 			if roll_rndElem.dialogBar==true then(
 				cui.DockDialogBar roll_rndElem #cui_dock_left
 				)else(
 				cui.RegisterDialogBar roll_rndElem style:#(#cui_dock_vert,#cui_floatable)
-				cui.DockDialogBar roll_rndElem #cui_dock_left	
+				cui.DockDialogBar roll_rndElem #cui_dock_left
 			)
 		)
 		on rc_dr picked do(
@@ -70,9 +70,9 @@ Tested on: 3D Max 2014
 				cui.DockDialogBar roll_rndElem #cui_dock_right
 				)else(
 				cui.RegisterDialogBar roll_rndElem style:#(#cui_dock_vert,#cui_floatable)
-				cui.DockDialogBar roll_rndElem #cui_dock_right	
+				cui.DockDialogBar roll_rndElem #cui_dock_right
 			)
-		)	
+		)
 		on rc_ud picked do(if roll_rndElem.dialogBar==true then cui.UnRegisterDialogBar roll_rndElem)
 	)--End RC
 	fn progress val: tot: =(
@@ -97,16 +97,16 @@ Tested on: 3D Max 2014
 					)
 				)
 			progress()
-			free done 
+			free done
 		)catch(return undefined)
 		elem_arr
 	)
-	
+
 	fn EleRandomizer obj eles delta: dSeed: sel:false =(
 		if eles.count>1 then(
 			if dSeed==unsupplied then (dSeed= eles.count)
-			seed dSeed	
-			local rands=#()		
+			seed dSeed
+			local rands=#()
 			local umbral = if delta <1 or delta!=unsupplied then floor(eles.count*delta) else eles.count
 			for r=1 to umbral do(
 				local rnd=floor(random 1.0 eles.count)
@@ -125,14 +125,14 @@ Tested on: 3D Max 2014
 			max modify mode
 			modPanel.setCurrentObject obj
 			subobjectlevel = 4
-			return rands	
+			return rands
 		)else return rands
 	)
 	fn EleDetacher nod obj eles faces rID unit:true =(
 		if eles.count==1 and not (queryBox "WARING! Only one element selected, do you want to continue?") then return undefined
 		case unit of (
-			true:( 
-				undo on(
+			true:(
+				undo on (
 					for i=1 to eles.count do(
 						polyop.setFaceMatID obj eles[i] (floor(random 1 rID))
 						polyop.detachFaces obj eles[i] name: (uniqueName "Elem_") delete:false asNode:true node:nod
@@ -141,13 +141,14 @@ Tested on: 3D Max 2014
 					polyop.deleteFaces obj faces
 					progress()
 				)
-			)			
+			)
 			false:(
-				undo on (polyop.detachFaces obj (faces as BitArray) name:(uniqueName "Elem_") asNode:true node:nod)	
+				undo on (polyop.detachFaces obj (faces as BitArray) name:(uniqueName "Elem_") asNode:true node:nod)
 			)
 		)
 	)
-	fn setSelection sel: =(
+	fn setSelection sel: =
+	(
 		if classOf sel.baseobject==Editable_poly then(
 			if roll_rndElem.chb_copy.checked==true then copy sel
 			_detach._node= sel
