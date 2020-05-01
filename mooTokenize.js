@@ -13,22 +13,21 @@ const UIcontrols = [
   'angle',        'bitmap',         'button',
   'checkbox',     'checkbutton',    'colorpicker',
   'combobox',     'curvecontrol',   'dropdownlist',
-  'edittext',     'groupBox',       'hyperLink',
-  'imgTag',       'label',          'listbox',
+  'edittext',     'groupbox',       'hyperlink',
+  'imgtag',       'label',          'listbox',
   'mapbutton',    'materialbutton', 'multilistbox',
-  'pickbutton',   'popUpMenu',      'progressbar',
+  'pickbutton',   'popupmenu',      'progressbar',
   'radiobuttons', 'slider',         'spinner',
-  'SubRollout',   'timer'
+  'subrollout',   'timer', 'dotnetcontrol'
 ]
 const kwContext = [
   "animate",
-  "undo",
   "redraw",
   "quiet",
-  "printAllElements",
-  "MXSCallstackCaptureEnabled",
-  "dontRepeatMessages",
-  "macroRecorderEmitterEnabled"
+  "printallelements",
+  "mxscallstackcaptureenabled",
+  "dontrepeatmessages",
+  "macrorecorderemitterenabled"
 ]
 var kwObjectSet = [
   'objects', 'geometry', 'lights', 'cameras', 'helpers',
@@ -39,7 +38,8 @@ const keywordsDB = {
   'kw_about':       'about',
   'kw_as':          'as',
   'kw_at':          'at',
-  'kw_bool':        ['true', 'false', 'on', 'off'],
+  'kw_on':          'on',
+  'kw_bool':        ['true', 'false', 'off'],
   'kw_by':          'by',
   'kw_case':        'case',
   'kw_catch':       'catch',
@@ -48,11 +48,11 @@ const keywordsDB = {
   'kw_not':         'not',
   'kw_context':     kwContext,
   'kw_return':      'return',
-  'kw_continue':    'continue',
+  //'kw_continue':    'continue',
   'kw_exit':        'exit',
   'kw_dontcollect': 'dontcollect',
   'kw_coordsys':    'coordsys',
-  'kw_defaultAction': 'defaultAction',
+  'kw_defaultAction': 'defaultaction',
   'kw_do':          'do',
   'kw_else':        'else',
   'kw_for':         'for',
@@ -65,24 +65,26 @@ const keywordsDB = {
   'kw_local':       'local',
   'kw_macroscript': 'macroscript',
   'kw_mapped':      'mapped',
-  'kw_max':         'max',
+  'kw_scope':       ['private', 'public'],
+  // 'kw_max':         'max',
   'kw_tool':        'tool',
-  'kw_null':        ['undefined', 'unsupplied', 'ok', 'silentValue'],
+  'kw_null':        ['undefined', 'unsupplied', 'ok', 'silentvalue'],
   'kw_of':          'of',
   'kw_from':        'from',
   'kw_params':      'parameters',
   'kw_persistent':  'persistent',
   'kw_plugin':      'plugin',
-  'kw_rcsep':       'separator',
-  'kw_rcitem':      'menuitem',
-  'kw_rcsub':       'submenu',
+  'kw_separator':   'separator',
+  'kw_menuitem':    'menuitem',
+  'kw_submenu':     'submenu',
   'kw_rcmenu':      'rcmenu',
-  'kw_redraw':      'redraw',
+  //'kw_redraw':      'redraw',
+  'kw_undo':        'undo',
   'kw_rollout':     'rollout',
   'kw_set':         'set',
   'kw_struct':      'struct',
   'kw_then':        'then',
-  'kw_throw':       'throw',
+  // 'kw_throw':       'throw',
   'kw_time':        'time',
   'kw_to':          'to',
   'kw_try':         'try',
@@ -131,38 +133,65 @@ declarations
 // Moo Lexer
 var mxLexer = moo.compile(
 {
-  comment: [
-		  { match: /--.*?$/},
-		  { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks:true},
-  ],
 
   string: [
-    { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
     { match: /"(?:\\["\\rn]|[^"\\])*?"/, value: x => x.slice(1, -1)},
-    { match: /@"(?:\\["\\rn]|[^"\\])*?"/, value: x => x.slice(2, -1)},
+    { match: /@"[^"\\]*(?:\\.[^"\\]*)*"/, value: x => x.slice(2, -1)},
+    { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
   ],
 
   path: [
-    {match: /[$](?:[a-zA-Z_\*\/\?\.]*)/},
-    {match: /[$](?:['][^'\n\r]+?['])/},
-   ],
+    {match: /[$](?:[A-Za-z0-9_\*\?\.\\]*)/},
+    {match: /[$](?:'[^'\r\n]+?')/},
+  ],
+
+  params: {
+    match:  /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*[:]/,
+    value: x => x.slice(0, -1)
+  },
+
+  property: {
+    match: /\.[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+    value: x => x.slice(1, 0)
+  },
+
+  global_typed: { match:/::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/},
+  // includes special alphanumeric chars
+  identity: {
+    match: /[&-]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+    type: caseInsensitiveKeywords(keywordsDB)
+  },
+
+  typed_iden: {
+    match: /'(?:\\['\\rn]|[^'\\\n])*?'/,
+    value: x => x.slice(1, -1)
+  },
+
+  comment_SL:   { match: /--.*$/, lineBreaks:false, },
+  comment_BLK:  { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks:true,},
+
+
+  // comment: [
+  //   { match: /--.*?$/, ignore:true},
+  //   { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks:true, ignore:true},
+  // ],
 
   locale:    { match: /~[A-Za-z0-9_]+~/, value: x => x.slice(2, -1)},
-  reference: { match: /\&/},
+  //reference: { match: /\&/},
   // cont:     { match: /\\/},
-  // ws:       { match: /[ \t]+/},
+  //ws:       { match: /[ \t]+/},
   // ws:       { match: /\s+/, lineBreaks:true },
   // o_ws: {match: /[\w][^a-zA-Z\d\s:]/, value: x => x.slice(1, -1)},
-  ws: { match: /(?:[ \t]+|(?:[ \t]*?[\\][ \t\n\r]*)+?)/, lineBreaks:true},
+  ws: { match: /(?:[ \t]+|(?:[ \t]*?[\\][ \t\r\n]*)+?)/, lineBreaks:true},
 
-  voidparens:   { match: /\(\)/},
-  parens:   { match: /\([ \t\n\r]+\)/},
+  //voidparens:   { match: /\(\)/},
+  //parens:   { match: /\([ \t\n\r]+\)/},
 
-  arraydef: { match: /\#\(/},
-  bitarraydef: {match: /\#\{/},
+  arraydef: { match: /\#[ \t]*\(/},
+  bitarraydef: {match: /\#[ \t]*\{/},
 
-  lparen:   { match:'('},
-  rparen:   { match:')'},
+  lparen:   { match: /\(/},
+  rparen:   { match: /\)/},
 
   lbracket: { match:'['},
   rbracket: { match:']'},
@@ -170,21 +199,15 @@ var mxLexer = moo.compile(
   rbrace:   { match:'}'},
 
   time: [
-    { match: /(?:(?:[0-9]+[.])*[0-9]+[msft])+/},
-    { match: /[0-9]+[:][0-9]+[.][0-9]+/}
+    { match: /(?:(?:[-]?[0-9]+[.])*[0-9]+[mMsSfFtT])+/},
+    { match: /(?:(?:[-]?[0-9]+[.])[0-9]*[mMsSfFtT])+/},
+    { match: /[0-9]+[:][0-9]+[.][0-9]*/}
   ],
-  // includes special alphanumeric chars
-  identity: {
-    match: /[&-]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
-    type: caseInsensitiveKeywords(keywordsDB)
-  },
-  typed_iden: {
-    match: /'(?:\\['\\rn]|[^'\\\n])*?'/,
-    value: x => x.slice(1, -1)
-  },
+
 
   number: [
     { match: /(?:[-]?[0-9]*[.][0-9]+[eEdD][+-]?[0-9]+)/},
+    { match: /(?:[-]?[0-9]+[eEdD][+-]?[0-9]+)/},
     { match: /(?:(?:[-]?[0-9]+)?\.[0-9]+)/},
     { match: /(?:[-]?[0-9]+\.(?:[0-9]+)?)/},
   ],
@@ -195,29 +218,27 @@ var mxLexer = moo.compile(
 
   name:
   [
-    { match: /#[A-Za-z0-9_]+/, value: x => x.slice(1, -1)},
-    { match: /#'[A-Za-z0-9_]+'/, value: x => x.slice(2, -1)},
+    { match: /#[A-Za-z0-9_]+/   },
+    { match: /#'[A-Za-z0-9_]+'/ },
   ],
 
   //res: {match:/\?/},
   //sharp: {match: /#/},
 
-  global_typed: { match:/::/},
-
+  comparison: [
+    { match: '>=' },
+    { match: '<=' },
+    { match: '==' },
+    { match: '!=' },
+    { match: '>'  },
+    { match: '<'  },
+  ],
   assign: [
     { match: '='  },
     { match: '+=' },
     { match: '-=' },
     { match: '*=' },
     { match: '/=' }
-  ],
-  comparison: [
-    { match: '==' },
-    { match: '!=' },
-    { match: '>'  },
-    { match: '<'  },
-    { match: '>=' },
-    { match: '<=' },
   ],
   math: [
     { match: '+' },
@@ -239,8 +260,19 @@ var mxLexer = moo.compile(
   newline:      { match: /(?:\r|\r\n|\n)+/, lineBreaks: true },
   statement:    { match: /\;/},
   // [\$?`] COMPLETE WITH UNWANTED CHARS HERE THAT CAN BREAK THE TOKENIZER
-  error:        { match: /[?¿¡!`]/, error: true},
+  error:        { match: /[¿¡!`]/, error: true},
 });
+//-----------------------------------------------------------------------------------
+
+//ignore TOKENS in output tokenization, no idea how this works...
+/*
+mxLexer.next = (next => () => {
+  let tok;
+  // IGNORING COMMENTS....
+  while ((tok = next.call(mxLexer)) && (tok.type === "comment_BLK" || tok.type === "comment_SL") ) { }
+  return tok;
+})(mxLexer.next);
+//*/
 //-----------------------------------------------------------------------------------
 //export {mxLexer};
 module.exports = mxLexer;
