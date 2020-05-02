@@ -1,49 +1,49 @@
-const caseCOnd = {
+export const caseCOnd = {
   'kw-case': 'case',
-  'kw-of': 'of'
+  'kw-of':   'of'
 }
-const ifCond = {
-  'kw-if': 'if',
+export const ifCond = {
+  'kw-if':   'if',
   'kw-then': 'do',
   'kw-then': 'then',
   'kw-else': 'else'
 }
-const forLoop = {
-  'kw-for': 'for',
-  'kw-to': 'to',
-  'kw-in': 'in',
-  'kw-by': 'by',
-  'kw-where': 'where',
-  'kw-do': 'do',
+export const forLoop = {
+  'kw-for':     'for',
+  'kw-to':      'to',
+  'kw-in':      'in',
+  'kw-by':      'by',
+  'kw-where':   'where',
+  'kw-do':      'do',
   'kw-collect': 'collect'
 }
-const tryCond = {
+export const tryCond = {
   'kw-try': 'try',
   'kw-catch': 'catch',
   'kw-throw': 'throw'
 }
-const blockDefs = {
+export const blockDefs = {
   'kw-macroscript': 'macroscript',
-  'kw-plugin': 'plugin',
-  'kw-rollout': 'rollout',
-  'kw-rcmenu': 'rcmenu',
-  'kw-set': 'set',
-  'kw-params': 'parameters',
-  'kw-mousetool': 'tool',
-  'kw-utility': 'utility'
+  'kw-plugin':      'plugin',
+  'kw-rollout':     'rollout',
+  'kw-rcmenu':      'rcmenu',
+  'kw-set':         'set',
+  'kw-params':      'parameters',
+  'kw-mousetool':   'tool',
+  'kw-utility':     'utility'
 }
-const UIcontrols = [
-  'angle', 'bitmap', 'button',
-  'checkbox', 'checkbutton', 'colorpicker',
-  'combobox', 'curvecontrol', 'dropdownlist',
-  'edittext', 'groupBox', 'hyperLink',
-  'imgTag', 'label', 'listbox',
-  'mapbutton', 'materialbutton', 'multilistbox',
-  'pickbutton', 'popUpMenu', 'progressbar',
-  'radiobuttons', 'slider', 'spinner',
-  'SubRollout', 'timer'
+export const UIcontrols = [
+  'angle',        'bitmap',         'button',
+  'checkbox',     'checkbutton',    'colorpicker',
+  'combobox',     'curvecontrol',   'dropdownlist',
+  'edittext',     'groupBox',       'hyperLink',
+  'imgTag',       'label',          'listbox',
+  'mapbutton',    'materialbutton', 'multilistbox',
+  'pickbutton',   'popUpMenu',      'progressbar',
+  'radiobuttons', 'slider',         'spinner',
+  'SubRollout',   'timer',          'dotnetcontrol',
 ]
-const kwContext = [
+export const kwContext = [
   "animate",
   "undo",
   "redraw",
@@ -53,70 +53,86 @@ const kwContext = [
   "dontRepeatMessages",
   "macroRecorderEmitterEnabled"
 ]
-var kwObjectSet = [
+export const  kwObjectSet = [
   'objects', 'geometry', 'lights', 'cameras', 'helpers',
   'shapes', 'systems', 'spacewarps', 'selection'
 ]
+export const changeHandlers = [
+  'topology',
+  'geometry',
+  'name',
+  'names',
+  'transform',
+  'select',
+  'parameters',
+  'subanimstructure',
+  'controller',
+  'children',
+]
+export const changeHandlersType = ['change', 'changes', 'deleted']
 
-const keywordsDB = {
-  'kw_about': 'about',
-  'kw_as': 'as',
-  'kw_at': 'at',
-  'kw_bool': ['true', 'false', 'on', 'off'],
-  'kw_by': 'by',
-  'kw_case': 'case',
-  'kw_catch': 'catch',
-  'kw_collect': 'collect',
-  'kw_compare': ['and', 'or'],
-  'kw_not': 'not',
-  'kw_context': kwContext,
-  'kw_return': 'return',
-  'kw_continue': 'continue',
-  'kw_exit': 'exit',
+export const keywordsDB = {
+  'kw_about':       'about',
+  'kw_as':          'as',
+  'kw_at':          'at',
+  'kw_bool':        ['true', 'false', 'off'],
+  'kw_by':          'by',
+  'kw_case':        'case',
+  'kw_catch':       'catch',
+  'kw_collect':     'collect',
+  'kw_compare':     ['and', 'or'],
+  'kw_context':     kwContext,
+  'kw_coordsys':    'coordsys',
+  'kw_defaultAction': 'defaultaction',
+  'kw_do':          'do',
   'kw_dontcollect': 'dontcollect',
-  'kw_coordsys': 'coordsys',
-  'kw_defaultAction': 'defaultAction',
-  'kw_do': 'do',
-  'kw_else': 'else',
-  'kw_for': 'for',
-  'kw_function': ['function', 'fn'],
-  'kw_global': 'global',
-  'kw_group': 'group',
-  'kw_if': 'if',
-  'kw_in': 'in',
-  'kw_level': 'level',
-  'kw_local': 'local',
+  'kw_else':        'else',
+  'kw_exit':        'exit',
+  'kw_for':         'for',
+  'kw_from':        'from',
+  'kw_function':    ['function', 'fn'],
+  'kw_global':      'global',
+  'kw_group':       'group',
+  'kw_if':          'if',
+  'kw_in':          'in',
+  'kw_level':       'level',
+  'kw_local':       'local',
   'kw_macroscript': 'macroscript',
-  'kw_mapped': 'mapped',
-  'kw_max': 'max',
-  'kw_tool': 'tool',
-  'kw_null': ['undefined', 'unsupplied', 'ok', 'silentValue'],
-  'kw_of': 'of',
-  'kw_from': 'from',
-  'kw_params': 'parameters',
-  'kw_persistent': 'persistent',
-  'kw_plugin': 'plugin',
-  'kw_rcsep': 'separator',
-  'kw_rcitem': 'menuitem',
-  'kw_rcsub': 'submenu',
-  'kw_rcmenu': 'rcmenu',
-  'kw_redraw': 'redraw',
-  'kw_rollout': 'rollout',
-  'kw_set': 'set',
-  'kw_struct': 'struct',
-  'kw_then': 'then',
-  'kw_throw': 'throw',
-  'kw_time': 'time',
-  'kw_to': 'to',
-  'kw_try': 'try',
-  'kw_uicontrols': UIcontrols,
-  'kw_objectset': kwObjectSet,
-  'kw_utility': 'utility',
-  'kw_when': 'when',
-  'kw_where': 'where',
-  'kw_while': 'while',
-  'kw_with': 'with',
+  'kw_mapped':      'mapped',
+  'kw_menuitem':    'menuitem',
+  'kw_not':         'not',
+  'kw_null':        ['undefined', 'unsupplied', 'ok', 'silentvalue'],
+  'kw_objectset':   kwObjectSet,
+  'kw_of':          'of',
+  'kw_on':          'on',
+  'kw_params':      'parameters',
+  'kw_persistent':  'persistent',
+  'kw_plugin':      'plugin',
+  'kw_rcmenu':      'rcmenu',
+  'kw_return':      'return',
+  'kw_rollout':     'rollout',
+  'kw_scope':       ['private', 'public'],
+  'kw_separator':   'separator',
+  'kw_set':         'set',
+  'kw_struct':      'struct',
+  'kw_submenu':     'submenu',
+  'kw_then':        'then',
+  'kw_time':        'time',
+  'kw_to':          'to',
+  'kw_tool':        'tool',
+  'kw_try':         'try',
+  'kw_uicontrols':  UIcontrols,
+  'kw_undo':        'undo',
+  'kw_utility':     'utility',
+  'kw_when':        'when',
+  'kw_where':       'where',
+  'kw_while':       'while',
+  'kw_with':        'with',
+  // 'kw_max':         'max',
+  // 'kw_throw':       'throw',
+  //'kw_continue':    'continue',
+  //'kw_redraw':      'redraw',
 }
 // OPERATORS
-const compareOp = ['==', '!=', '>', '<', '>=', '<=']
-const mathOp = ['+', '-', '*', '/', '^']
+export const compareOp = ['==', '!=', '>', '<', '>=', '<=']
+export const mathOp = ['+', '-', '*', '/', '^']
