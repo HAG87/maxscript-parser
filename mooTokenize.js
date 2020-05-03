@@ -194,7 +194,7 @@ var mxLexer = moo.compile(
   // #name literals .. should go higher??
   name:
   [
-    { match: /#[A-Za-z0-9_]+/   },
+    { match: /#[A-Za-z0-9_]+\b/   },
     { match: /#'[A-Za-z0-9_]+'/ },
   ],
   // Operators. each on his own rule, just for readability
