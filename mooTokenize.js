@@ -128,7 +128,7 @@ var mxLexer = moo.compile(
   // property <object>.<property>
   property: {
     match: /\.[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
-    value: x => x.slice(1, 0)
+    value: x => x.slice(1)
   },
   // ::global variable
   global_typed: { match:/::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/},

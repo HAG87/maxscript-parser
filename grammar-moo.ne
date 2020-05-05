@@ -7,6 +7,44 @@
     const flatten = arr => arr !== null ? [].concat(...arr).filter(e => e != null ) : null;
     const merge = (a, b) => a !== null && b != null ? [].concat(a, ...b).filter(e => e != null ) : null;
     const filterNull = (arr) => arr !== null ? arr.filter(e => e != null ) : null;
+
+    const tokenType = (t, newytpe) => {t.type = newytpe; return t};
+
+    const convertToken = (token, newytpe) => {
+        let node = {...token};
+            node.type = newtype;
+        return node;
+    };
+
+        const getLoc = (start, end) =>
+            {
+                if (!start) {return null;}
+
+                let startOffset;
+                let endOffset;
+
+                if (start.loc) {
+                    startOffset = start.loc.start;
+                } else {
+                    startOffset = start.offset;
+                }
+
+                if (!end) {
+                    if (!start.loc) {
+                        endOffset = start.text != null ? start.offset + (start.text.length - 1): null;
+                    } else {
+                        endOffset = start.loc.end
+                    }
+                } else {
+                    if (end.loc) {
+                        endOffset = end.loc.end
+                    } else {
+                        endOffset = end.text != null ? end.offset + (end.text.length - 1) : null;
+                    }
+                };
+
+                return ({start: startOffset, end: endOffset});
+            };
     // parser configuration
     //let out_logic_expr = false;
     //let out_simple_expr = false;
@@ -32,7 +70,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | "(" _ ")"
         {% d => null %}
 
-    _expr_seq -> expr  (EOL expr):* {% d => merge(...d) %}
+    _expr_seq -> expr  (EOL expr):*
+    {% d => ({
+        type: 'BlockStatement',
+        body: merge(...d)}
+    ) %}
 
             #| expr {% id %}
             #|_expr_seq EOL expr {% d => ( [].concat(d[0], d[2]) )%}
@@ -79,9 +121,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
                     rcmenu_clauses:?
             RPAREN
         {% d => ({
-            'type': 'entity.rcmenu',
-            'name': d[1],
-            'body': d[4]
+            type: 'EntityRcmenu',
+            id:   d[1],
+            body: d[4]
         })%}
     #---------------------------------------------------------------
     # REPLACE WHIS WITH EBNF CAPTURE GROUP
@@ -105,24 +147,24 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 rcmenu_clauses:?
             RPAREN
     {% d => ({
-        'type': 'rcmenu.submenu',
-        'label': d[1],
-        'filter': d[2],
-        'body': d[5]
+        type:   'EntityRcmenu-submenu',
+        label:  d[1],
+        filter: d[2],
+        body:   d[5]
     })%}
     #---------------------------------------------------------------
     rcmenu_sep -> (%kw_separator __) var_name (_ "filter:" _ function_def):?
     {% d => ({
-        'type': 'rcmenu.separator',
-        'label': d[1],
-        'filter': d[2],
+        type:   'EntityRcmenu_separator',
+        label:  d[1],
+        filter: d[2],
     })%}
     rcmenu_item -> (%kw_menuitem __) var_name _ string (_ parameter):*
     {% d => ({
-        'type': 'rcmenu.menuitem',
-        'name': d[1],
-        'label': d[3],
-        'params':flatten(d[4]),
+        type:   'EntityRcmenu_menuitem',
+        id:     d[1],
+        label:  d[3],
+        params: flatten(d[4]),
     })%}
 #---------------------------------------------------------------
 # PLUGIN DEFINITION --- SHOULD AVOID LEFT RECURSION
@@ -132,11 +174,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 plugin_clauses
             RPAREN
             {% d => ({
-                'type': 'entity.plugin',
-                'superclass': d[1],
-                'class': d[2],
-                'params':flatten(d[4]),
-                'body': d[7]
+                type:       'EntityPlugin',
+                superclass: d[1],
+                class:      d[2],
+                params:     flatten(d[4]),
+                body:       d[7]
             })%}
 
     plugin_clauses
@@ -145,13 +187,13 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
 
     plugin_clause
-        -> variable_decl  {% id %}
-        | function_def   {% id %}
-        | struct_def     {% id %}
-        | tool_def       {% id %}
-        | rollout_def    {% id %}
-        | event_handler  {% id %}
-        | plugin_parameter     {% id %}
+        -> variable_decl    {% id %}
+        | function_def      {% id %}
+        | struct_def        {% id %}
+        | tool_def          {% id %}
+        | rollout_def       {% id %}
+        | event_handler     {% id %}
+        | plugin_parameter  {% id %}
     #---------------------------------------------------------------
     plugin_parameter
         -> (%kw_parameters __) var_name (__ parameter):* _
@@ -159,10 +201,10 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 param_clauses
             RPAREN
             {% d => ({
-                'type': 'entity.plugin.params',
-                'name': d[1],
-                'params':flatten(d[2]),
-                'body': d[5]
+                type:   'EntityPlugin_params',
+                id:     d[1],
+                params: flatten(d[2]),
+                body:   d[5]
             })%}
 
     param_clauses ->
@@ -176,10 +218,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
 
     param_defs -> var_name (__ parameter):*
     {% d => ({
-        'plugin_param':{
-            'id': d[0],
-            'params': flatten(d[1])
-        }
+            type:   'PluginParam',
+            id:     d[0],
+            params: flatten(d[1])
     })%}
 #---------------------------------------------------------------
 # TOOL - MOUSE TOOL DEFINITION - OK
@@ -190,10 +231,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 ( EOL tool_clause):*
             RPAREN
             {% d => ({
-                'type': 'entity.tool',
-                'name': d[1],
-                'params': flatten(d[2]),
-                'body': merge(d[5], d[6]),
+                type:   'EntityTool',
+                id:     d[1],
+                params: flatten(d[2]),
+                body:   merge(d[5], d[6]),
+                loc:    getLoc(d[0][0], d[7])
             })%}
 
     tool_clause
@@ -210,11 +252,12 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 (EOL utility_clause):*
             RPAREN
             {% d => ({
-                'type': 'entity.utility',
-                'name': d[1],
-                'title': d[3],
-                'params': flatten(d[4]),
-                'body': merge(d[7], d[8]),
+                type:   'EntityUtility',
+                id:     d[1],
+                title:  d[3],
+                params: flatten(d[4]),
+                body:   merge(d[7], d[8]),
+                loc:    getLoc(d[0][0], d[9])
             })%}
 
     utility_clause
@@ -229,11 +272,12 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 (EOL rollout_clause):*
             RPAREN
             {% d => ({
-                'type': 'entity.rollout',
-                'name': d[1],
-                'title': d[3],
-                'params':flatten(d[4]),
-                'body': merge(d[7], d[8]),
+                type:   'EntityRollout',
+                id:     d[1],
+                title:  d[3],
+                params: flatten(d[4]),
+                body:   merge(d[7], d[8]),
+                loc:    getLoc(d[0][0], d[9])
             })%}
     #---------------------------------------------------------------
     rollout_clause
@@ -253,18 +297,20 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 (EOL rollout_item):*
             RPAREN
             {% d => ({
-                'type': 'rollout.group',
-                'name': d[1],
-                'body': merge(d[4], d[5]),
+                type: 'EntityRolloutGroup',
+                id:   d[1],
+                body: merge(d[4], d[5]),
+                loc:getLoc(d[0][0], d[6])
             })%}
     #---------------------------------------------------------------
     rollout_item
         -> item_type __ var_name (_ string ):? ( _ parameter):*
             {% d => ({
-                'type': ('rollout.control.').concat(d[0]),
-                'name': d[2],
-                'text': filterNull(d[3]),
-                'params': flatten(d[4])
+                type:   'EntityRolloutControl',
+                class:  d[0],
+                id:     d[2],
+                text:   filterNull(d[3]),
+                params: flatten(d[4])
             })%}
 
     item_type -> %kw_uicontrols
@@ -278,18 +324,19 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 # macro_script_body
             RPAREN
             {% d => ({
-                'type': 'entity.macroscript',
-                'name': d[1],
-                'params': d[3],
-                'body': d[5]
+                type:   'EntityMacroscript',
+                id:     d[1],
+                params: d[3],
+                body:   merge(...d[5]),
+                loc:    getLoc(d[0][0], d[6])
             })%}
 
     macro_script_param
-    -> param_name _ ( operand | resource)
-        {% d => ({
-            ...d[0],
-            'value': d[2]
-        })%}
+        -> param_name _ ( operand | resource)
+            {% d => ({
+                ...d[0],
+                value: d[2]
+            })%}
 
     macro_script_body
         -> null
@@ -308,44 +355,46 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 struct_member
             RPAREN
             {% d => ({
-                'type': 'entity.struct',
-                'name': d[1],
-                'members':[...d[4], d[5]],
+                type: 'Struct',
+                id:   d[1],
+                body: [...d[4], d[5]],
+                loc:  getLoc(d[0][0], d[6])
             })%}
-
+    # TODO: FINISH LOCATION
     struct_members
         -> struct_member (_ "," _) {% d => d[0]%}
         | struct_mod _             {% d => d[0]%}
-
-    struct_mod -> %kw_scope {% d => ({'scope': d[0]})%}
+    # TODO: FINISH LOCATION
+    struct_mod -> %kw_scope {% d => ({scope: d[0].value, loc:getLoc(d[0])})%}
 
     #---------------------------------------------------------------
     struct_member
-            -> decl          {% id %}
-            | function_def   {% id %}
-            | event_handler  {% id %}
+        -> decl          {% id %}
+        | function_def   {% id %}
+        | event_handler  {% id %}
 #===============================================================
 # EVENT HANDLER --- OK
+# TODO: FINISH LOCATION
     # check for "the other" event handlers...?
     event_handler
         -> (%kw_on __) event_args __ (%kw_do | %kw_return) _ expr
             {% d => ({
-                'type': 'block.event',
-                'args': d[1],
-                'modifier': d[3],
-                'expr': d[5]
+                type:     'Event',
+                args:     d[1],
+                modifier: d[3],
+                body:     d[5]
             }) %}
 
     event_args
         -> var_name
-            {% d => ({'event': d[0]}) %}
+            {% d => ({event: d[0]}) %}
         | var_name __ var_name
-            {% d => ({'target': d[0], 'event': d[2]}) %}
+            {% d => ({target: d[0], event: d[2]}) %}
         | var_name __ var_name ( __ var_name):+
             {% d => ({
-                'target': d[0],
-                'event': d[2],
-                'args': flatten(d[3])}
+                target: d[0],
+                event: d[2],
+                args: flatten(d[3])}
             )%}
 
 # CHANGE HANDLER -- UNFINISHED
@@ -360,17 +409,17 @@ Main -> _ _EXPR _ {% d => d[1] %}
 
 #---------------------------------------------------------------
 # FUNCTION DEFINITION --- OK
+# TODO: FINISH LOCATION
     function_def
         -> (%kw_mapped __):?  (%kw_function __ ) var_name (_ var_name):*  (_ arg):* (_ "=" _) expr
             {% d => ({
-                'type': 'entity.function',
-                'mapped': (d[0] === null),
-                'identifier': d[2],
-                'args': flatten(d[3]),
-                'params': flatten(d[4]),
-                'expr': d[6],
+                type:   'Function',
+                mapped: (d[0] === null),
+                id:     d[2],
+                args:   flatten(d[3]),
+                params: flatten(d[4]),
+                body:   d[6],
             })%}
-
 
     arg
         -> parameter  {% id %}
@@ -378,11 +427,13 @@ Main -> _ _EXPR _ {% d => d[1] %}
 
     function_return -> %kw_return _ expr:?
         {% d => ({
-            'type': 'function.return',
-            'expr': d[2]
+            type: 'FunctionReturn',
+            body: d[2]
         })%}
 #===============================================================
 # CONTEXT EXPRESSION -- UNFINISHED
+# TODO: FINISH LOCATION
+# TODO: FINISH
     set_context -> %kw_set _ context
     #---------------------------------------------------------------
     context_expr -> context (_S "," _ context ):* _ expr
@@ -407,156 +458,196 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 # EOL:?
             RPAREN
             {% d => ({
-                'type': 'expression.case',
-                'expr': d[1],
-                'cases':  merge(d[5], d[6]),
+                type:  'CaseStatement',
+                test:  d[1],
+                cases: merge(d[5], d[6]),
+                loc:   getLoc(d[0][0], d[7])
             })%}
 
     case_src -> expr _  {% d => d[0]%} | __ {% id %}
 
-    # case_col ->
-    #   case_item {% id %}
-    #   | case_col EOL case_item {% d => [].concat(d[0], d[2]) %}
-
     case_item
         -> factor (":" _) expr
-            {% d => ({'case': d[0], 'expr': d[2] })%}
-        | param_name _ expr # WORKAROUND FOR THE TOKENIZATION
-            {% d => ({'case': d[0], 'expr': d[2] })%}
+            {% d => ({case: d[0], body: d[2] })%}
+        | param_name _ expr
+            # WORKAROUND FOR THE TOKENIZATION
+            {% d => ({case: d[0], body: d[2] })%}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK
+# TODO: FINISH LOCATION
     for_loop
-        -> (%kw_for __) var_name _S source (_ (%kw_do | %kw_collect) _) expr
+        -> (%kw_for __) var_name _S (for_to | for_in) (_ (%kw_do | %kw_collect) _) expr
             {% d => ({
-                'type': 'expression.loop.for',
-                'index': d[1],
+                type: 'ForStatement',
+                init:  d[1],
                 ...d[3],
-                [d[4][1]]: d[5]
+                action: [d[4][1]],
+                body:   d[5]
             })%}
 
-    source
+    for_to
         -> ("=" _S) expr (_ %kw_to _S) expr
-                    ((_ %kw_by _S) expr):?
-                    ((_ %kw_while _S) expr):?
-                    ((_ %kw_where _S) expr):?
+                ((_ %kw_by _S) expr):?
+                ((_ %kw_while _S) expr):?
+                ((_ %kw_where _S) expr):?
+        {% d => ({
+            iteration: 'ordinal',
+            value:     d[1],
+            to:        d[3],
+            by:        filterNull(d[4]),
+            while:     filterNull(d[5]),
+            where:     filterNull(d[6])
+        })%}
+    for_in
+        -> (%kw_in _S) expr ((_ %kw_where _S) expr):?
             {% d => ({
-                'iteration': 'ordinal',
-                'value': d[1],
-                'to': d[3],
-                'by':    filterNull(d[4]),
-                'while': filterNull(d[5]),
-                'where': filterNull(d[6])
-            })%}
-        | (%kw_in _S) expr ((_ %kw_where _S) expr):?
-            {% d => ({
-                'iteration': 'cardinal',
-                'value': d[1],
-                'where': filterNull(d[2])
+                iteration: 'cardinal',
+                value:     d[1],
+                where:     filterNull(d[2])
             })%}
 #---------------------------------------------------------------
 # LOOP EXIT EXPRESSION --- OK
+# TODO: FINISH LOCATION
     loop_exit
         -> %kw_exit
-            {% d => ({ 'type' : 'loop.exit' })%}
+            {% d => ({
+                type : 'LoopExit',
+                loc:   getLoc(d[0])
+            })%}
         | %kw_exit (__ %kw_with _) expr
             {% d => ({
-                'type' : 'expression.loop.exit',
-                'with': d[2]
+                type : 'LoopExit',
+                with:  d[2],
+                loc:   getLoc(d[0])
             })%}
 #---------------------------------------------------------------
 # DO LOOP --- OK
+# TODO: FINISH LOCATION
     do_loop -> (%kw_do __) expr (__ %kw_while __) expr
         {% d => ({
-            'type': 'expression.loop.do',
-            'do': d[1],
-            'while': d[3]
+            type: 'DoWhileStatement',
+            body: d[1],
+            test: d[3]
         })%}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
+# TODO: FINISH LOCATION
     while_loop -> (%kw_while __) expr (__ %kw_do __) expr
         {% d => ({
-            'type': 'expression.loop.while',
-            'while': d[1],
-            'do': d[3]
+            type: 'WhileStatement',
+            test: d[1],
+            body: d[3]
         })%}
 #---------------------------------------------------------------
 # IF EXPRESSION --- OK
+# TODO: FINISH LOCATION
     if_expr
         -> (%kw_if _) expr (_ ( %kw_do | %kw_then ) _) expr
             {% d => ({
-                'type': 'expression.if',
-                'condition': d[1],
-                'then': d[3]
+                type:       'IfStatement',
+                consequent: d[1],
+                alternate:  d[3]
             })%}
         | (%kw_if _) expr (_ %kw_then _) expr (_ %kw_else _) expr
             {% d => ({
-                'type': 'expression.if',
-                'condition': d[1],
-                'then': d[3],
-                'else': d[5]
+                type:       'IfStatement',
+                test:       d[1],
+                consequent: d[3],
+                alternate:  d[5]
             })%}
 #---------------------------------------------------------------
 # TRY EXPRESSION -- OK
+# TODO: FINISH LOCATION
     try_expr -> (%kw_try _) expr (_ %kw_catch _) expr
-    {% d =>({
-        'type': 'expression.try',
-        'try': d[1],
-        'catch': d[3]
+    {% d => ({
+        type:      'TryStatement',
+        block:     d[1],
+        finalizer: d[3]
     })%}
+    kw_try -> %kw_try _ {% d => d[0] %}
 #---------------------------------------------------------------
 # VARIABLE DECLARATION --- OK
+# TODO: FINISH LOCATION
     variable_decl
-        -> ( %kw_local | %kw_global ) _ decl ( (_S "," _) decl ):*
+        -> kw_decl _ decl ( (_S "," _) decl ):*
             {% d => ({
-                'type': 'variable.declaration',
-                'scope': d[0],
-                'values': (
-                    d[3] != null ? [].concat(d[2], d[3].map( x => x[1])) : d[2]
-                    )
+                type: 'VariableDeclaration',
+                ...d[0],
+                decl: ( d[3] != null ? [].concat(d[2], d[3].map( x => x[1])) : d[2] ),
+                //loc:d[0].loc
             })%}
-        | ( %kw_persistent __ %kw_global ) _ decl ( (_S "," _) decl ):*
+        | kw_decl_pers _ decl ( (_S "," _) decl ):*
             {% d => ({
-                'type': 'variable.declaration',
-                'scope': 'persistent global',
-                'values': merge(d[2], d[3])
+                type: 'VariableDeclaration',
+                scope: 'persistent global',
+                decl:  merge(d[2], d[3]),
+                //loc:d[0].loc
             })%}
 
+    kw_decl
+        -> %kw_local {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
+        | %kw_global {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
+
+    kw_decl_pers
+        -> %kw_persistent __ %kw_global {% d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})%}
+
     # Direct assignment on declaration
-    decl    -> var_name {% id %}
-            | var_name (_S "=" _) expr
-            {% d => ({...d[0], ...{'value': d[2]}})%}
+    # TODO: LOCATION
+    decl
+        -> var_name                {% id %}
+        | var_name (_S "=" _) expr {% d => ({...d[0], ...{value: d[2]}})%}
 #---------------------------------------------------------------
 #ASSIGNEMENT --- OK
     assignment
     -> destination (_S assignSym _) expr
         {% d => ({
-            'type': 'variable.assign',
-            'operand': d[0],
-            'assign': d[1][1],
-            'value': d[2]
+            type:     'AssignmentExpression',
+            operator: d[1][1],
+            operand:  d[0],
+            value:    d[2]
         })%}
 
     #assignSym -> ("="|"+="|"-="|"*="|"/=")
     assignSym -> %assign
 
     destination
-    -> var_name {% id %}
-    | property  {% id %}
-    | index     {% id %}
+        -> var_name {% id %}
+        | property  {% id %}
+        | index     {% id %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  PARTIAL OPERATOR PRECEDENCE....
+# includes "as" operator, for simplicity
     math_expr
         -> math_operand _S mathSym _ math_operand
-            {% d => ({'type': 'expression.math','operator': d[2], 'operand_A': d[0], 'operand_B': d[4]})%}
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]
+        })%}
         | math_expr    _S mathSym _ math_operand
-            {% d => ({'type': 'expression.math','operator': d[2], 'operand_A': d[0], 'operand_B': d[4]})%}
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]
+        })%}
         | math_operand _S %kw_as _ var_name
-            {% d => ({'type': 'expression.math','operator': d[2], 'operand_A': d[0], 'operand_B': d[4]})%}
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]
+        })%}
         | math_expr _S    %kw_as _ var_name
-            {% d => ({'type': 'expression.math','operator': d[2], 'operand_A': d[0], 'operand_B': d[4]})%}
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]}
+        )%}
 
     mathSym -> %math
-    # mathSym -> ("+"|"-"|"*"|"/"|"^") {% id %}
 
     # THIS ___needs to drop operand results..
     #    math_expr -> sum
@@ -565,14 +656,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
     #    )%}
     #    sum -> sum _ ("+"|"-") __ product      {% d => [(d[0][0]), (d[2][0]), d[4] ]%}
     #        | product
-    #
     #    product -> product _ ("*"|"/") _ exp  {% d => [d[0], (d[2][0]), d[4] ]%}
     #        | exp                             {% id %}
-    #
     #    # this is right associative!
     #    exp -> math_operand _ "^" _ exp  {% d => [d[0], d[2], d[4] ]%}
     #        | math_operand               {% id %}
-    #
 
     math_operand
         -> operand   {% id %}
@@ -583,34 +671,34 @@ Main -> _ _EXPR _ {% d => d[1] %}
 # CONVERSION
     conversion -> operand _S %kw_as _ var_name
     {% d => ({
-        'type': 'expression.convert',
-        'operand': d[0],
-        'class': d[4]
+        type:    'ConvertExpression',
+        operand: d[0],
+        class:   d[4]
     })%}
 #---------------------------------------------------------------
-# LOGIC EXPRESSION --- this probably wont work
+# LOGIC EXPRESSION --- OK
     logical_expr
         -> logical_operand _S %kw_compare _  (not_operand | logical_operand)
         {% d => ({
-            'type' : 'expression.logic',
-            'operator': d[2],
-            'operand_A': d[0],
-            'operand_B': d[4]
+            type :    'LogicalExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]
         }) %}
         | logical_expr _S %kw_compare _  (not_operand | logical_operand)
         {% d => ({
-            'type' : 'expression.logic',
-            'operator': d[2],
-            'operand_A1': d[0],
-            'operand_B1': d[4]
+            type :    'LogicalExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]
         }) %}
         | not_operand {% id %}
 
         not_operand -> %kw_not _ logical_operand
             {% d => ({
-            'type' : 'expression.negation',
-            'operator': d[0],
-            'operand_B1': d[2]
+            type :    'LogicalExpression',
+            operator: d[0],
+            right:    d[2]
         }) %}
 
     logical_operand
@@ -620,13 +708,14 @@ Main -> _ _EXPR _ {% d => d[1] %}
         #| logical_expr #recursion!
 #---------------------------------------------------------------
 # COMPARE EXPRESSION --- OK
-    compare_expr -> compare_operand _S compareSym _ compare_operand
-    {% d => ({
-        'type': 'expression.compare',
-        'operator': d[2],
-        'operand_A': d[0],
-        'operand_B': d[4]
-    }) %}
+    compare_expr
+        -> compare_operand _S compareSym _ compare_operand
+        {% d => ({
+            type:     'LogicalExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4]
+        }) %}
     compare_operand
     -> math_expr {% id %}
     | operand    {% id %}
@@ -639,15 +728,15 @@ Main -> _ _EXPR _ {% d => d[1] %}
     fn_call
         -> operand voidparens
             {% d => ({
-                'type': 'method.call',
-                'identifier': d[0],
-                'parameters': d[1]
+                type:      'CallExpression',
+                callee:    d[0],
+                arguments: d[1]
             })%}
         | operand _S call_params
             {% d => ({
-                'type': 'method.call',
-                'identifier': d[0],
-                'parameters': d[2]
+                type:      'CallExpression',
+                calle:     d[0],
+                arguments: d[2]
             })%}
 
     call_params
@@ -659,12 +748,13 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter -> param_name _ operand
-        {% d =>({
-            'type': 'value.parameter',
-            ...d[0],
-            'value': d[2]
+        {% d => ({
+            type: 'ParameterAssignment',
+            id: d[0], //id: d[0].id,
+            value: d[2],
+            //loc: d[0].loc
         })%}
-    param_name -> %params {% d => ({ 'parameter': d[0] })%}
+    param_name -> %params #{% d => ({ type: 'Parameter', id: d[0].value, loc: getLoc(d[0]) })%}
 #---------------------------------------------------------------
 # OPERANDS --- OK
     operand
@@ -673,19 +763,23 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | index       {% id %}
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
+#TODO: Avoid capturing operand
     property -> operand %property
         {% d => ({
-            'type': 'accessor.property',
-            'operand': d[0],
-            'property': d[2]
+            type: 'AccessorProperty',
+            operand: d[0],
+            property: d[1],   //property: d[1].value,
+            //loc: getLoc(d[1])
         })%}
 #---------------------------------------------------------------
 # ACCESSOR - INDEX --- OK
-    index -> operand _ ("[" _) expr (_ "]")
+# TODO: avoid capturing operand
+    index -> operand _ p_start expr p_end
         {% d => ({
-            'type': 'accessor.index',
-            'operand': d[0],
-            'index': d[3]
+            type:    'AccessorIndex',
+            operand: d[0],
+            index:   d[3],
+            loc:     getLoc(d[2], d[4])
         })%}
 #---------------------------------------------------------------
 # FACTORS --- OK?
@@ -708,9 +802,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
         # | %voidparens {% id %}
         #| %parens {% id %}
         #unary minus
-        | "-" expr   {% d => ({'type': 'unary_minus', 'operand': d[1]}) %}
+        | "-" expr   {% d => ({type: 'UnaryExpression', operand: d[1], }) %} #{% d => ({type: 'UnaryExpression', operand: d[1], loc: getLoc(d[0])}) %}
         #last listener result
-        | "?" {% d => ({'type': 'keyword.listener', 'token': d[0]}) %}
+        | "?" {% d => ({type: 'Keyword', value: d[0]}) %} #{% d => ({type: 'Keyword', value: d[0].value, loc: getLoc(d[0])}) %}
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
 
 # RESERVED KEYWORDS
@@ -727,35 +821,46 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #===============================================================
 # VALUES
 #===============================================================
-# POINT4
-    point4 -> ("[" _) expr (_S "," _) expr (_S "," _) expr (_S "," _) expr (_S "]")
-    {% d => ({
-        'type': 'value.point4',
-            x: d[1],
-            y: d[3],
-            z: d[5],
-            w: d[7]
-    }) %}
-# POINT3
-    point3 -> ("[" _) expr (_S "," _) expr (_S "," _) expr (_S "]")
-    {% d => ({
-        'type': 'value.point3',
-            x: d[1],
-            y: d[3],
-            z: d[5]
-    }) %}
-# POINT2
-    point2 -> ("[" _) expr (_S "," _) expr (_S "]")
-    {% d => ({
-        'type': 'value.point2',
-            x: d[1],
-            y: d[3]
-    }) %}
+# POINTS
+    point4
+        -> p_start expr (_S "," _) expr (_S "," _) expr (_S "," _) expr p_end
+        {% d => ({
+            type: 'ObjectPoint4',
+                x: d[1], y: d[3], z: d[5], w: d[7],
+                loc: getLoc(d[0], d[8])
+        }) %}
+    point3
+        -> p_start expr (_S "," _) expr (_S "," _) expr p_end
+        {% d => ({
+            type: 'ObjectPoint3',
+                x: d[1], y: d[3], z: d[5],
+                loc: getLoc(d[0], d[6])
+        }) %}
+    point2
+        -> p_start expr (_S "," _) expr p_end
+        {% d => ({
+            type: 'ObjectPoint2',
+                x: d[1], y: d[3],
+                loc: getLoc(d[0], d[4])
+        }) %}
+
+    p_start -> "[" _  {% d => d[0]%}
+    p_end   -> _S "]" {% d => d[1]%}
 #===============================================================
 # ARRAY --- OK
     array
-        -> %arraydef _ %rparen                    {% d => ({'type': 'value.array', 'value': d[1]}) %}
-        | (%arraydef _) array_expr (_ %rparen)    {% d => ({'type': 'value.array', 'value': d[1]}) %}
+        -> %arraydef _ %rparen
+            {% d => ({
+                type:      'ObjectArray',
+                elements:  d[1],
+                loc:       getLoc(d[0], d[2])
+            }) %}
+        | (%arraydef _) array_expr (_ %rparen)
+            {% d => ({
+                type:     'ObjectArray',
+                elements: d[1],
+                loc:      getLoc(d[0], d[2])
+            }) %}
 
         array_expr
         -> expr {% id %}
@@ -763,13 +868,24 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # BITARRAY --- OK
     bitarray
-    -> ( %bitarraydef _) bitarray_inner:* (_ %rbrace)
-       {% d => ({'type': 'value.bitarray', 'value': d[1]}) %}
+    -> %bitarraydef _ %rbrace
+        {% d => ({
+            type:     'ObjectBitArray',
+            elements: d[1],
+            loc:      getLoc(d[0], d[2])
+        }) %}
+    | ( %bitarraydef _) bitarray_expr (_ %rbrace)
+        {% d => ({
+            type:     'ObjectBitArray',
+            elements: d[1],
+            loc:      getLoc(d[0], d[2])
+        }) %}
 
-    bitarray_inner
+    bitarray_expr
     -> bitarray_expr {% id %}
-    | bitarray_inner (_ "," _) bitarray_expr {% d => [].concat(d[0], d[2]) %}
+    | bitarray_expr (_ "," _) bitarray_expr {% d => [].concat(d[0], d[2]) %}
 
+    # TODO: Fix groups
     bitarray_expr
     -> expr {% id %}
     | expr  ".."  expr {% d => [].concat(...d) %}
@@ -777,32 +893,76 @@ Main -> _ _EXPR _ {% d => d[1] %}
 # TOKENS
 #===============================================================
     # time
-    time -> %time    {% d =>({'value.time': d[0]}) %}
+    time -> %time
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.value,
+            //loc:getLoc(d[0])
+        }) %}
     # Bool
-    bool -> (%kw_bool | %kw_on ) {% d =>({'value.bool': d[0]}) %}
+    bool -> (%kw_bool | %kw_on )
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.value,
+            //loc:getLoc(d[0])
+        }) %}
     # Void values
-    void -> %kw_null {% d =>({'value.null': d[0]}) %}
+    void -> %kw_null
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.value,
+            //loc:getLoc(d[0])
+        }) %}
     #---------------------------------------------------------------
     # Numbers
-    number
-        -> %posint  {% d => ({'type': 'value.number', 'value': d[0]}) %}
-        | %negint   {% d => ({'type': 'value.number', 'value': d[0]}) %}
-        | %number   {% d => ({'type': 'value.number', 'value': d[0]}) %}
-        | %hex      {% d => ({'type': 'value.number', 'value': d[0]}) %}
-        # _posint -> %posint
+    number -> number_types
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.value,
+            //loc:getLoc(d[0])
+        }) %}
+
+    number_types
+        -> %posint
+        | %negint
+        | %number
+        | %hex
+        # %posint
     # string
-    string -> %string   {% d => ({'type': 'value.string', 'value': d[0]}) %}
+    string -> %string
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.value,
+            //loc:getLoc(d[0])
+        }) %}
     # names
-    name_value -> %name {% d => ({'type': 'value.name', 'value': d[0]}) %}
+    name_value -> %name
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.text,
+            //loc:getLoc(d[0])
+        }) %}
     #Resources
-    resource -> %locale {% d => ({'type': 'value.resource', 'value' : d[0]}) %}
+    resource -> %locale
+        {% d => ({
+            type: 'Literal',
+            value: d[0], //.text,
+            //loc:getLoc(d[0])
+        }) %}
 #===============================================================
 # VARNAME --- IDENTIFIERS --- OK
     # some keywords can be var_name too...
-    var_name
-        -> %identity    {% d =>({'type': 'identifier', 'value': d[0]}) %}
-        | %global_typed {% d =>({'type': 'identifier', 'value': d[0]}) %}
-        | kw_reserved   {% d =>({'type': 'identifier', 'value': d[0]}) %}
+    var_name -> var_type
+    {% d => ({
+        type: 'Identifier',
+        value: d[0], //.value,
+        //loc:getLoc(d[0])
+    }) %}
+
+    var_type
+        -> %identity
+        | %global_typed
+        | kw_reserved
         #  | %kw_objectset {% id %}
 #===============================================================
 # PATH NAME
@@ -810,7 +970,12 @@ Main -> _ _EXPR _ {% d => d[1] %}
     # path_name -> "$" | "$" alphanum {% d => d.join('') %}
     #---------------------------------------------------------------
     # THIS JUST CAPTURES ALL THE LEVEL PATH IN ONE TOKEN....
-    path_name -> %path {% d => ({'type': 'identifier.path', 'value': d[0]}) %}
+    path_name -> %path
+        {% d => ({
+            type: 'Identifier',
+            value: d[0], //.value,
+            //loc:getLoc(d[0])
+        }) %}
     #---------------------------------------------------------------
     # path -> (%kw_objectset):? ("/"):? (levels):? level_name
     # levels -> level | levels "/" level
@@ -818,8 +983,8 @@ Main -> _ _EXPR _ {% d => d[1] %}
     # level_name -> # MISSING
 #===============================================================
 #PARENS
-    LPAREN ->  %lparen _    {% d => ({'type': 'paren.open', 'offset':d[0].offset}) %}
-    RPAREN ->  ___ %rparen  {% d => ({'type': 'paren.close', 'offset':d[1].offset}) %}
+    LPAREN ->  %lparen _    {% d => d[0] %}
+    RPAREN ->  ___ %rparen  {% d => d[1] %}
     voidparens -> "()"      {% d => '( )' %}
 #===============================================================
 # WHITESPACE AND NEW LINES
@@ -831,7 +996,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     | %statement
     | %newline
     | %comment_BLK
-    | %comment_SL # %newline
+    | %comment_SL
 
     # one or more whitespace
     _S_ -> ws | _S_ ws  {% d => null %}
@@ -845,5 +1010,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
     ___ -> null | ___ (junk | %statement)  {% d => null %}
 
     ws -> %ws | %comment_BLK
-    junk ->  %ws | %newline | %comment_BLK | %comment_SL
+    junk
+    ->  %ws
+    | %newline
+    | %comment_BLK
+    | %comment_SL
 #---------------------------------------------------------------
