@@ -3,7 +3,7 @@ const grammar = require('./grammar.js');
 const mxLexer = require('./mooTokenize.js')
 //-----------------------------------------------------------------------------------
 // Create a Parser object from our grammar.
-export var parser = new nearley.Parser(
+var parser = new nearley.Parser(
     nearley.Grammar.fromCompiled(grammar),
     {
         keepHistory: true,
@@ -15,7 +15,7 @@ export var parser = new nearley.Parser(
  * @param {moo.lexer} lexer
  * @param {string} source
  */
-export function TokenizeSource(lexer = mxLexer, source) {
+function TokenizeSource(lexer = mxLexer, source) {
     //if (!source) {return null;}
     try {
         // feed the tokenizer
@@ -42,7 +42,7 @@ export function TokenizeSource(lexer = mxLexer, source) {
  * @param {nearley.parser} parserInstance Instance of initialized parser
  * @param {Integer} tree Index of the parsed tree I want in return, results are multiple when the parser finds and ambiguity
  */
-export async function ParseSource(source, parserInstance = parser, tree = 0) {
+async function ParseSource(source, parserInstance = parser, tree = 0) {
 
     // read input stream
     const input = (fsi.readFileSync(source)).toString();
@@ -66,4 +66,10 @@ export async function ParseSource(source, parserInstance = parser, tree = 0) {
         // Reject. the error is the offending token plus possible tokens
         throw errCatch;
     }
+}
+//-----------------------------------------------------------------------------------
+module.exports = {
+    parser,
+    TokenizeSource,
+    ParseSource,
 }
