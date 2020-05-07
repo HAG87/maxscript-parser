@@ -44,12 +44,9 @@ function TokenizeSource(lexer = mxLexer, source) {
  */
 async function ParseSource(source, parserInstance = parser, tree = 0) {
 
-    // read input stream
-    const input = (fsi.readFileSync(source)).toString();
-
     try {
         // feed the parser
-        parserInstance.feed(input);
+        parserInstance.feed(source);
 
         /*// TODO: implement parser re-feed after error.
         I could replace the offending token with possible alternatives until the parser takes in.

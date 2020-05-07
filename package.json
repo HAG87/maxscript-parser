@@ -1,21 +1,28 @@
 {
   "name": "maxscript-lexer",
   "version": "1.0.0",
-  "description": "lexer for maxscript language",
+  "description": "parser for maxscript language",
   "main": "App.js",
   "dependencies": {
     "@types/nearley": "^2.11.1",
-    "kreia-moo": "^0.4.8",
+    "@types/object-path": "^0.11.0",
+    "ast-monkey": "^7.11.7",
+    "ast-monkey-traverse": "^1.12.9",
+    "ast-monkey-traverse-with-lookahead": "^1.1.2",
+    "ast-monkey-util": "^1.1.5",
     "moo": "^0.5.1",
-    "nearley": "^2.19.2"
+    "mz": "^2.7.0",
+    "nearley": "^2.19.2",
+    "object-path": "^0.11.4",
+    "util-array-object-or-both": "^2.7.58"
   },
   "devDependencies": {
     "@types/moo": "^0.5.3",
     "@types/node": "^12.12.37"
   },
   "scripts": {
-    "test": "echo \"Error: no tests installed\" && exit 1",
-    "build": "node"
+    "build": "node",
+    "gen-parser": "nearleyc grammar-moo.ne -o grammar.js"
   },
   "repository": {
     "type": "git",

@@ -17,35 +17,35 @@ function id(x) { return x[0]; }
         return node;
     };
 
-        const getLoc = (start, end) =>
-            {
-                if (!start) {return null;}
+    const getLoc = (start, end) =>
+        {
+            if (!start) {return null;}
 
-                let startOffset;
-                let endOffset;
+            let startOffset;
+            let endOffset;
 
-                if (start.loc) {
-                    startOffset = start.loc.start;
+            if (start.loc) {
+                startOffset = start.loc.start;
+            } else {
+                startOffset = start.offset;
+            }
+
+            if (!end) {
+                if (!start.loc) {
+                    endOffset = start.text != null ? start.offset + (start.text.length - 1): null;
                 } else {
-                    startOffset = start.offset;
+                    endOffset = start.loc.end
                 }
-
-                if (!end) {
-                    if (!start.loc) {
-                        endOffset = start.text != null ? start.offset + (start.text.length - 1): null;
-                    } else {
-                        endOffset = start.loc.end
-                    }
+            } else {
+                if (end.loc) {
+                    endOffset = end.loc.end
                 } else {
-                    if (end.loc) {
-                        endOffset = end.loc.end
-                    } else {
-                        endOffset = end.text != null ? end.offset + (end.text.length - 1) : null;
-                    }
-                };
-
-                return ({start: startOffset, end: endOffset});
+                    endOffset = end.text != null ? end.offset + (end.text.length - 1) : null;
+                }
             };
+
+            return ({start: startOffset, end: endOffset});
+        };
     // parser configuration
     //let out_logic_expr = false;
     //let out_simple_expr = false;
@@ -117,7 +117,7 @@ var grammar = {
     {"name": "rcmenu_submenu$ebnf$2", "symbols": ["rcmenu_clauses"], "postprocess": id},
     {"name": "rcmenu_submenu$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "rcmenu_submenu", "symbols": ["rcmenu_submenu$subexpression$1", "string", "rcmenu_submenu$ebnf$1", "_", "LPAREN", "rcmenu_submenu$ebnf$2", "RPAREN"], "postprocess":  d => ({
-            type:   'EntityRcmenu-submenu',
+            type:   'EntityRcmenu_submenu',
             label:  d[1],
             filter: d[2],
             body:   d[5]
@@ -547,9 +547,9 @@ var grammar = {
             decl:  merge(d[2], d[3]),
             //loc:d[0].loc
         })},
-    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_local") ? {type: "kw_local"} : kw_local)], "postprocess": d => ({scope: d[0].value, loc:getLoc(d[0])})},
-    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": d => ({scope: d[0].value, loc:getLoc(d[0])})},
-    {"name": "kw_decl_pers", "symbols": [(mxLexer.has("kw_persistent") ? {type: "kw_persistent"} : kw_persistent), "__", (mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})},
+    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_local") ? {type: "kw_local"} : kw_local)], "postprocess": id},
+    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": id},
+    {"name": "kw_decl_pers", "symbols": [(mxLexer.has("kw_persistent") ? {type: "kw_persistent"} : kw_persistent), "__", (mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": id},
     {"name": "decl", "symbols": ["var_name"], "postprocess": id},
     {"name": "decl$subexpression$1", "symbols": ["_S", {"literal":"="}, "_"]},
     {"name": "decl", "symbols": ["var_name", "decl$subexpression$1", "expr"], "postprocess": d => ({...d[0], ...{value: d[2]}})},
@@ -647,7 +647,7 @@ var grammar = {
     {"name": "fn_call_args", "symbols": ["parameter"]},
     {"name": "parameter", "symbols": ["param_name", "_", "operand"], "postprocess":  d => ({
             type: 'ParameterAssignment',
-            id: d[0], //id: d[0].id,
+            param: d[0], //id: d[0].id,
             value: d[2],
             //loc: d[0].loc
         })},
@@ -787,7 +787,7 @@ var grammar = {
             value: d[0], //.value,
             //loc:getLoc(d[0])
         }) },
-    {"name": "var_type", "symbols": [(mxLexer.has("identity") ? {type: "identity"} : identity)]},
+    {"name": "var_type", "symbols": [(mxLexer.has("identity") ? {type: "identity"} : identity)], "postprocess": id},
     {"name": "var_type", "symbols": [(mxLexer.has("global_typed") ? {type: "global_typed"} : global_typed)]},
     {"name": "var_type", "symbols": ["kw_reserved"]},
     {"name": "path_name", "symbols": [(mxLexer.has("path") ? {type: "path"} : path)], "postprocess":  d => ({

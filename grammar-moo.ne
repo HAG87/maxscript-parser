@@ -16,35 +16,35 @@
         return node;
     };
 
-        const getLoc = (start, end) =>
-            {
-                if (!start) {return null;}
+    const getLoc = (start, end) =>
+        {
+            if (!start) {return null;}
 
-                let startOffset;
-                let endOffset;
+            let startOffset;
+            let endOffset;
 
-                if (start.loc) {
-                    startOffset = start.loc.start;
+            if (start.loc) {
+                startOffset = start.loc.start;
+            } else {
+                startOffset = start.offset;
+            }
+
+            if (!end) {
+                if (!start.loc) {
+                    endOffset = start.text != null ? start.offset + (start.text.length - 1): null;
                 } else {
-                    startOffset = start.offset;
+                    endOffset = start.loc.end
                 }
-
-                if (!end) {
-                    if (!start.loc) {
-                        endOffset = start.text != null ? start.offset + (start.text.length - 1): null;
-                    } else {
-                        endOffset = start.loc.end
-                    }
+            } else {
+                if (end.loc) {
+                    endOffset = end.loc.end
                 } else {
-                    if (end.loc) {
-                        endOffset = end.loc.end
-                    } else {
-                        endOffset = end.text != null ? end.offset + (end.text.length - 1) : null;
-                    }
-                };
-
-                return ({start: startOffset, end: endOffset});
+                    endOffset = end.text != null ? end.offset + (end.text.length - 1) : null;
+                }
             };
+
+            return ({start: startOffset, end: endOffset});
+        };
     // parser configuration
     //let out_logic_expr = false;
     //let out_simple_expr = false;
@@ -147,7 +147,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 rcmenu_clauses:?
             RPAREN
     {% d => ({
-        type:   'EntityRcmenu-submenu',
+        type:   'EntityRcmenu_submenu',
         label:  d[1],
         filter: d[2],
         body:   d[5]
@@ -585,11 +585,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
             })%}
 
     kw_decl
-        -> %kw_local {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
-        | %kw_global {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
+        -> %kw_local {% id %} #{% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
+        | %kw_global {% id %} #{% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
 
     kw_decl_pers
-        -> %kw_persistent __ %kw_global {% d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})%}
+        -> %kw_persistent __ %kw_global {% id %} #{% d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})%}
 
     # Direct assignment on declaration
     # TODO: LOCATION
@@ -750,7 +750,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     parameter -> param_name _ operand
         {% d => ({
             type: 'ParameterAssignment',
-            id: d[0], //id: d[0].id,
+            param: d[0], //id: d[0].id,
             value: d[2],
             //loc: d[0].loc
         })%}
@@ -960,7 +960,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     }) %}
 
     var_type
-        -> %identity
+        -> %identity {% id %}
         | %global_typed
         | kw_reserved
         #  | %kw_objectset {% id %}
