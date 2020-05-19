@@ -1,0 +1,22 @@
+VS Code API
+[] createDiagnosticCollection
+[] registerCompletionItemProvider
+[X] registerHoverProvider
+[X] registerSignatureHelpProvider
+[] registerDefinitionProvider
+[] registerTypeDefinitionProvider
+[X] registerImplementationProvider
+[X] registerReferenceProvider
+[X] registerDocumentHighlightProvider
+[-] registerDocumentSemanticTokensProvider
+[] registerDocumentSymbolProvider
+[] registerCodeActionsProvider
+[] registerCodeLensProvider
+[] registerDocumentLinkProvider
+[X] registerColorProvider
+[] registerDocumentFormattingEditProvider
+[X] registerDocumentRangeFormattingEditProvider
+[X] registerOnTypeFormattingEditProvider
+[] registerRenameProvider
+[X] registerFoldingRangeProvider
+[O] registerDocumentSemanticTokensProvider

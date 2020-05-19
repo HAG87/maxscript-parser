@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             // "program": "${workspaceFolder}/App.ts",
-            "program": "${workspaceFolder}/App.js",
+            "program": "${workspaceFolder}/src/index.js",
             //"preLaunchTask": "tsc: build - tsconfig.json",
             "outFiles": [
                 "${workspaceFolder}/out/**/*.js"

@@ -24,7 +24,7 @@ class vscodeSymbolInformation {
 		if (container != null) this.containerName = container;
 		this.location = loc;
 	}
-};
+}
 //-----------------------------------------------------------------------------------
 /**
  * Maps values from type > vcode kind enumeration
@@ -90,55 +90,50 @@ const usageExpressions = [
  * @param {object} ast The AST
  * @param {string} path The path of the current node/leaf
  */
-const findParentName = (ast, path, key = 'id.value.value') =>
-{
+const findParentName = (ast, path, key = 'id.value.value') => {
 	// this is faster than using ats-money find method
 	let roots = path.split('.');
 	let i = roots.length;
 	do {
 		let thePath = roots.slice(0, i).join('.').concat('.', key);
-		let theNode =  objectPath.get(ast, thePath);
+		let theNode = objectPath.get(ast, thePath);
 
 		if (theNode != null) return theNode;
 
 		i = i - 1;
 	} while (i > 0);
-};
+}
 //-----------------------------------------------------------------------------------
 /**
  * Functions for getting the range of a statement. Grouped in a static class for coherency
  */
 class range {
-	static getRange (start, end) {
+	static getRange(start, end) {
 		return {
 			start: start,
 			end: end
 		}
-	};
-	static FromStartEndOffsets = (startOff, endOff, value1) =>
-	{
+	}
+	static FromStartEndOffsets (startOff, endOff, value1) {
 		return {
 			start: startOff - 1,
 			end: endOff + (value1.length - 1)
 		}
-	};
-	static FromOffset = (offset, value) =>
-	{
+	}
+	static FromOffset (offset, value) {
 		return {
 			start: offset - 1,
 			end: (offset + (value.length - 1))
 		}
-	};
+	}
 	// Get the range of the statement from the offset of the first and last child of the node
-	static FromChilds = (node) =>
-	{
+	static FromChilds (node) {
 		let paths = [];
 		// traverse the node to collect first and last child offset
-		traverse2(node, (key1, val1, innerObj, stop) =>
-		{
+		traverse2(node, (key1, val1, innerObj, stop) => {
 			const current = val1 != null ? val1 : key1;
-			if ( key1 === "offset" ) {
-				paths.push( parentPath(innerObj.path) );
+			if (key1 === "offset") {
+				paths.push(parentPath(innerObj.path));
 			}
 			return current;
 		});
@@ -147,11 +142,10 @@ class range {
 		let last = objectPath.get(node, paths[paths.length - 1]);
 
 		return range.FromStartEndOffsets(start, last.offset, last.text);
-	};
-};
+	}
+}
 //-----------------------------------------------------------------------------------
-function collectStatementsFromAST(AST)
-{
+function collectStatementsFromAST(AST) {
 	//store the nodes
 	let statements = [];
 	//let calls = [];
@@ -170,12 +164,12 @@ function collectStatementsFromAST(AST)
 			// if ( key1 === "type" && (blockStatements.includes(val1)) ) statements.push(innerObj.path);
 			// I will not be using this for now, since vscode only cares about definitions, I can later reference-search that definition
 			// if ( key1 === "type" && (usageExpressions.includes(val1)) ) calls.push(innerObj.path);
-			if ( key1 === "id" ) statements.push(innerObj.path);
+			if (key1 === "id") statements.push(innerObj.path);
 		}
 		return current;
 	});
 	return statements;
-};
+}
 //-----------------------------------------------------------------------------------
 //TODO: Collect identifiers and calls to find references to functions, structs... decl, so on...
 // establish a declaration and usage points
@@ -184,12 +178,11 @@ function collectStatementsFromAST(AST)
  * @param {object} AST the AST
  * @param {string[]} paths Collection of object-paths
  */
-function collectSymbols (AST, paths)
-{
+function collectSymbols(AST, paths) {
 	let theSymbols = [];
 	paths.forEach(path => {
 		// each path represent a key in the node, I need to get the path of the node
-		let currentNode = objectPath.get(AST,parentPath(path))
+		let currentNode = objectPath.get(AST, parentPath(path))
 		// Location
 		// if loc.end is undefined, i will need to traverse the node anyways, so...
 		let loc = currentNode.loc || range.FromChilds(currentNode);
@@ -210,10 +203,10 @@ function collectSymbols (AST, paths)
 		//return result;
 	});
 	return theSymbols;
-};
+}
 //-----------------------------------------------------------------------------------
 module.exports = {
-    range,
-    collectStatementsFromAST,
-    collectSymbols,
+	range,
+	collectStatementsFromAST,
+	collectSymbols,
 }

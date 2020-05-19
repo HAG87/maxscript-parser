@@ -83,7 +83,7 @@ async function Main(source) {
 //-----------------------------------------------------------------------------------
 var input_file = 'examples/example-3.ms';
 const source = (fsi.readFileSync(input_file, 'utf8')).toString();
-/*
+// /*
 try {
 	let msxParser = new mxsParseSource(source);
 	let AST = msxParser.parsedAST;
@@ -99,7 +99,7 @@ try {
 
 	console.log(alt);
 }
-*/
+// */
 //-----------------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 #IT COULD DISCARD WHITESPACE AND LINEBREAKS ALTOGHETHER
 #AND THIS IS NOT DETERMINANT TO MARK STATEMENTS ENDS
 @{%
-	const mxLexer = require('./mooTokenize.js');
+	const mxLexer = require('../src/mooTokenize.js');
     // utilities
     const flatten = arr => arr !== null ? [].concat(...arr).filter(e => e != null ) : null;
     const merge = (a, b) => a !== null && b != null ? [].concat(a, ...b).filter(e => e != null ) : null;
