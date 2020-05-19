@@ -1,3 +1,7 @@
 # ignore node modules
 node_modules
 out
+/package-lock.json
+/*.txt
+/ast*.json
+/dump.json

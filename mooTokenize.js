@@ -106,17 +106,25 @@ const keywordsDB = {
 // Moo Lexer
 var mxLexer = moo.compile(
 {
-  // a bunch of different strings
-  string: [
-    { match: /"(?:\\["\\rn]|[^"\\])*?"/, value: x => x.slice(1, -1)},
-    { match: /@"[^"\\]*(?:\\.[^"\\]*)*"/, value: x => x.slice(2, -1)},
-    { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
+  // the comments
+  comment_SL:   { match: /--.*$/, lineBreaks:false, },
+  comment_BLK:  { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks:true,},
+  // strings
+  string:
+  [
+    {match: /@"(?:\\["\\rn]|[^"])*?"/, lineBreaks: true, value: x => x.slice(2, -1)},
+    {match: /"(?:\\["\\rn]|[^"])*?"/, lineBreaks: true, value: x => x.slice(1, -1)},
+    // { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
   ],
+  // whitespace -  also matches line continuations
+  ws: { match: /(?:[ \t]+|(?:[ \t]*?[\\][ \t\r\n]*)+?)/, lineBreaks:true},
   // path_name $mounstrosity*/_?
   path: [
     {match: /[$](?:[A-Za-z0-9_\*\?\.\\]*)/},
     {match: /[$](?:'[^'\r\n]+?')/},
   ],
+  // strings ~RESOURCE~
+  locale:    { match: /~[A-Za-z0-9_]+~/, value: x => x.slice(2, -1)},
   // parameter <param_name>:
   params: {
     match:  /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*[:]/,
@@ -127,9 +135,7 @@ var mxLexer = moo.compile(
   // this [3] should go down the chain, under identity??
   // property <object>.<property>
   property: {
-    match: /\.[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
-    value: x => x.slice(1)
-  },
+    match: /\.[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/, value: x => x.slice(1)},
   // ::global variable
   global_typed: { match:/::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/},
   // IDENTIFIERS
@@ -140,19 +146,8 @@ var mxLexer = moo.compile(
   },
   // a mounstrosity
   typed_iden: {
-    match: /'(?:\\['\\rn]|[^'\\\n])*?'/,
-    value: x => x.slice(1, -1)
+    match: /'(?:\\['\\rn]|[^'\\\n])*?'/, value: x => x.slice(1, -1)
   },
-  // the comments
-  comment_SL:   { match: /--.*$/, lineBreaks:false, },
-  comment_BLK:  { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks:true,},
-  // strings ~RESOURCE~
-  locale:    { match: /~[A-Za-z0-9_]+~/, value: x => x.slice(2, -1)},
-
-  // WHITESPACE -- Should go higher on the chain??
-  // also matches line continuations
-  ws: { match: /(?:[ \t]+|(?:[ \t]*?[\\][ \t\r\n]*)+?)/, lineBreaks:true},
-
   // DISABLED TOKENS
   //reference: { match: /\&/},
   // cont:     { match: /\\/},
@@ -197,32 +192,32 @@ var mxLexer = moo.compile(
     { match: /#[A-Za-z0-9_]+\b/   },
     { match: /#'[A-Za-z0-9_]+'/ },
   ],
-  // Operators. each on his own rule, just for readability
-  comparison: [
-    { match: '>=' },
-    { match: '<=' },
-    { match: '==' },
-    { match: '!=' },
-    { match: '>'  },
-    { match: '<'  },
-  ],
-  assign: [
-    { match: '='  },
-    { match: '+=' },
-    { match: '-=' },
-    { match: '*=' },
-    { match: '/=' }
-  ],
-  math: [
-    { match: '+' },
-    { match: '-' },
-    { match: '*' },
-    { match: '/' },
-    { match: '^' },
-  ],
-  // comparison: { match:compareOp},
-  // math:       { match:mathOp},
-
+  // Operators.
+  comparison: ['==', '!=', '>', '<', '>=', '<='],
+  assign: ['=', '+=', '-=', '*=', '/='],
+  math: ['+', '-', '*', '/', '^'],
+  // comparison: [
+  //   { match: '>=' },
+  //   { match: '<=' },
+  //   { match: '==' },
+  //   { match: '!=' },
+  //   { match: '>'  },
+  //   { match: '<'  },
+  // ],
+  // assign: [
+  //   { match: '='  },
+  //   { match: '+=' },
+  //   { match: '-=' },
+  //   { match: '*=' },
+  //   { match: '/=' }
+  // ],
+  // math: [
+  //   { match: '+' },
+  //   { match: '-' },
+  //   { match: '*' },
+  //   { match: '/' },
+  //   { match: '^' },
+  // ],
   // DELIMITERS
   delimiter:  { match:/\./},
   sep:  { match: /\,/},

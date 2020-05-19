@@ -118,14 +118,14 @@ class range {
 	static FromStartEndOffsets = (startOff, endOff, value1) =>
 	{
 		return {
-			start: startOff,
+			start: startOff - 1,
 			end: endOff + (value1.length - 1)
 		}
 	};
 	static FromOffset = (offset, value) =>
 	{
 		return {
-			start: offset,
+			start: offset - 1,
 			end: (offset + (value.length - 1))
 		}
 	};
@@ -143,7 +143,7 @@ class range {
 			return current;
 		});
 		// Childs
-		let start = objectPath.get(node, paths[0]).offset;
+		let start = objectPath.get(node, paths[0]).offset - 1;
 		let last = objectPath.get(node, paths[paths.length - 1]);
 
 		return range.FromStartEndOffsets(start, last.offset, last.text);
@@ -177,6 +177,8 @@ function collectStatementsFromAST(AST)
 	return statements;
 };
 //-----------------------------------------------------------------------------------
+//TODO: Collect identifiers and calls to find references to functions, structs... decl, so on...
+// establish a declaration and usage points
 /**
  * For each element of a object-path collection, return a valid {name|parent|kind|location} node
  * @param {object} AST the AST

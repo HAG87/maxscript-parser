@@ -1,3 +1,4 @@
+"use strict";
 const crypto = require('crypto');
 //-----------------------------------------------------------------------------------
 const nearley = require('nearley');
@@ -76,6 +77,8 @@ class mxsParseSource {
             // offending token is err.token
             // Reject. This returns the offending token and a list of possible solutions
             // offset is useless bc indicates the token index, not the char in source. token.offset is what I want
+            //TODO: Implement some error skip. I could save the parser change the offending token for one of the spected,
+            // and try muy luck parsing the rest. OR parse all again changing that token in the input stream.
             err.alternatives = this._PossibleTokens(err.token, this.parserInstance);
             throw err;
         }
