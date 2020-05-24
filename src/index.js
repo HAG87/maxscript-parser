@@ -2,8 +2,8 @@ const fs = require('fs');
 const fsi = require('mz/fs');
 //-----------------------------------------------------------------------------------
 const mxsParseSource = require('./mxsParser.js');
-const { collectStatementsFromAST, collectSymbols } = require('./mxsProvideSymbols.js');
-const {basicDiagnostics, correctionList} = require('./mxsProvideDiagnostics.js');
+const { collectStatementsFromAST, collectSymbols, collectErrors } = require('./mxsProvideSymbols.js');
+const {parsingErrorMessage} = require('./mxsProvideDiagnostics.js');
 //-----------------------------------------------------------------------------------
 const JsonFileWrite = (file, source) =>
 {
@@ -81,23 +81,27 @@ async function Main(source) {
 //-----------------------------------------------------------------------------------
 // PROVIDE SYMBOLS
 //-----------------------------------------------------------------------------------
-var input_file = 'examples/example-3.ms';
-const source = (fsi.readFileSync(input_file, 'utf8')).toString();
+var input_file = 'examples/example-4.ms';
+// var input_file = 'examples/HAG_viewPortCompositionGuides.mcr';
+var input_file2 = 'examples/HAG_vertexScrambler.mcr';
+const source = (input_file) => (fsi.readFileSync(input_file, 'utf8')).toString();
 // /*
 try {
-	let msxParser = new mxsParseSource(source);
-	let AST = msxParser.parsedAST;
+	let msxParser = new mxsParseSource('');
+	msxParser.source = source(input_file);
+	// msxParser.parsedAST;
+	// msxParser.source = source(input_file2);
+	//let AST = msxParser.parsedAST;
 	//Main(source).then( result => {AST = result; });
-	let ASTstatements = collectStatementsFromAST(AST);
-	let vscodeSymbols = collectSymbols(AST, ASTstatements);
-
-	console.log(vscodeSymbols);
+	let ASTstatements = collectStatementsFromAST( msxParser.parsedAST);
+	let vscodeSymbols = collectSymbols( msxParser.parsedAST, ASTstatements);
+	let failedTopkens = collectErrors(msxParser.parsedAST);
+	console.log(failedTopkens);
+	// console.log(vscodeSymbols);
 } catch (e) {
 	// ERROR PARSING INPUT, PROVIDE DIAGNOSTICS
-	basicDiagnostics(e.token);
-	let alt = correctionList(e.alternatives);
-
-	console.log(alt);
+	let msg = parsingErrorMessage(e);
+	console.log(e.token);
 }
 // */
 //-----------------------------------------------------------------------------------

@@ -11,7 +11,7 @@ class mxsParseSource {
 		this.parserInstance = new nearley.Parser(
 			nearley.Grammar.fromCompiled(grammar),
 			{
-				keepHistory: true,
+				//keepHistory: true,
 				lexer: mxLexer
 			});
 	}
@@ -19,8 +19,10 @@ class mxsParseSource {
 	constructor(source) {
 		this._declareParser();
 		this.__source = source;
-		this.parsedAST = this.ParseSource();
-		this.SourceHash = mxsParseSource.HashSource(source);
+		this.__parsedAST = [];
+		this.__SourceHash();
+		// this.SourceHash = mxsParseSource.HashSource(source);
+		this.ParseSource();
 	}
 
 	get source() {
@@ -29,14 +31,35 @@ class mxsParseSource {
 
 	set source(newSource) {
 		this.__source = newSource;
-		this.parsedAST = this.ParseSource();
+		// this.SourceHash = mxsParseSource.HashSource(newSource);
+		this.reset();
+		this.__SourceHash();
+		this.ParseSource();
+		// this.__parsedAST = this.ParseSource();
+	}
+
+	get parsedAST() {
+		return this.__parsedAST;
+	}
+	//-----------------------------------------------------------------------------------
+	reset () {
+		this._declareParser()
 	}
 	/**
 	 * Tokenize mxs string
 	 * @param {moo.lexer} lexer
 	 * @param {string} source
 	 */
-	TokenizeSource() {
+	TokenizeSource(filter) {
+
+		if (typeof filter === Array) {
+			mxLexer.next = (next => () => {
+				let tok;
+				// IGNORING COMMENTS....
+				while ((tok = next.call(mxLexer)) && (filter.includes)) /* empty statement */;
+				return tok;
+			})(mxLexer.next);
+		}
 		//if (!source) {return null;}
 		// feed the tokenizer
 		mxLexer.reset(this.__source);
@@ -58,8 +81,20 @@ class mxsParseSource {
 	 * @param {Integer} tree Index of the parsed tree I want in return, results are multiple when the parser finds and ambiguity
 	 */
 	ParseSource(tree = 0) {
-
+		/*
+		let parserState = null;
 		try {
+		parserState = parser.save();
+		parser.feed(...);
+		} catch (e) {
+		parser.restore(parserState);
+		}
+		*/
+		// let parserState = null;
+		try {
+			// this.parserInstance.finish();
+			// save parser state
+			// parserState = this.parserInstance.save();
 			// feed the parser
 			this.parserInstance.feed(this.__source);
 
@@ -70,14 +105,40 @@ class mxsParseSource {
 			//savedParse = parser.save()
 			//*/
 			// Resolve. the ATS
-			return (this.parserInstance.results[tree]);
-
+			// console.log('results');
+			// return (this.parserInstance.results[tree]);
+			this.__parsedAST = (this.parserInstance.results[tree]);
+			return;
 		} catch (err) {
 			// offending token is err.token
 			// Reject. This returns the offending token and a list of possible solutions
 			// offset is useless bc indicates the token index, not the char in source. token.offset is what I want
 			//TODO: Implement some error skip. I could save the parser change the offending token for one of the spected,
-			// and try muy luck parsing the rest. OR parse all again changing that token in the input stream.
+			// and try my luck parsing the rest. OR parse all again changing that token in the input stream.
+			// let heyhey = this.parserInstance.lexer.next()
+
+			err.alternatives = this._PossibleTokens();
+			// console.log(heyhey);
+			// restore the parser... and now?
+			// this.parserInstance.restore(parserState);
+
+			throw err;
+		}
+	}
+
+	feed(str, tree = 0) {
+		try {
+			this.parserInstance.feed(str);
+			this.__parsedAST = (this.parserInstance.results[tree]);
+			return;
+		} catch (err) {
+						// offending token is err.token
+			// Reject. This returns the offending token and a list of possible solutions
+			// offset is useless bc indicates the token index, not the char in source. token.offset is what I want
+			//TODO: Implement some error skip. I could save the parser change the offending token for one of the spected,
+			// and try my luck parsing the rest. OR parse all again changing that token in the input stream.
+			// let heyhey = this.parserInstance.lexer.next()
+
 			err.alternatives = this._PossibleTokens();
 			throw err;
 		}
@@ -92,7 +153,6 @@ class mxsParseSource {
 				var nextSymbol = state.rule.symbols[state.dot];
 				return nextSymbol && typeof nextSymbol !== "string";
 			});
-
 		// Display a "state stack" for each expectant state
 		// - which shows you how this state came to be, step by step.
 		// If there is more than one derivation, we only display the first one.
@@ -106,13 +166,12 @@ class mxsParseSource {
 			var nextSymbol = state.rule.symbols[state.dot];
 
 			possibleTokens.push(nextSymbol);
-			//var symbolDisplay = this.getSymbolDisplay(nextSymbol);
-			//lines.push('A ' + symbolDisplay + ' based on:');
-			//this.displayStateStack(stateStack, lines);
 		}, this);
-		//lines.push("");
-		//return lines.join("\n");
 		return possibleTokens;
+	}
+
+	__SourceHash () {
+		mxsParseSource.HashSource(this.__source);
 	}
 
 	static HashSource(source) {

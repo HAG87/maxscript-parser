@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build": "node",
-    "gen-parser": "nearleyc ./grammar.ne -o ./src/grammar.js"
+    "gen-parser": "nearleyc ./grammars/grammar.ne -o ./src/grammar.js"
   },
   "repository": {
     "type": "git",
