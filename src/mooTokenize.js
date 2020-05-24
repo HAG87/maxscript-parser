@@ -1,12 +1,12 @@
 // moo tokenizer
 //import moo from 'moo';
-const moo = require('moo')
+const moo = require('moo');
 //-----------------------------------------------------------------------------------
 // CASE INSENSITIVE FOR KEYWORKDS
 const caseInsensitiveKeywords = map => {
-	const transform = moo.keywords(map)
-	return text => transform(text.toLowerCase())
-}
+	const transform = moo.keywords(map);
+	return text => transform(text.toLowerCase());
+};
 //-----------------------------------------------------------------------------------
 // KEYWORDS
 const UIcontrols = [
@@ -19,7 +19,7 @@ const UIcontrols = [
 	'pickbutton', 'popupmenu', 'progressbar',
 	'radiobuttons', 'slider', 'spinner',
 	'subrollout', 'timer', 'dotnetcontrol'
-]
+];
 const kwContext = [
 	"animate",
 	"redraw",
@@ -28,12 +28,11 @@ const kwContext = [
 	"mxscallstackcaptureenabled",
 	"dontrepeatmessages",
 	"macrorecorderemitterenabled"
-]
-var kwObjectSet = [
+];
+const kwObjectSet = [
 	'objects', 'geometry', 'lights', 'cameras', 'helpers',
 	'shapes', 'systems', 'spacewarps', 'selection'
-]
-
+];
 const keywordsDB = {
 	'kw_about': 'about',
 	'kw_as': 'as',
@@ -95,10 +94,9 @@ const keywordsDB = {
 	// 'kw_throw':       'throw',
 	//'kw_continue':    'continue',
 	//'kw_redraw':      'redraw',
-}
+};
 //-----------------------------------------------------------------------------------
 // In order to be able to use rules like this, first I need to change All the src src to Lowers..and exclude strings...?
-// OR use the "helper"
 // {type:'declaration', match: /\blocal\b/},
 // {type:'declaration', match: /\bglobal\b/},
 // {type:'declaration', match: /\bpersistent\b(?:[ \t]+global\b)/},
@@ -226,20 +224,15 @@ var mxLexer = moo.compile(
 		newline: { match: /(?:\r|\r\n|\n)+/, lineBreaks: true },
 		statement: { match: /;/ },
 		// [\$?`] COMPLETE WITH UNWANTED CHARS HERE THAT CAN BREAK THE TOKENIZER
-		error: { match: /[¿¡!`]/, error: true },
+		error: [
+			{ match: /[¿¡!`´]/, /* error: true  */},
+			{ match: /[/?\\]{2,}/},
+			// { match: /[?]{2,}/},
+		],
+		// This contains the rest of the stack in case of error.
+		fatalError : moo.error
 		// ---- MOO RULES END-----
 	});
 //-----------------------------------------------------------------------------------
-//ignore TOKENS in output tokenization, no idea how this works...
-/*
-mxLexer.next = (next => () => {
-  let tok;
-  // IGNORING COMMENTS....
-  while ((tok = next.call(mxLexer)) && (tok.type === "comment_BLK" || tok.type === "comment_SL") ) { }
-  return tok;
-})(mxLexer.next);
-//*/
-//-----------------------------------------------------------------------------------
-// EXPORT THE MODULE
 //export {mxLexer};
 module.exports = mxLexer;

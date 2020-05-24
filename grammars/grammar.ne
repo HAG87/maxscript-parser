@@ -2,7 +2,7 @@
 #IT COULD DISCARD WHITESPACE AND LINEBREAKS ALTOGHETHER
 #AND THIS IS NOT DETERMINANT TO MARK STATEMENTS ENDS
 @{%
-	const mxLexer = require('../src/mooTokenize.js');
+	const mxLexer = require('./mooTokenize.js');
     // utilities
     const flatten = arr => arr !== null ? [].concat(...arr).filter(e => e != null ) : null;
     const merge = (a, b) => a !== null && b != null ? [].concat(a, ...b).filter(e => e != null ) : null;
@@ -103,6 +103,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | macroscript_def {% id %}
         | plugin_def      {% id %}
         | change_handler  {% id %}
+        # | %error {% id %}
     #---------------------------------------------------------------
     simple_expr
         -> operand     {% id %}
@@ -110,6 +111,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | compare_expr {% id %}
         | logical_expr {% id %}
         | fn_call      {% id %}
+        # | %error {% id %}
         #| expr_seq #RECURSION!
 #===============================================================
 # DEFINITIONS
@@ -411,15 +413,21 @@ Main -> _ _EXPR _ {% d => d[1] %}
 # FUNCTION DEFINITION --- OK
 # TODO: FINISH LOCATION
     function_def
-        -> (%kw_mapped __):?  (%kw_function __ ) var_name (_ var_name):*  (_ arg):* (_ "=" _) expr
+        -> function_decl __ var_name (_ var_name):*  (_ arg):* (_ "=" _) expr
             {% d => ({
-                type:   'Function',
-                mapped: (d[0] === null),
+                ...d[0],
                 id:     d[2],
                 args:   flatten(d[3]),
                 params: flatten(d[4]),
                 body:   d[6],
             })%}
+
+    function_decl -> (%kw_mapped __):?  %kw_function
+        {% d => ({
+            type:   'Function',
+            mapped: (d[0] != null),
+            loc: (getLoc(d[0] != null ? d[0][0] : d[1]))
+        })%}
 
     arg
         -> parameter  {% id %}
@@ -573,29 +581,19 @@ Main -> _ _EXPR _ {% d => d[1] %}
             {% d => ({
                 type: 'VariableDeclaration',
                 ...d[0],
-                decl: ( d[3] != null ? [].concat(d[2], d[3].map( x => x[1])) : d[2] ),
-                //loc:d[0].loc
-            })%}
-        | kw_decl_pers _ decl ( (_S "," _) decl ):*
-            {% d => ({
-                type: 'VariableDeclaration',
-                scope: 'persistent global',
-                decl:  merge(d[2], d[3]),
-                //loc:d[0].loc
+                decls:  merge(d[2], d[3]),
             })%}
 
     kw_decl
-        -> %kw_local {% id %} #{% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
-        | %kw_global {% id %} #{% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
-
-    kw_decl_pers
-        -> %kw_persistent __ %kw_global {% id %} #{% d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})%}
+        -> %kw_local {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
+        | %kw_global {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
+        | %kw_persistent __ %kw_global {% d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})%}
 
     # Direct assignment on declaration
     # TODO: LOCATION
     decl
-        -> var_name                {% id %}
-        | var_name (_S "=" _) expr {% d => ({...d[0], ...{value: d[2]}})%}
+        -> var_name                {% d => ({type:'Declaration', id:d[0]}) %}
+        | var_name (_S "=" _) expr {% d => ({type:'Declaration', id:d[0], value: d[2]}) %} #{% d => ({...d[0], ...{value: d[2]}})%}
 #---------------------------------------------------------------
 #ASSIGNEMENT --- OK
     assignment
@@ -806,6 +804,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         #last listener result
         | "?" {% d => ({type: 'Keyword', value: d[0]}) %} #{% d => ({type: 'Keyword', value: d[0].value, loc: getLoc(d[0])}) %}
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
+        | %error {% id %}
 
 # RESERVED KEYWORDS
     kw_reserved

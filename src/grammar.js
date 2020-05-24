@@ -1,4 +1,4 @@
-// Generated automatically by nearley, version 2.19.0
+// Generated automatically by nearley, version 2.19.2
 // http://github.com/Hardmath123/nearley
 (function () {
 function id(x) { return x[0]; }
@@ -351,24 +351,27 @@ var grammar = {
     {"name": "change_handler$ebnf$4", "symbols": ["change_handler$ebnf$4$subexpression$1"], "postprocess": id},
     {"name": "change_handler$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "change_handler", "symbols": [(mxLexer.has("kw_when") ? {type: "kw_when"} : kw_when), "__", "change_handler$subexpression$2", "__", "var_name", "__", "change_handler$ebnf$3", "change_handler$ebnf$4", (mxLexer.has("kw_do") ? {type: "kw_do"} : kw_do), "_", "expr"]},
-    {"name": "function_def$ebnf$1$subexpression$1", "symbols": [(mxLexer.has("kw_mapped") ? {type: "kw_mapped"} : kw_mapped), "__"]},
-    {"name": "function_def$ebnf$1", "symbols": ["function_def$ebnf$1$subexpression$1"], "postprocess": id},
-    {"name": "function_def$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "function_def$subexpression$1", "symbols": [(mxLexer.has("kw_function") ? {type: "kw_function"} : kw_function), "__"]},
+    {"name": "function_def$ebnf$1", "symbols": []},
+    {"name": "function_def$ebnf$1$subexpression$1", "symbols": ["_", "var_name"]},
+    {"name": "function_def$ebnf$1", "symbols": ["function_def$ebnf$1", "function_def$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "function_def$ebnf$2", "symbols": []},
-    {"name": "function_def$ebnf$2$subexpression$1", "symbols": ["_", "var_name"]},
+    {"name": "function_def$ebnf$2$subexpression$1", "symbols": ["_", "arg"]},
     {"name": "function_def$ebnf$2", "symbols": ["function_def$ebnf$2", "function_def$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "function_def$ebnf$3", "symbols": []},
-    {"name": "function_def$ebnf$3$subexpression$1", "symbols": ["_", "arg"]},
-    {"name": "function_def$ebnf$3", "symbols": ["function_def$ebnf$3", "function_def$ebnf$3$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "function_def$subexpression$2", "symbols": ["_", {"literal":"="}, "_"]},
-    {"name": "function_def", "symbols": ["function_def$ebnf$1", "function_def$subexpression$1", "var_name", "function_def$ebnf$2", "function_def$ebnf$3", "function_def$subexpression$2", "expr"], "postprocess":  d => ({
-            type:   'Function',
-            mapped: (d[0] === null),
+    {"name": "function_def$subexpression$1", "symbols": ["_", {"literal":"="}, "_"]},
+    {"name": "function_def", "symbols": ["function_decl", "__", "var_name", "function_def$ebnf$1", "function_def$ebnf$2", "function_def$subexpression$1", "expr"], "postprocess":  d => ({
+            ...d[0],
             id:     d[2],
             args:   flatten(d[3]),
             params: flatten(d[4]),
             body:   d[6],
+        })},
+    {"name": "function_decl$ebnf$1$subexpression$1", "symbols": [(mxLexer.has("kw_mapped") ? {type: "kw_mapped"} : kw_mapped), "__"]},
+    {"name": "function_decl$ebnf$1", "symbols": ["function_decl$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "function_decl$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "function_decl", "symbols": ["function_decl$ebnf$1", (mxLexer.has("kw_function") ? {type: "kw_function"} : kw_function)], "postprocess":  d => ({
+            type:   'Function',
+            mapped: (d[0] != null),
+            loc: (getLoc(d[0] != null ? d[0][0] : d[1]))
         })},
     {"name": "arg", "symbols": ["parameter"], "postprocess": id},
     {"name": "arg", "symbols": ["param_name"], "postprocess": id},
@@ -534,25 +537,14 @@ var grammar = {
     {"name": "variable_decl", "symbols": ["kw_decl", "_", "decl", "variable_decl$ebnf$1"], "postprocess":  d => ({
             type: 'VariableDeclaration',
             ...d[0],
-            decl: ( d[3] != null ? [].concat(d[2], d[3].map( x => x[1])) : d[2] ),
-            //loc:d[0].loc
+            decls:  merge(d[2], d[3]),
         })},
-    {"name": "variable_decl$ebnf$2", "symbols": []},
-    {"name": "variable_decl$ebnf$2$subexpression$1$subexpression$1", "symbols": ["_S", {"literal":","}, "_"]},
-    {"name": "variable_decl$ebnf$2$subexpression$1", "symbols": ["variable_decl$ebnf$2$subexpression$1$subexpression$1", "decl"]},
-    {"name": "variable_decl$ebnf$2", "symbols": ["variable_decl$ebnf$2", "variable_decl$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "variable_decl", "symbols": ["kw_decl_pers", "_", "decl", "variable_decl$ebnf$2"], "postprocess":  d => ({
-            type: 'VariableDeclaration',
-            scope: 'persistent global',
-            decl:  merge(d[2], d[3]),
-            //loc:d[0].loc
-        })},
-    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_local") ? {type: "kw_local"} : kw_local)], "postprocess": id},
-    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": id},
-    {"name": "kw_decl_pers", "symbols": [(mxLexer.has("kw_persistent") ? {type: "kw_persistent"} : kw_persistent), "__", (mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": id},
-    {"name": "decl", "symbols": ["var_name"], "postprocess": id},
+    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_local") ? {type: "kw_local"} : kw_local)], "postprocess": d => ({scope: d[0].value, loc:getLoc(d[0])})},
+    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": d => ({scope: d[0].value, loc:getLoc(d[0])})},
+    {"name": "kw_decl", "symbols": [(mxLexer.has("kw_persistent") ? {type: "kw_persistent"} : kw_persistent), "__", (mxLexer.has("kw_global") ? {type: "kw_global"} : kw_global)], "postprocess": d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})},
+    {"name": "decl", "symbols": ["var_name"], "postprocess": d => ({type:'Declaration', id:d[0]})},
     {"name": "decl$subexpression$1", "symbols": ["_S", {"literal":"="}, "_"]},
-    {"name": "decl", "symbols": ["var_name", "decl$subexpression$1", "expr"], "postprocess": d => ({...d[0], ...{value: d[2]}})},
+    {"name": "decl", "symbols": ["var_name", "decl$subexpression$1", "expr"], "postprocess": d => ({type:'Declaration', id:d[0], value: d[2]})},
     {"name": "assignment$subexpression$1", "symbols": ["_S", "assignSym", "_"]},
     {"name": "assignment", "symbols": ["destination", "assignment$subexpression$1", "expr"], "postprocess":  d => ({
             type:     'AssignmentExpression',
@@ -682,6 +674,7 @@ var grammar = {
     {"name": "factor", "symbols": [{"literal":"-"}, "expr"], "postprocess": d => ({type: 'UnaryExpression', operand: d[1], })},
     {"name": "factor", "symbols": [{"literal":"?"}], "postprocess": d => ({type: 'Keyword', value: d[0]})},
     {"name": "factor", "symbols": ["expr_seq"], "postprocess": id},
+    {"name": "factor", "symbols": [(mxLexer.has("error") ? {type: "error"} : error)], "postprocess": id},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_uicontrols") ? {type: "kw_uicontrols"} : kw_uicontrols)]},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_objectset") ? {type: "kw_objectset"} : kw_objectset)]},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_time") ? {type: "kw_time"} : kw_time)]},
