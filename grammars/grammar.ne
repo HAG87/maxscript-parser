@@ -987,6 +987,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     voidparens -> "()"      {% d => '( )' %}
 #===============================================================
 # WHITESPACE AND NEW LINES
+# comments are skipped in the parse tree!
 #===============================================================
     EOL -> _eol:* ( %newline | %statement ) _S {% d => null %}
 
