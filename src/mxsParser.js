@@ -8,18 +8,14 @@ const mxLexer = require('./mooTokenize.js');
 class mxsParseSource {
 	constructor(source) {
 		this._declareParser();
-		this.__source = source;
+		this.__source = source || '';
 		this.hash = mxsParseSource.HashSource(this.__source);
 		this.ParseSource();
 	}
 	/** Declare a new parser isntance */
 	_declareParser() {
 		this.parserInstance = new nearley.Parser(
-			nearley.Grammar.fromCompiled(grammar),
-			{
-				keepHistory: true,
-				// lexer: mxLexer
-			});
+			nearley.Grammar.fromCompiled(grammar));
 		// this.parserInstance.feed('');
 		this.__parserState = this.parserInstance.save();
 	}
@@ -28,17 +24,17 @@ class mxsParseSource {
 	/**	Set new source, and re-parse */
 	set source(newSource) {
 		this.__source = newSource;
-		// this._declareParser();
-		// this.__sourceStream = newSource;
 		this.reset();
 		this.hash = mxsParseSource.HashSource(this.__source);
 		this.ParseSource();
-		// this.__parsedAST = this.ParseSource();
 	}
 	/** Get the parsed AST, if any */
-	get parsedAST() { return this.parserInstance.results[0]; }
+	get parsedAST() {
+		return this.__parsedAST || this.parserInstance.results[0];
+		// return this.parserInstance.results[0];
+	}
 	/** Reset the parser * */
-	reset () { this._declareParser(); }
+	reset() { this._declareParser(); }
 	/**
 	 * Tokenize mxs string
 	 * @param {moo.lexer} lexer
@@ -76,109 +72,171 @@ class mxsParseSource {
 	 */
 	ParseSource() {
 		// Set a clean state
-		// this.parserInstance.feed('');
-		// this.__parserState = this.parserInstance.save();
+		this.__parserState = this.parserInstance.save();
 
 		try {
 			this.parserInstance.feed(this.__source);
+			this.__parsedAST = this.parserInstance.results[0];
 		} catch (err) {
-			console.log('-->error REPARSE');
-
-			// this.next = this.__source;
-
-			this.__setStore();
 			this.parserInstance.restore(this.__parserState);
 			this.__parseWhitErrors();
-			return;
 			// throw err;
 		}
-		this.__parserState = this.parserInstance.save();
-		// return;
+		return;
+		// this.__parserState = this.parserInstance.save();
 	}
 	/** feed Stream to active parser */
 	feed(str) {
-		this.__parserState = this.parserInstance.save();
 		try {
 			this.parserInstance.feed(str);
 		} catch (err) {
-			err.alternatives = this._PossibleTokens();
+			err.details = [{token: err.token, expected: this._PossibleTokens()}];
 			this.parserInstance.restore(this.__parserState);
-
 			throw err;
 		}
+		this.__parserState = this.parserInstance.save();
+		this.__parsedAST = this.parserInstance.results[0];
 	}
+	/**
+	 * Parser with error recovery
+	 */
+	__parseWhitErrors() {
+		// console.log( 'ERRORS!');
+		//-------------------------------------------------
+		// NEW METHOD TOKENIZING THE INPUT, COULD BE A WAY TO FEED TOKENS TO THE PARSER?
+		let src = this.TokenizeSource();
+		let state = this.parserInstance.save();
 
-	__setStore() {
-		this.next = this.__source;
-		this.remain = '';
+		let badTokens = [];
+		let errorReport = [];
+
+		let next = 0;
+		let remain = src.length - 1;
+		let parsings = () => {
+		// for (var tok = 0; tok < src.length; tok++) {
+			// console.log(src[tok]);
+			try {
+				// this.parserInstance.feed(src[tok].text);
+				this.parserInstance.feed(src[next].text);
+				// console.log(src[next].text);
+			} catch (err) {
+				// catch non parsing related errors.
+				if (!err.token) {throw err;}
+				// console.log(src[next]);
+				badTokens.push(src[next]);
+				errorReport.push({token:src[next], expected:this._PossibleTokens()});
+				this.parserInstance.restore(state);
+				// continue;
+			}
+			state = this.parserInstance.save();
+			// console.log(next);
+			if (next < remain) {
+				next +=1;
+				parsings();
+			}
+		};
+		parsings();
+		//-------------------------------------------------
+		/* DEPRECATED METHOD
+		// recursion storage
+		let proccess = this.__source;
+		let remain = this.__source;
+		let skipToken = 0;
+		let srcOffset = 0;
+		// reset the parser
+		// this.parserInstance.restore(this.__parserState);
+		// save the parser state, locally
+		let state = this.parserInstance.save();
+		// error
+		let badTokens = [];
+		let errorReport = [];
+		let lastError;
+		// recursion
+		let test = () => {
+			// do {
+			try {
+
+				this.parserInstance.feed(proccess);
+				// console.log(proccess);
+				// reduce remain
+				if (skipToken !== 0) {
+					remain = remain.slice(skipToken);
+				} else {
+					remain = remain.replace(proccess, '');
+				}
+				console.log(remain);
+
+				// push next chunk
+				proccess = remain;
+				// save the parser
+				state = this.parserInstance.save();
+			} catch (err) {
+				console.log('ERROR: ' + err.token.text);
+				// return last error
+				lastError = err;
+				// token Info
+				var errToken = err.token;
+				var currPos  = errToken.offset;
+				var nextPos  = errToken.offset + (errToken.text.length || 0);
+				srcOffset    = this.__source.length - proccess.length + currPos;
+				// collect the token
+				let cloneToken = {...errToken};
+				cloneToken.offset = srcOffset;
+				delete cloneToken.line;
+				delete cloneToken.col;
+				badTokens.push(cloneToken);
+				errorReport.push({token:cloneToken, expected:this._PossibleTokens()});
+				// reached the last token, and is bad
+				if (!this.parserInstance.lexer.next()) {
+					console.log('--------EOF--------');
+					// return last error
+					// lastError = err;
+					// restore the parser
+					this.parserInstance.restore(state);
+					// break;
+					return;
+				}
+				// skip the bad token, reduce the remain // split proccess, push to remain
+				skipToken = nextPos;
+				// parse again the good lines
+				proccess = proccess.slice(0, currPos);
+				// restore the parser
+				this.parserInstance.restore(state);
+			}
+			if (remain.length > 0) {test();}
+		// } while (remain.length > 0);
+		};
+		//--------------------------------
+		test();
+		*/
+		// console.log('PASSED!!!');
+		// return values
+		let newErr;
+		if (this.parserInstance.results[0]) {
+			// console.log(this.parserInstance.results[0]);
+			this.__parsedAST = this.parserInstance.results[0];
+			// parsing passed
+			newErr = new Error('Parser finished with errors.');
+			newErr.name = 'ERR_RECOVER';
+			newErr.tokens = badTokens;
+			newErr.details = errorReport;
+			// newErr.parsedAST = this.parserInstance.results[0];
+		} else {
+			// console.log('unrecoverable error');
+			newErr = new Error('Parser failed. unrecoverable errors.');
+			newErr.name = 'ERR_FATAL';
+			newErr.tokens = badTokens;
+			newErr.details = errorReport;
+			// newErr = lastError;
+			// newErr.name = 'ERR_FATAL';
+			// newErr.expected = this._PossibleTokens();
+			// newErr.tokens = badTokens;
+			// newErr.details = errorReport;
+		}
 		this.badTokens = [];
 		this.errorReport = [];
-		this.Offset = 0;
-	}
-	__parseWhitErrors() {
-		// console.log('--------------------------------re-feed--------------------------------');
-		try {
-			this.parserInstance.feed(this.next);
-			// this.__parserState = this.parserInstance.save();
-			this.next = this.remain;
-		} catch (err) {
-			// console.log('-->error TOKEN: ' + err.token.text);
-			let errToken =  err.token;
-			let currPos = errToken.offset;
-			let nextPos = errToken.offset + (errToken.text.length || 0);
-
-			// NEXt token
-			// let nextToken =  this.parserInstance.lexer.next();
-			// let nextPos = nextToken.offset;
-			// let nextPos = nextToken ? nextToken.offset : errToken.offset + (errToken.text.length || 0);
-
-			// token Offset from the text start
-			this.Offset = this.__source.length - this.next.length + currPos;
-
-			// Collect bad tokens
-			err.token.offset = this.Offset;
-			delete err.token.line;
-			delete err.token.col;
-			this.badTokens.push(err.token);
-			this.errorReport.push({token:err.token, expected:this._PossibleTokens()});
-
-			// Restore the parser to previous state
-			this.parserInstance.restore(this.__parserState);
-			// if (!nextToken) {
-			if (!this.parserInstance.lexer.next()) {
-				// console.log('EOF');
-				// restore last valid parser state
-				this.parserInstance.restore(this.__parserState);
-
-				console.log(this.parserInstance.results[0]);
-
-				if (this.parserInstance.results[0]) {
-					let newErr = new Error('Parser finished with errors');
-						newErr.name = 'ERR_RECOVER';
-						newErr.badTokens = this.badTokens;
-						newErr.details = this.errorReport;
-					throw newErr;
-				} else {
-					console.log('unrecoverable error');
-					err.name = 'ERR_FATAL';
-					throw err
-				}
-			}
-			// console.log('Pos till start:' + this.Offset);
-			// console.log('current length: '+this.next.length +' || '+this.__source.length);
-			// console.log('current off: '+currPos);
-			// console.log(this.next[currPos] +' || '+ this.next[nextPos]);
-			// REMAINING text
-			this.remain = this.next.slice(nextPos);
-			// Re-parse the valid lines
-			this.next = this.next.slice(0,currPos);
-			// Restore the parser to previous state
-			// this.parserInstance.restore(this.__parserState);
-		}
-		// if (this.counter <= 1) {console.log('force exit'); return;}
-		// this.next = this.remain;
-		this.__parserState = this.parserInstance.save();
-		this.__parseWhitErrors();
+		// exit with error
+		throw newErr;
 	}
 	/**
 	 * List of possible tokens to overcome the error

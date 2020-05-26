@@ -186,7 +186,7 @@ function collectSymbols(AST, paths) {
 			theSymbol.location = currentNode.loc || range.fromChilds(currentNode);
 		} catch (e) {
 			// console.log(e);
-		};
+		}
 		// Kind
 		theSymbol.kind = SymbolKind[currentNode.type];
 		// parents... ? no need, they will be in the collection anyways
