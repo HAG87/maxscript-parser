@@ -8,6 +8,7 @@
     "ast-monkey-traverse": "^1.12.9",
     "ast-monkey-traverse-with-lookahead": "^1.1.2",
     "ast-monkey-util": "^1.1.5",
+    "chalk": "^4.0.0",
     "moo": "^0.5.1",
     "nearley": "^2.19.2",
     "object-path": "^0.11.4"

@@ -28,9 +28,9 @@ class mxsParseSource {
 		this.hash = mxsParseSource.HashSource(this.__source);
 		this.ParseSource();
 	}
-	/** Get the parsed AST, if any */
-	get parsedAST() {
-		return this.__parsedAST || this.parserInstance.results[0];
+	/** Get the parsed CST, if any */
+	get parsedCST() {
+		return this.__parsedCST || this.parserInstance.results[0];
 		// return this.parserInstance.results[0];
 	}
 	/** Reset the parser * */
@@ -76,11 +76,14 @@ class mxsParseSource {
 
 		try {
 			this.parserInstance.feed(this.__source);
-			this.__parsedAST = this.parserInstance.results[0];
+
+			console.log('PARSE TREES: '+ this.parserInstance.results.length);
+			
+			this.__parsedCST = this.parserInstance.results[0];
 		} catch (err) {
 			this.parserInstance.restore(this.__parserState);
-			this.__parseWhitErrors();
-			// throw err;
+			// this.__parseWhitErrors();
+			throw err;
 		}
 		return;
 		// this.__parserState = this.parserInstance.save();
@@ -90,12 +93,12 @@ class mxsParseSource {
 		try {
 			this.parserInstance.feed(str);
 		} catch (err) {
-			err.details = [{token: err.token, expected: this._PossibleTokens()}];
+			err.details = [{ token: err.token, expected: this._PossibleTokens() }];
 			this.parserInstance.restore(this.__parserState);
 			throw err;
 		}
 		this.__parserState = this.parserInstance.save();
-		this.__parsedAST = this.parserInstance.results[0];
+		this.__parsedCST = this.parserInstance.results[0];
 	}
 	/**
 	 * Parser with error recovery
@@ -113,7 +116,7 @@ class mxsParseSource {
 		let next = 0;
 		let remain = src.length - 1;
 		let parsings = () => {
-		// for (var tok = 0; tok < src.length; tok++) {
+			// for (var tok = 0; tok < src.length; tok++) {
 			// console.log(src[tok]);
 			try {
 				// this.parserInstance.feed(src[tok].text);
@@ -121,17 +124,17 @@ class mxsParseSource {
 				// console.log(src[next].text);
 			} catch (err) {
 				// catch non parsing related errors.
-				if (!err.token) {throw err;}
+				if (!err.token) { throw err; }
 				// console.log(src[next]);
 				badTokens.push(src[next]);
-				errorReport.push({token:src[next], expected:this._PossibleTokens()});
+				errorReport.push({ token: src[next], expected: this._PossibleTokens() });
 				this.parserInstance.restore(state);
 				// continue;
 			}
 			state = this.parserInstance.save();
 			// console.log(next);
 			if (next < remain) {
-				next +=1;
+				next += 1;
 				parsings();
 			}
 		};
@@ -214,13 +217,13 @@ class mxsParseSource {
 		let newErr;
 		if (this.parserInstance.results[0]) {
 			// console.log(this.parserInstance.results[0]);
-			this.__parsedAST = this.parserInstance.results[0];
+			this.__parsedCST = this.parserInstance.results[0];
 			// parsing passed
 			newErr = new Error('Parser finished with errors.');
 			newErr.name = 'ERR_RECOVER';
 			newErr.tokens = badTokens;
 			newErr.details = errorReport;
-			// newErr.parsedAST = this.parserInstance.results[0];
+			// newErr.parsedCST = this.parserInstance.results[0];
 		} else {
 			// console.log('unrecoverable error');
 			newErr = new Error('Parser failed. unrecoverable errors.');

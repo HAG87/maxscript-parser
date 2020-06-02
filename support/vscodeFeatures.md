@@ -5,13 +5,13 @@
 [X] registerHoverProvider
 [X] registerSignatureHelpProvider
 [] registerDefinitionProvider
-[] registerTypeDefinitionProvider
+[X] registerTypeDefinitionProvider
 [] registerImplementationProvider
 [X] registerReferenceProvider
 [X] registerDocumentHighlightProvider
 [O] registerDocumentSymbolProvider
 [-] registerWorkspaceSymbolProvider
-[~] registerCodeActionsProvider
+[] registerCodeActionsProvider
 [X] registerCodeLensProvider
 [X] registerDocumentLinkProvider
 [X] registerColorProvider

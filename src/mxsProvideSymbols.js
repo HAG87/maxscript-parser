@@ -138,15 +138,15 @@ class range {
  * I'm retrieving only the paths, because will need to get the parents location later.
  * I will not be using this for now, since vscode only cares about definitions, I can later reference-search that definition
  *
- * @param {any} AST Abstract Syntax tree source
+ * @param {any} CST Abstract Syntax tree source
  * @param {object} filter Object with keys:[] to be collected.
  */
-// function collectStatementsFromAST(AST, filter = blockStatements) {
-function collectStatementsFromAST(AST, filter = 'id') {
+// function collectStatementsFromCST(CST, filter = blockStatements) {
+function collectStatementsFromCST(CST, filter = 'id') {
 	let statements = [];
 	//let result = objFromKeys(filter, []);
-	//traverse the AST
-	traverse2(AST, (key1, val1, innerObj, stop) => {
+	//traverse the CST
+	traverse2(CST, (key1, val1, innerObj, stop) => {
 		const current = val1 != null ? val1 : key1;
 		// if (val1 != null && filter.includes(val1)) statements.push(innerObj.path);
 		if (key1 === filter) statements.push(innerObj.path);
@@ -163,14 +163,14 @@ function collectStatementsFromAST(AST, filter = 'id') {
 
 /**
  * For each element of a object-path collection, return a valid {name|parent|kind|location} node
- * @param {object} AST the AST
+ * @param {object} CST the CST
  * @param {string[]} paths Collection of object-paths
  */
-function collectSymbols(AST, paths) {
+function collectSymbols(CST, paths) {
 	let theSymbols = [];
 	paths.forEach(path => {
 		// each path represent a key in the node, I need to get the path of the node
-		let currentNode = objectPath.get(AST, parentPath(path));
+		let currentNode = objectPath.get(CST, parentPath(path));
 		// console.log(currentNode);
 		// since Im searching the tree for the id key, it should exist. more complex search will need to check for valid keys
 		let theSymbol = new vscodeSymbolInformation();
@@ -179,7 +179,7 @@ function collectSymbols(AST, paths) {
 		theSymbol.name = name !== '' ? name : '[unnamed]';
 		// parent name is needed to provide vscode with the tree structure
 		// parent will not be an object, if the node is in a parent key or array, so i need the parent of the parent.. and so on..
-		theSymbol.containerName = findParentName(AST, parentPath(path, 2)) || '';
+		theSymbol.containerName = findParentName(CST, parentPath(path, 2)) || '';
 		// Location
 		// if loc.end is undefined, i will need to traverse the node anyways, so...
 		try {
@@ -200,14 +200,14 @@ function collectSymbols(AST, paths) {
 // INVALID TOKENS
 /**
  * Return errorSymbol from invalid tokens
- * @param {object} AST the AST
+ * @param {object} CST the CST
  */
-function collectErrors(AST) {
+function collectErrors(CST) {
 
 	let theSymbols = [];
 	let errTokens = [];
 
-	traverse2(AST, (key1, val1, innerObj, stop) => {
+	traverse2(CST, (key1, val1, innerObj, stop) => {
 		const current = val1 != null ? val1 : key1;
 		if (key1 === 'type' && val1 === 'error') errTokens.push(innerObj.parent);
 		return current;
@@ -227,7 +227,7 @@ function collectErrors(AST) {
 //-----------------------------------------------------------------------------------
 module.exports = {
 	range,
-	collectStatementsFromAST,
+	collectStatementsFromCST,
 	collectSymbols,
 	collectErrors,
 };

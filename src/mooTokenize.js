@@ -107,10 +107,10 @@ var mxLexer = moo.compile({
 		{ match: /"(?:\\["\\rn]|[^"])*?"/, lineBreaks: true, value: x => x.slice(1, -1) },
 		// { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
 	],
-	newline: { match: /(?:[\r\n]|[\\]\s*[\r\n])+/, lineBreaks: true },
 	// whitespace -  also matches line continuations
 	ws: { match: /(?:[ \t]+|(?:[ \t]*?[\\][ \t\r\n]*)+?)/, lineBreaks: true },
 	// ws: { match: /[ \t]+/, lineBreaks: false },
+	newline: { match: /(?:[\r\n]|[\\]\s*[\r\n])+/, lineBreaks: true },
 	// path_name $mounstrosity*/_?
 	path: [
 		{ match: /[$](?:(?:[A-Za-z0-9_*?/\\]|[.]{3})*)/ },
