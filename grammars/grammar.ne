@@ -5,7 +5,7 @@
     const empty = '';
 
     const flatten = arr => arr != null ? arr.flat().filter(e => e != null) : [];
-    
+
     const collectSub = (arr, index) => arr !== null ? arr.map(e => e[index]) : [];
 
     const filterNull = arr => arr !== null ? arr.filter(e => e != null) : [];
@@ -274,7 +274,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 body:   merge(d[7], d[8]),
                 loc:    getLoc(d[0][0], d[9])
             })%}
-  
+
     utility_clause
         -> rollout_clause  {% id %}
         | rollout_def      {% id %}
@@ -304,7 +304,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     #         type: 'BlockStatement',
     #         body: merge(...d)
     #     })%}
-    
+
     rollout_clause
         -> variable_decl {% id %}
         | function_def   {% id %}
@@ -408,9 +408,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 modifier: d[3],
                 body:     d[5]
             }) %}
-    
+
     event_action -> %kw_do {% id %} | %kw_return {% id %}
-    
+
     event_args
         -> var_name
             {% d => ({type: 'EventArgs', event: d[0]}) %}
@@ -425,14 +425,6 @@ Main -> _ _EXPR _ {% d => d[1] %}
             )%}
 
 # CHANGE HANDLER -- UNFINISHED
-
-#   when <attribute> <objects> change[s] [ id:<name> ] \ 
-#   [handleAt: #redrawViews|#timeChange] \ 
-#   [ <object_parameter> ] do <expr>
-#   when <objects> deleted [ id:<name> ] \ 
-#   [handleAt:#redrawViews|#timeChange] \
-#   [ <object_parameter> ] do <expr> 
-
     change_handler
         -> %kw_when __ var_name __ operand __ var_name __
           (when_param _ | when_param _ when_param _):? (var_name __):?
@@ -495,7 +487,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 params: [],
                 body:   d[4],
             })%}
-    
+
     function_decl -> (%kw_mapped __):?  %kw_function
         {% d => ({
             type:   'Function',
@@ -506,7 +498,12 @@ Main -> _ _EXPR _ {% d => d[1] %}
 
     fn_params
         -> parameter  {% id %}
-        | param_name  {% id %}
+        | param_name
+                {% d => ({
+            type: 'ParameterAssignment',
+            param: d[0],
+            value: null,
+        })%}
 #---------------------------------------------------------------
 # FUNCTION RETURN
     fn_return -> %kw_return _ expr:?
@@ -578,7 +575,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 //    d[4]
                 //]
             })%}
-       
+
         undo_label -> string {% id %} | parameter {% id %} | var_name {% id %}
 #---------------------------------------------------------------
 # CASE EXPRESSION --- OK
@@ -626,14 +623,15 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
         | (for_while _):? for_where
         {% d => ({
-           to: {},
-           by: {},
+           type: 'ForLoopSequence',
+           to: [],
+           by: [],
            while: filterNull(d[0]),
            where: d[1]
        })%}
 
     for_iterator -> "=" {% id %} | %kw_in {% id %}
-    
+
     for_to    -> (%kw_to _S)    expr {% d => d[1] %}
     for_by    -> (%kw_by _S)    expr {% d => d[1] %}
     for_where -> (%kw_where _S) expr {% d => d[1] %}
@@ -873,7 +871,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
             value: d[2],
             //loc: d[0].loc
         })%}
-    param_name -> %params _S ":" {% d => d[0] %}
+    param_name -> %params _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
 #---------------------------------------------------------------
 # OPERANDS --- OK
     operand

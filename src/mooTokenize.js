@@ -132,7 +132,7 @@ var mxLexer = moo.compile({
 	global_typed: { match: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
 	// IDENTIFIERS
 	identity: {
-		match: /[&-]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+		match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
 		type: caseInsensitiveKeywords(keywordsDB)
 	},
 	// a mounstrosity

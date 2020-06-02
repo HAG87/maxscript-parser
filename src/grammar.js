@@ -9,7 +9,7 @@ function id(x) { return x[0]; }
     const empty = '';
 
     const flatten = arr => arr != null ? arr.flat().filter(e => e != null) : [];
-    
+
     const collectSub = (arr, index) => arr !== null ? arr.map(e => e[index]) : [];
 
     const filterNull = arr => arr !== null ? arr.filter(e => e != null) : [];
@@ -441,7 +441,11 @@ var grammar = {
             loc: (getLoc(d[0] != null ? d[0][0] : d[1]))
         })},
     {"name": "fn_params", "symbols": ["parameter"], "postprocess": id},
-    {"name": "fn_params", "symbols": ["param_name"], "postprocess": id},
+    {"name": "fn_params", "symbols": ["param_name"], "postprocess":  d => ({
+            type: 'ParameterAssignment',
+            param: d[0],
+            value: null,
+        })},
     {"name": "fn_return$ebnf$1", "symbols": ["expr"], "postprocess": id},
     {"name": "fn_return$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "fn_return", "symbols": [(mxLexer.has("kw_return") ? {type: "kw_return"} : kw_return), "_", "fn_return$ebnf$1"], "postprocess":  d => ({
@@ -582,8 +586,9 @@ var grammar = {
     {"name": "for_sequence$ebnf$4", "symbols": ["for_sequence$ebnf$4$subexpression$1"], "postprocess": id},
     {"name": "for_sequence$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "for_sequence", "symbols": ["for_sequence$ebnf$4", "for_where"], "postprocess":  d => ({
-            to: {},
-            by: {},
+            type: 'ForLoopSequence',
+            to: [],
+            by: [],
             while: filterNull(d[0]),
             where: d[1]
         })},
@@ -765,7 +770,7 @@ var grammar = {
             value: d[2],
             //loc: d[0].loc
         })},
-    {"name": "param_name", "symbols": [(mxLexer.has("params") ? {type: "params"} : params), "_S", {"literal":":"}], "postprocess": d => d[0]},
+    {"name": "param_name", "symbols": [(mxLexer.has("params") ? {type: "params"} : params), "_S", {"literal":":"}], "postprocess": d => ({type:'Identifier', value:d[0]})},
     {"name": "operand", "symbols": ["factor"], "postprocess": id},
     {"name": "operand", "symbols": ["property"], "postprocess": id},
     {"name": "operand", "symbols": ["index"], "postprocess": id},
