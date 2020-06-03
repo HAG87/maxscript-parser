@@ -1,6 +1,4 @@
-const chalk = require('chalk');
 //-----------------------------------------------------------------------------------
-
 /**
  * Visit and reduce CST to compact code
  * @param {any} node CST node
@@ -156,9 +154,26 @@ let visitorPatterns = {
 		return `(${exprTerm(stack.body)})`;
 	},
 	// Struct
-	Struct(node, stack) {
-		return `struct ${stack.id}(${stack.body.join(',')})`;
-	},
+    Struct(node, stack) {
+        let body;
+        if (Array.isArray(stack.body)) {
+            body =
+                stack.body.reduce((acc, curr, index, src) => {
+                    if (index < src.length - 1) {
+                        let sep = /(?:private|public)$/gmi.test(curr) ? ';' : ',';
+                        return (acc + curr + sep);
+                    } else {
+                        return (acc + curr);
+                    }
+                }, '');
+        } else {
+            body = stack.body;
+        }
+        return `struct ${stack.id}(${body})`;
+    },
+    StructScope(node, stack){
+        return stack.value;
+    },
 	// Functions
 	Function(node, stack) {
 		let decl = `${node.mapped ? 'mapped ' : ''}${stack.keyword} ${stack.id}`;
@@ -289,24 +304,15 @@ let visitorPatterns = {
 		let val = `${spaceLR(stack.iteration, stack.value)}${stack.value}`;
 		let seq = spaceSE(stack.sequence);
         let body = exprTerm(stack.body);
-        // console.log('val: '+val);
-        // console.log('seq: '+seq);
         let spacer = (stack.sequence.length > 0) ? spaceLR(seq, stack.action) : spaceLR(val, stack.action);
-        console.log('spacer: '+spacer);
         let act = `${spacer}${stack.action}${spaceLR(stack.action, body)}${body}`;
-        // console.log(act);
 		return (it + val + seq + act);
 	},
 	ForLoopSequence(node, stack) {
-        // console.log(stack.to);
-        // console.log(stack.by);
-        // console.log(stack.while);
-        // console.log(stack.where);
 		let _to = (stack.to.length > 0) ? `to${spaceSE(stack.to)}` : '';
 		let _by = (stack.by.length > 0) ? `by${spaceSE(stack.by)}` : '';
 		let _while = (stack.while.length > 0) ? `while${spaceSE(stack.while)}` : '';
         let _where = (stack.where.length > 0) ? `where${spaceSE(stack.where, false)}` : '';
-
 		return (_to + _by + _while + _where);
 	},
 	CaseStatement(node, stack) {
@@ -329,7 +335,6 @@ let visitorPatterns = {
 		return `${prefix}${spaceLR(prefix, context)}${context}${spaceLR(context, args)}${args}`;
 	},
 };
-exports.visitorPatterns = visitorPatterns;
 // Basic expressions
 function unary(right, op) {
 	return `${op}${spaceLR(op, right)}${right}`;
@@ -369,7 +374,7 @@ function joinStr(arr) {
  * @param {string} str2 Right string
  */
 function spaceLR(str1, str2) {
-	if (str2 === undefined || str2 === '' || str1 === '') {
+	if (!str2 || !str1) {
 		return '';
 	}
 	else {
@@ -400,3 +405,5 @@ function isNode(node) {
 function getNodeType(node) {
 	return ('type' in node) ? node.type : undefined;
 }
+//-----------------------------------------------------------------------------------
+exports.visitorPatterns = visitorPatterns;
