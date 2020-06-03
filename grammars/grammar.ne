@@ -59,28 +59,36 @@
 Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # Expressions main recursion
-    _EXPR -> expr (EOL expr):*    {% d => merge(...d) %}
+    # _EXPR -> expr (EOL expr):*    {% d => merge(...d) %}
+
+    _EXPR -> _EXPR EOL expr {% d => [].concat(d[0], d[2])%}
+    | expr {% id %}
 #---------------------------------------------------------------
 # EXPRESSIONS - RECURSION!
     expr_seq ->
         LPAREN
             _expr_seq
         RPAREN
-        {% d => d[1] %}
+        # {% d => d[1] %}
+        {% d => ({
+            type: 'BlockStatement',
+            body: d[1]
+        })%}
         | "(" _ ")"
-                {% d => ({
+        {% d => ({
             type: 'BlockStatement',
             body: []
         })%}
 
-    _expr_seq -> expr  (EOL expr):*
-        {% d => ({
-            type: 'BlockStatement',
-            body: merge(...d)
-        })%}
-        #| expr {% id %}
-        #|_expr_seq EOL expr {% d => ( [].concat(d[0], d[2]) )%}
-#---------------------------------------------------------------
+    _expr_seq
+        # -> expr  (EOL expr):*
+        # {% d => ({
+        #     type: 'BlockStatement',
+        #     body: merge(...d)
+        # })%}
+        -> _expr_seq EOL expr {% d => [].concat(d[0], d[2]) %}
+        | expr #{% id %}
+# ---------------------------------------------------------------
 # EXPRESSIONS LIST --- OK
     expr
         -> simple_expr    {% id %}
@@ -108,10 +116,10 @@ Main -> _ _EXPR _ {% d => d[1] %}
         # | %error {% id %}
     #---------------------------------------------------------------
     simple_expr
-        -> operand     {% id %}
-        | math_expr    {% id %}
+        -> math_expr    {% id %}
         | compare_expr {% id %}
         | logical_expr {% id %}
+        | operand     {% id %}
         | fn_call      {% id %}
         # | %error {% id %}
         #| expr_seq #RECURSION!
@@ -376,22 +384,33 @@ Main -> _ _EXPR _ {% d => d[1] %}
     struct_def
         -> (%kw_struct __ ) var_name _
             LPAREN
-                struct_members:*
-                struct_member
+                struct_members
             RPAREN
             {% d => ({
                 type: 'Struct',
                 id:   d[1],
-                body: [...d[4], d[5]],
-                loc:  getLoc(d[0][0], d[6])
+                body: d[4],
+                loc:  getLoc(d[0][0], d[5])
             })%}
+
+
+
     # TODO: FINISH LOCATION
     struct_members
-        -> struct_member (_ "," _) {% d => d[0]%}
-        | struct_mod _             {% d => d[0]%}
-    # TODO: FINISH LOCATION
-    struct_mod -> %kw_scope {% d => ({scope: d[0].value, loc:getLoc(d[0])})%}
+        -> struct_members (_ "," _) _struct_member {% d => [].concat(d[0], d[2])%}
+        | _struct_member #{% id %}
 
+    _struct_member
+    -> str_scope _ struct_member {% d => [].concat(d[0], d[2]) %}
+
+    | struct_member {% id %}
+    | str_scope     {% id %}
+
+    str_scope -> %kw_scope
+        {% d => ({
+            type:'StructScope',
+            value: d[0]
+        }) %}
     #---------------------------------------------------------------
     struct_member
         -> decl          {% id %}
@@ -736,20 +755,59 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  PARTIAL OPERATOR PRECEDENCE....
     # includes "as" operator, for simplicity
+
+    #    math_expr -> sum {% id %}
+    #    sum -> prod _S ("+"|"-") _ sum
+    #            {% d => ({
+    #                type:     'MathExpression',
+    #                operator: d[2],
+    #                left:     d[0],
+    #                right:    d[4]
+    #            })%}
+    #        | prod {% id %}
+    #    prod -> prod _S ("*"|"/") _ exp
+    #            {% d => ({
+    #                type:     'MathExpression',
+    #                operator: d[2],
+    #                left:     d[0],
+    #                right:    d[4]
+    #            })%}
+    #        | exp {% id %}
+    #    exp -> as _S "^" _ exp
+    #            {% d => ({
+    #                type:     'MathExpression',
+    #                operator: d[2],
+    #                left:     d[0],
+    #                right:    d[4]
+    #            })%}
+    #        | as {% id %}
+    #    as -> as _S %kw_as _ var_name
+    #            {% d => ({
+    #                type:     'MathExpression',
+    #                operator: d[2],
+    #                left:     d[0],
+    #                right:    d[4]
+    #            })%}
+    #        | math_operand {% id %}
+
+    #   math_expr -> math_p _S (%math _ math_p):*
+    #   math_p -> math_operand | %unary math_p
+    #   math_p -> math_operand | "-" math_p
+
     math_expr
-        -> math_operand _S  %math _ (math_operand | math_unary)
+        -> math_expr _S  %math _ math_operand
         {% d => ({
             type:     'MathExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4][0]
+            right:    d[4]
         })%}
-        | math_expr    _S  %math _ (math_operand | math_unary)
+        | math_operand _S  %math _ math_operand
         {% d => ({
             type:     'MathExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4][0]
+            right:    d[4]
         })%}
         | math_operand _S %kw_as _ var_name
         {% d => ({
@@ -758,29 +816,12 @@ Main -> _ _EXPR _ {% d => d[1] %}
             left:     d[0],
             right:    d[4]
         })%}
-        | math_expr _S    %kw_as _ var_name
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4]
-        } )%}
-        | math_unary {% id %}
-
-    math_unary -> "-" math_operand
-        {% d => ({
-            type: 'UnaryExpression',
-            operator: d[0],
-            right:    d[1]
-        }) %}
 
     math_operand
         -> operand   {% id %}
         | fn_call    {% id %}
         #| conversion {% id %}
         #| math_expr #recursion!
-
-    # mathSym -> %math {% id %}
 #---------------------------------------------------------------
     # THIS ___needs to drop operand results..
     #    math_expr -> sum
@@ -805,28 +846,28 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     logical_expr
-        -> logical_operand _S %kw_compare _  (not_operand | logical_operand)
+        -> logical_expr _S %kw_compare _  logical_operand
         {% d => ({
             type :    'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4][0]
+            right:    d[4]
         }) %}
-        | logical_expr _S %kw_compare _  (not_operand | logical_operand)
+        | logical_operand _S %kw_compare _  logical_operand
         {% d => ({
             type :    'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4][0]
+            right:    d[4]
         }) %}
-        | not_operand {% id %}
+        # | not_operand {% id %}
 
-    not_operand -> %kw_not _ logical_operand
-        {% d => ({
-            type :    'LogicalExpression',
-            operator: d[0],
-            right:    d[2]
-        }) %}
+    #   not_operand -> %kw_not _ logical_operand
+    #       {% d => ({
+    #           type :    'LogicalExpression',
+    #           operator: d[0],
+    #           right:    d[2]
+    #       }) %}
 
     logical_operand
         -> operand     {% id %}
@@ -842,6 +883,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
             left:     d[0],
             right:    d[4]
         }) %}
+
     compare_operand
         -> math_expr {% id %}
         | operand    {% id %}
@@ -858,10 +900,13 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
     # up to an end of line or lower precedence token?
     call_params
-        -> fn_call_args #{% id %}
-         | call_params _S fn_call_args {% d => [].concat(d[0], d[2]) %}
+        # -> fn_call_args (_S fn_call_args):* {% d => merge(d[0], d[1]) %}
+        -> call_params _S fn_call_args {% d => [].concat(d[0], d[2]) %}
+        | fn_call_args #{% id %}
 
-    fn_call_args -> operand {% id %} | parameter {% id %}
+    fn_call_args
+        -> operand {% id %}
+        | parameter {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter -> param_name _ operand
@@ -898,31 +943,48 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # FACTORS --- OK?
-    factor
-        -> number    {% id %}
-        | string     {% id %}
-        | path_name  {% id %}
+    factor -> norev_factor {% id %} | rev_factor {% id %} | u_factor {% id %} | not_factor {% id %}
+
+    u_factor
+        -> %unary rev_factor
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[0],
+                right:    d[1]
+            }) %}
+        # | rev_factor {% id %}
+
+    not_factor -> %kw_not _ neg_factor
+        {% d => ({
+            type :    'LogicalExpression',
+            operator: d[0],
+            right:    d[2]
+        }) %}
+
+    neg_factor
+        ->  bool       {% id %}
         | var_name   {% id %}
+        | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
+
+    norev_factor
+        -> string     {% id %}
+        | path_name  {% id %}
         | name_value {% id %}
+        | bool       {% id %}
+        | void       {% id %}
+        | %error     {% id %}
+        | "?" {% d => ({type: 'Keyword', value: d[0]}) %}
+
+    rev_factor
+        -> number    {% id %}
+        | time       {% id %}
+        | var_name   {% id %}
         | array      {% id %}
         | bitarray   {% id %}
         | point4     {% id %}
         | point3     {% id %}
         | point2     {% id %}
-        | time       {% id %}
-        | bool       {% id %}
-        | void       {% id %}
-        # additonal rules: workarounds.
-        # | kw_reserved {% id %}
-        # MAGIC TRICK: for expressions like catch ()
-        # | %voidparens {% id %}
-        #| %parens {% id %}
-        #unary minus
-        # | "-" expr   {% d => ({type: 'UnaryExpression', operator: d[0], operand: d[1], }) %} #{% d => ({type: 'UnaryExpression', operand: d[1], loc: getLoc(d[0])}) %}
-        #last listener result
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
-        | %error     {% id %}
-        | "?" {% d => ({type: 'Keyword', value: d[0]}) %} #{% d => ({type: 'Keyword', value: d[0].value, loc: getLoc(d[0])}) %}
 # RESERVED KEYWORDS
     kw_reserved
         -> %kw_uicontrols  {% id %}

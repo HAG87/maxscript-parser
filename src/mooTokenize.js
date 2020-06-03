@@ -149,6 +149,11 @@ var mxLexer = moo.compile({
 	lbrace: { match: '{' },
 	rbrace: { match: '}' },
 	// time format
+
+	comparison: ['==', '!=', '>', '<', '>=', '<='],
+	assign: ['=', '+=', '-=', '*=', '/='],
+	unary: {match: /(?<=[^\w)-])-(?![-\s])/},
+	math: ['+', '-', '*', '/', '^'],
 	time: [
 		{ match: /(?:(?:[-]?[0-9]+[.])*[0-9]+[mMsSfFtT])+/ },
 		{ match: /(?:(?:[-]?[0-9]+[.])[0-9]*[mMsSfFtT])+/ },
@@ -156,6 +161,8 @@ var mxLexer = moo.compile({
 	],
 	// number formats
 	bitrange: { match: /[.]{2}/ },
+		// Operators.
+
 	number: [
 		{ match: /(?:[-]?[0-9]*)[.](?:[0-9]+(?:[eEdD][+-]?[0-9]+)?)/ },
 		{ match: /(?:[-]?[0-9]+\.(?!\.))/ },
@@ -168,10 +175,7 @@ var mxLexer = moo.compile({
 		{ match: /#[A-Za-z0-9_]+\b/ },
 		{ match: /#'[A-Za-z0-9_]+'/ },
 	],
-	// Operators.
-	comparison: ['==', '!=', '>', '<', '>=', '<='],
-	assign: ['=', '+=', '-=', '*=', '/='],
-	math: ['+', '-', '*', '/', '^'],
+
 	// DELIMITERS
 	delimiter: { match: /\.(?!\.)/ },
 	sep: { match: /,/ },
