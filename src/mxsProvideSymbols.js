@@ -1,6 +1,4 @@
 "use strict";
-// const { find, get, set, drop, info, del, arrayFirstOnly, traverse, } = require('ast-monkey');
-// const { pathNext, pathPrev, pathUp } = require('ast-monkey-util');
 const traverse2 = require('ast-monkey-traverse-with-lookahead');
 const objectPath = require("object-path");
 //-----------------------------------------------------------------------------------
@@ -58,38 +56,6 @@ const SymbolKind = {
 };
 //-----------------------------------------------------------------------------------
 /**
- * Types: Block statements
- */
-/* const blockStatements = [
-	'Struct',
-	'Function',
-	'EntityMacroscript',
-	'EntityRollout',
-	'EntityRolloutControl',
-	'EntityUtility',
-	'EntityTool',
-	'EntityPlugin',
-	'EntityRcmenu',
-	// 'VariableDeclaration',
-	'Declaration',
-	'EntityRcmenu_menuitem',
-	'EntityPlugin_params',
-	'PluginParam',
-	'EntityRolloutGroup',
-]; */
-/**
- * Types: Expression, one-line statements only
- */
-const plainScript = [];
-/**
- * Implementations, references..
- */
-const usageExpressions = [
-	'Itentifier',
-	'CallExpression',
-];
-//-----------------------------------------------------------------------------------
-/**
  * Functions for getting the range of a statement. Grouped in a static class for coherency
  */
 class range {
@@ -141,17 +107,13 @@ class range {
  * @param {any} CST Abstract Syntax tree source
  * @param {object} filter Object with keys:[] to be collected.
  */
-// function collectStatementsFromCST(CST, filter = blockStatements) {
 function collectStatementsFromCST(CST, filter = 'id') {
 	let statements = [];
 	//let result = objFromKeys(filter, []);
 	//traverse the CST
-	traverse2(CST, (key1, val1, innerObj, stop) => {
+	traverse2(CST, (key1, val1, innerObj) => {
 		const current = val1 != null ? val1 : key1;
-		// if (val1 != null && filter.includes(val1)) statements.push(innerObj.path);
 		if (key1 === filter) statements.push(innerObj.path);
-		// if (!val1) { /*going through an array.*/ }
-		// else { /*going through a key/value pair.*/ }
 		return current;
 	});
 	return statements;
@@ -159,7 +121,7 @@ function collectStatementsFromCST(CST, filter = 'id') {
 //-----------------------------------------------------------------------------------
 //TODO: Collect identifiers and calls to find references to functions, structs... decl, so on...
 // establish a declaration and usage points
-// get declarations in statements, set apernt>child>child order, set a declaration póint and implementation points for symbol defintions, and goto
+// get declarations in statements, set parent>child>child order, set a declaration póint and implementation points for symbol defintions, and goto
 
 /**
  * For each element of a object-path collection, return a valid {name|parent|kind|location} node
@@ -182,11 +144,7 @@ function collectSymbols(CST, paths) {
 		theSymbol.containerName = findParentName(CST, parentPath(path, 2)) || '';
 		// Location
 		// if loc.end is undefined, i will need to traverse the node anyways, so...
-		try {
-			theSymbol.location = currentNode.loc || range.fromChilds(currentNode);
-		} catch (e) {
-			// console.log(e);
-		}
+		theSymbol.location = currentNode.loc || range.fromChilds(currentNode);
 		// Kind
 		theSymbol.kind = SymbolKind[currentNode.type];
 		// parents... ? no need, they will be in the collection anyways
@@ -221,9 +179,7 @@ function collectErrors(CST) {
 	return theSymbols;
 }
 //-----------------------------------------------------------------------------------
-// IMPLEMENTATIONS
-//-----------------------------------------------------------------------------------
-
+// TODO: IMPLEMENTATIONS
 //-----------------------------------------------------------------------------------
 module.exports = {
 	range,

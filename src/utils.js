@@ -1,8 +1,8 @@
-const fsi = require('mz/fs');
+const fs = require('fs');
 
 const JsonFileWrite = (file, source) =>
 {
-	fsi.writeFileSync(file, JSON.stringify(source, null, 2),
+	fs.writeFileSync(file, JSON.stringify(source, null, 2),
 	err => {
 		if (err)
 			console.error(err);
@@ -11,7 +11,7 @@ const JsonFileWrite = (file, source) =>
 };
 const FileWrite = (file, source) =>
 {
-	fsi.writeFileSync(file, source,
+	fs.writeFileSync(file, source,
 	err => {
 		if (err)
 			console.error(err);
