@@ -1,4 +1,3 @@
-//-----------------------------------------------------------------------------------
 /**
  * Visit and reduce CST to compact code
  * @param {any} node CST node
@@ -26,7 +25,7 @@ function visit(node, callbackMap) {
 						collection.push(_visit(child[j], node, key, level + 1));
 					}
 					else {
-						empty();
+						// not object array items. i.e. null values
 					}
 				}
 				stack[key] = collection;
@@ -37,10 +36,12 @@ function visit(node, callbackMap) {
 				stack[key] = _visit(child, node, key, level + 1);
 				// console.log(stack);
 			}
+			/*
 			else if (child === String || child === Number) {
 				// eslint-disable-next-line no-empty
 				//...
 			}
+			//*/
 		}
 		let res;
 		if (nodeType && nodeType in callbackMap) {
@@ -56,11 +57,7 @@ function visit(node, callbackMap) {
 		// console.log(chalk.inverse(res));
 		return res;
 	}
-	function empty(node) {
-		return '';
-	}
 }
-exports.visit = visit;
 //-----------------------------------------------------------------------------------
 let tokensValue = {
 	global_typed: (node) => node.text,
@@ -336,12 +333,14 @@ let visitorPatterns = {
 	},
 };
 // Basic expressions
+/*
 function unary(right, op) {
 	return `${op}${spaceLR(op, right)}${right}`;
 }
 function binary(left, right, op) {
 	return `${left}${spaceLR(left, op)}${op}${spaceLR(op, right)}${right}`;
 }
+//*/
 function binaryNode(node) {
 	let _left = node.left || '';
 	let _right = node.right || '';
@@ -406,4 +405,4 @@ function getNodeType(node) {
 	return ('type' in node) ? node.type : undefined;
 }
 //-----------------------------------------------------------------------------------
-exports.visitorPatterns = visitorPatterns;
+module.exports = {visit, visitorPatterns};

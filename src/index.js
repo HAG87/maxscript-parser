@@ -22,7 +22,6 @@ const chalk = require('chalk');
 // At beginning of your code
 perf.start();
 //-----------------------------------------------------------------------------------
-
 /*
 	async function Main(source) {
 		//await mxParser.ParseSource(source, parser, 0)
@@ -58,6 +57,10 @@ let examples = {
 	1:  'examples/example-1.ms',
 	2:  'examples/example-2.ms',
 	3:  'examples/example-3.ms',
+	4:  'examples/example-4.ms',
+	5:  'examples/example-5.ms',
+	6:  'examples/example-6.ms',
+	7:  'examples/example-7.ms',
 }
 //-----------------------------------------------------------------------------------
 let CST = [];
@@ -67,7 +70,7 @@ function Main(src) {
 	const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
 	var msxParser = new mxsParseSource();
 	msxParser.source = source(src);
-
+	// console.log(source(src));
 	// console.log(msxParser.TokenizeSource());
 	CST = msxParser.parsedCST;
 
