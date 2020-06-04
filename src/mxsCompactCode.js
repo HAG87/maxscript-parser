@@ -151,51 +151,51 @@ let visitorPatterns = {
 		return `(${exprTerm(stack.body)})`;
 	},
 	// Struct
-    Struct(node, stack) {
-        let body;
-        if (Array.isArray(stack.body)) {
-            body =
-                stack.body.reduce((acc, curr, index, src) => {
-                    if (index < src.length - 1) {
-                        let sep = /(?:private|public)$/gmi.test(curr) ? ';' : ',';
-                        return (acc + curr + sep);
-                    } else {
-                        return (acc + curr);
-                    }
-                }, '');
-        } else {
-            body = stack.body;
-        }
-        return `struct ${stack.id}(${body})`;
-    },
-    StructScope(node, stack){
-        return stack.value;
-    },
+	Struct(node, stack) {
+		let body;
+		if (Array.isArray(stack.body)) {
+			body =
+				stack.body.reduce((acc, curr, index, src) => {
+					if (index < src.length - 1) {
+						let sep = /(?:private|public)$/gmi.test(curr) ? ';' : ',';
+						return (acc + curr + sep);
+					} else {
+						return (acc + curr);
+					}
+				}, '');
+		} else {
+			body = stack.body;
+		}
+		return `struct ${stack.id}(${body})`;
+	},
+	StructScope(node, stack) {
+		return stack.value;
+	},
 	// Functions
 	Function(node, stack) {
 		let decl = `${node.mapped ? 'mapped ' : ''}${stack.keyword} ${stack.id}`;
 
-        let args = ('args' in stack) ? joinStr(stack.args) : '';
+		let args = ('args' in stack) ? joinStr(stack.args) : '';
 		let params = ('params' in stack) ? joinStr(stack.params) : '';
 
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 
-        let spacer = args.length > 0 ? spaceLR(decl, args) : spaceLR(decl, params);
+		let spacer = args.length > 0 ? spaceLR(decl, args) : spaceLR(decl, params);
 
-        return `${decl}${spacer}${args}${spaceLR(args, params)}${params}=${body}`
+		return `${decl}${spacer}${args}${spaceLR(args, params)}${params}=${body}`
 		// return (decl + args + params + '=' + spaceLR('=', body) + body);
 	},
 	FunctionReturn(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `return${spaceLR('return', body)}${body}`;
 	},
 	// Plugin
 	EntityPlugin(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `plugin ${stack.superclass} ${stack.class} ${joinStr(stack.params)}(${body})`;
 	},
 	EntityPlugin_params(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `parameters ${stack.id} ${joinStr(stack.params)}(${body})`;
 	},
 	PluginParam(node, stack) {
@@ -229,16 +229,16 @@ let visitorPatterns = {
 	},
 	EntityRollout(node, stack) {
 		return `rollout ${stack.id}${stack.title}${joinStr(stack.params)}(${exprTerm(stack.body)})`;
-    },
-    EntityRolloutGroup(node, stack) {
-       return `group${stack.id}(${exprTerm(stack.body)})`;
-    },
+	},
+	EntityRolloutGroup(node, stack) {
+		return `group${stack.id}(${exprTerm(stack.body)})`;
+	},
 	EntityRolloutControl(node, stack) {
 		return `${stack.class} ${stack.id}${stack.text || ' '}${joinStr(stack.params)}`;
 	},
 	// Event
 	Event(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `on ${stack.args} ${stack.modifier}${spaceLR(stack.modifier, body)}${body}`;
 	},
 	EventArgs(node, stack) {
@@ -246,8 +246,8 @@ let visitorPatterns = {
 		return args;
 	},
 	WhenStatement(node, stack) {
-        let args = joinStr(stack.args);
-        let body = exprTerm(stack.body);
+		let args = joinStr(stack.args);
+		let body = exprTerm(stack.body);
 
 		return `when${spaceLR('when', args)}${args}${spaceLR(args, 'do')}do${spaceLR('do', body)}${body}`;
 	},
@@ -279,7 +279,7 @@ let visitorPatterns = {
 		return res;
 	},
 	LoopExit(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `exit with${spaceLR('with', body)}${body}`;
 	},
 	TryStatement(node, stack) {
@@ -288,41 +288,41 @@ let visitorPatterns = {
 		return `try${block}catch${finalizer}`;
 	},
 	DoWhileStatement(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `do${spaceSE(body)}while${spaceLR('while', stack.test)}${stack.test}`;
 	},
 	WhileStatement(node, stack) {
 		let test = spaceSE(stack.test);
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `while${test}do${spaceLR('do', body)}${body}`;
 	},
 	ForStatement(node, stack) {
 		let it = `for ${stack.variable}${spaceLR(stack.variable, stack.iteration)}${stack.iteration}`;
 		let val = `${spaceLR(stack.iteration, stack.value)}${stack.value}`;
 		let seq = spaceSE(stack.sequence);
-        let body = exprTerm(stack.body);
-        let spacer = (stack.sequence.length > 0) ? spaceLR(seq, stack.action) : spaceLR(val, stack.action);
-        let act = `${spacer}${stack.action}${spaceLR(stack.action, body)}${body}`;
+		let body = exprTerm(stack.body);
+		let spacer = (stack.sequence.length > 0) ? spaceLR(seq, stack.action) : spaceLR(val, stack.action);
+		let act = `${spacer}${stack.action}${spaceLR(stack.action, body)}${body}`;
 		return (it + val + seq + act);
 	},
 	ForLoopSequence(node, stack) {
 		let _to = (stack.to.length > 0) ? `to${spaceSE(stack.to)}` : '';
 		let _by = (stack.by.length > 0) ? `by${spaceSE(stack.by)}` : '';
 		let _while = (stack.while.length > 0) ? `while${spaceSE(stack.while)}` : '';
-        let _where = (stack.where.length > 0) ? `where${spaceSE(stack.where, false)}` : '';
+		let _where = (stack.where.length > 0) ? `where${spaceSE(stack.where, false)}` : '';
 		return (_to + _by + _while + _where);
 	},
 	CaseStatement(node, stack) {
 		return `case${spaceSE(stack.test)}of(${stack.cases.join(';')});`;
 	},
 	CaseClause(node, stack) {
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `${stack.case}:${body}`;
 	},
 	// context expressions
 	ContextStatement(node, stack) {
 		let contx = stack.context.join(',');
-        let body = exprTerm(stack.body);
+		let body = exprTerm(stack.body);
 		return `${contx}${spaceLR(contx, body)}${body}`;
 	},
 	ContextExpression(node, stack) {
@@ -349,11 +349,11 @@ function binaryNode(node) {
 	return `${left}${node.operator}${right}`;
 }
 function exprTerm(exprArr) {
-    if (Array.isArray(exprArr)) {
-        return exprArr.join(';');
-    } else {
-        return exprArr;
-    }
+	if (Array.isArray(exprArr)) {
+		return exprArr.join(';');
+	} else {
+		return exprArr;
+	}
 }
 /**
  * Join string array
@@ -405,4 +405,7 @@ function getNodeType(node) {
 	return ('type' in node) ? node.type : undefined;
 }
 //-----------------------------------------------------------------------------------
-module.exports = {visit, visitorPatterns};
+function mxsMinify(cst) {
+	return visit(cst, visitorPatterns);
+}
+module.exports = { mxsMinify, visit, visitorPatterns };
