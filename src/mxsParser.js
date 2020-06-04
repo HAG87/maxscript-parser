@@ -82,7 +82,7 @@ class mxsParseSource {
 			this.__parsedCST = this.parserInstance.results[0];
 		} catch (err) {
 			this.parserInstance.restore(this.__parserState);
-			this.__parseWhitErrors();
+			// this.__parseWhitErrors();
 			throw err;
 		}
 		return;

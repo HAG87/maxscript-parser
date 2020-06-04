@@ -83,7 +83,7 @@ function Main(src) {
 }
 // /*
 try {
-	Main(examples[5])
+	Main(examples[2])
 	// examples.forEach(x => Main(x));
 } catch (e) {
 	// console.log(e.message);
@@ -103,7 +103,7 @@ function compress(source) {
 		console.log(err.message);
 	}
 }
-let COMPRESS = compress(CST); FileWrite('test/compress.ms', COMPRESS);
+// let COMPRESS = compress(CST); FileWrite('test/compress.ms', COMPRESS);
 //-----------------------------------------------------------------------------------
 /*
 If traverse2() is currently traversing a plain object, going each key/value pair, key will be the object's current key and val will be the value.

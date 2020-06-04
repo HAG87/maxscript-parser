@@ -62,7 +62,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     # _EXPR -> expr (EOL expr):*    {% d => merge(...d) %}
 
     _EXPR -> _EXPR EOL expr {% d => [].concat(d[0], d[2])%}
-    | expr {% id %}
+    | expr #{% id %}
 #---------------------------------------------------------------
 # EXPRESSIONS - RECURSION!
     expr_seq ->
@@ -792,27 +792,31 @@ Main -> _ _EXPR _ {% d => d[1] %}
     #   math_p -> math_operand | "-" math_p
 
     math_expr
-        -> math_expr _S  %math _ math_operand
+        -> math_expr _S  %math _ (math_operand | math_as)
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4][0]
+        })%}
+        | math_operand _S  %math _ (math_operand | math_as)
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4][0]
+        })%}
+        | math_as {% id %}
+
+    math_as
+        -> math_operand _S %kw_as _ var_name
         {% d => ({
             type:     'MathExpression',
             operator: d[2],
             left:     d[0],
             right:    d[4]
         })%}
-        | math_operand _S  %math _ math_operand
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4]
-        })%}
-        | math_operand _S %kw_as _ var_name
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4]
-        })%}
+        # | math_operand {% id %}
 
     math_operand
         -> operand   {% id %}
