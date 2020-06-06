@@ -539,49 +539,49 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
 
     context
-        -> %kw_at __ (%kw_level | %kw_time) __ (operand)
+        -> %kw_at __ (%kw_level | %kw_time) _ (operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : empty,
                 context: d[0],
                 args: d[2].concat(d[4])
             })%}
-        | %kw_in __ (operand)
+        | %kw_in _ (operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : empty,
                 context: d[0],
                 args: d[2]
             })%}
-        | (%kw_in __):? %kw_coordsys __ (%kw_local | operand)
+        | (%kw_in __):? %kw_coordsys _ (%kw_local | operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : empty),
                 context: d[1],
                 args: d[3]
             })%}
-        | %kw_about __ (%kw_coordsys | operand)
+        | %kw_about _ (%kw_coordsys | operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : empty,
                 context: d[0],
                 args: d[2]
             })%}
-        | (%kw_with __):? %kw_context __ (logical_expr | bool)
+        | (%kw_with __):? %kw_context _ (logical_expr | bool)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : empty),
                 context: d[1],
                 args: d[3]
             })%}
-        | %kw_with __ %kw_defaultAction __ ("#logmsg"|"#logtofile"|"#abort")
+        | %kw_with __ %kw_defaultAction _ ("#logmsg"|"#logtofile"|"#abort")
             {% d => ({
                 type: 'ContextExpression',
                 prefix : d[0],
                 context: d[2],
                 args: d[4]
             })%}
-        | (%kw_with __):? %kw_undo __ ( undo_label __ ):? (logical_expr | bool)
+        | (%kw_with __):? %kw_undo _ ( undo_label _ ):? (logical_expr | bool)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : empty),

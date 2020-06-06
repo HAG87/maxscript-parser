@@ -377,7 +377,7 @@ function spaceLR(str1, str2) {
 		return '';
 	}
 	else {
-		return /[\w_-]$/gmi.test(str1) && /^[\w_-]/gmi.test(str2) ? ' ' : '';
+		return /[\w_$?-]$/gmi.test(str1) && /^[\w_-]/gmi.test(str2) ? ' ' : '';
 	}
 }
 /**
@@ -387,7 +387,7 @@ function spaceLR(str1, str2) {
  */
 function spaceSE(str, end = true) {
 	let _start = /^[\w_-]/gmi.test(str) ? ' ' : '';
-	let _end = /[\w_-]$/gmi.test(str) && end ? ' ' : '';
+	let _end = /[\w_$?-]$/gmi.test(str) && end ? ' ' : '';
 	return `${_start}${str}${_end}`;
 }
 /**

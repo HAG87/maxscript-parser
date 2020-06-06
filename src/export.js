@@ -1,11 +1,11 @@
 const fs = require('fs');
 
 var exp = [
-    'astUtils.js',
+    // 'astUtils.js',
     'grammar.js',
     'mooTokenize.js',
-    'mxsCompactCode.js',
-    // 'mxsparser.js',
+    // 'mxsCompactCode.js',
+    'mxsparser.js',
 ]
 
 exp.forEach( f => {

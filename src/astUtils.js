@@ -1,7 +1,6 @@
 "use strict";
 const objectPath = require("object-path");
-// const traverse2 = require('ast-monkey-traverse-with-lookahead');
-//-----------------------------------------------------------------------------------
+const traverse2 = require('ast-monkey-traverse-with-lookahead');
 //-----------------------------------------------------------------------------------
 /**
  * Retrieve an object-path notation pruning n branches/leafs
@@ -56,7 +55,7 @@ const objFromKeys = (arr, def) => arr.reduce((ac,a) => ({...ac,[a]:def}),{});
 /**
  * Functions for getting the range of a statement. Grouped in a static class for coherency
  */
-/* class range {
+class range {
 	static getRange(start, end) {
 		return {
 			start: start,
@@ -93,10 +92,9 @@ const objFromKeys = (arr, def) => arr.reduce((ac,a) => ({...ac,[a]:def}),{});
 		return this.fromStartEndOffsets(start, last.offset, last.text);
 	}
 }
-//*/
 //-----------------------------------------------------------------------------------
 module.exports = {
-	// range,
+	range,
 	parentPath,
 	findParentName,
 	objFromKeys
