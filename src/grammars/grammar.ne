@@ -185,6 +185,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
             value: d[2],
             //loc: d[0].loc
         })%}
+
 #---------------------------------------------------------------
 # PLUGIN DEFINITION --- SHOULD AVOID LEFT RECURSION
     plugin_def
@@ -269,7 +270,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # UTILITY DEFINITION -- OK
     utility_def
-        -> (%kw_utility __) var_name _ string (_ parameter):* _
+        -> (%kw_utility __) var_name _ operand (_ parameter):* _
             LPAREN
                 utility_clause
                 (EOL utility_clause):*
@@ -289,7 +290,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # ROLLOUT DEFINITION --- OK
     rollout_def
-        -> (%kw_rollout  __) var_name _ string (_ parameter):* _
+        -> (%kw_rollout  __) var_name _ operand (_ parameter):* _
             LPAREN
                 rollout_clause
                 (EOL rollout_clause):*
@@ -337,7 +338,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
             })%}
     #---------------------------------------------------------------
     rollout_item
-        -> item_type __ var_name (_ string ):? ( _ parameter):*
+        -> item_type __ var_name (_ operand):? ( _ parameter):*
             {% d => ({
                 type:   'EntityRolloutControl',
                 class:  d[0],
@@ -666,7 +667,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # DO LOOP --- OK
 # TODO: FINISH LOCATION
-    do_loop -> (%kw_do __) expr (__ %kw_while __) expr
+    do_loop -> (%kw_do _) expr (_ %kw_while _) expr
         {% d => ({
             type: 'DoWhileStatement',
             body: d[1],
@@ -675,7 +676,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
 # TODO: FINISH LOCATION
-    while_loop -> (%kw_while __) expr (__ %kw_do __) expr
+    while_loop -> (%kw_while _S) expr (_S %kw_do _) expr
         {% d => ({
             type: 'WhileStatement',
             test: d[1],
@@ -992,6 +993,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | %kw_objectset    {% id %}
         | %kw_time         {% id %}
         | %kw_group        {% id %}
+        | %kw_menuitem     {% id %}
+        | %kw_separator    {% id %}
+        | %kw_submenu      {% id %}
         # | %kw_return
         # | %kw_throw
         # | %kw_continue

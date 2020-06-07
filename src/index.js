@@ -35,14 +35,20 @@ const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
 //-----------------------------------------------------------------------------------
 function Main(src) {
 	try {
-		let msxParser = new mxsParseSource();
+		var msxParser = new mxsParseSource();
 		msxParser.source = source(src);
 		JsonFileWrite('test/CST.json', msxParser.parsedCST);
-		// JsonFileWrite('test/TOKENS.json', msxParser.TokenizeSource());
+		JsonFileWrite('test/TOKENS.json', msxParser.TokenizeSource());
 		// let failedTopkens = collectErrors(msxParser.parsedCST);
 		return msxParser.parsedCST;
 	} catch (e) {
 		console.log(e.token);
+		try {
+			let toks = msxParser.TokenizeSource();
+			JsonFileWrite('test/TOKENS.json', toks);
+		} catch (err2) {
+			console.log(err2.message);
+		}
 		FileWrite('test/error.txt', e.message);
 	}
 }
@@ -56,8 +62,8 @@ function compress(source) {
 		console.log(err.message);
 	}
 }
-let CST = Main(examples[1]);
-let COMPRESS = compress(CST); FileWrite('test/compress.ms', COMPRESS);
+let CST = Main('examples/dstlbx_run.ms');
+// let COMPRESS = compress(CST); FileWrite('test/compress.ms', COMPRESS);
 //-----------------------------------------------------------------------------------
 // At end of your code
 const results = perf.stop();
