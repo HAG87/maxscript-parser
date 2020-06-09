@@ -755,7 +755,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
     # includes "as" operator, for simplicity
 
     #    math_expr -> sum {% id %}
-    #    sum -> prod _S ("+"|"-") _ sum
+    #    sum -> sum _S ("+"|"-") _ prod
     #            {% d => ({
     #                type:     'MathExpression',
     #                operator: d[2],
@@ -894,7 +894,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     fn_call
-        -> operand _S call_params
+        -> call_caller _S call_params
         {% d => ({
             type:  'CallExpression',
             calle: d[0],
@@ -903,12 +903,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
     # up to an end of line or lower precedence token?
     call_params
         # -> fn_call_args (_S fn_call_args):* {% d => merge(d[0], d[1]) %}
-        -> call_params _S fn_call_args {% d => [].concat(d[0], d[2]) %}
-        | fn_call_args #{% id %}
+        -> call_params _S call_args {% d => [].concat(d[0], d[2]) %}
+        | call_args #{% id %}
 
-    fn_call_args
-        -> operand {% id %}
-        | parameter {% id %}
+    call_caller -> var_name {% id %} | property {% id %}
+    call_args -> operand {% id %} | parameter {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter -> param_name _ operand
@@ -918,7 +917,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
             value: d[2],
             //loc: d[0].loc
         })%}
-    param_name -> %params _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
+    param_name -> var_name _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
 #---------------------------------------------------------------
 # OPERANDS --- OK
     operand
@@ -945,18 +944,31 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # FACTORS --- OK?
-    factor -> norev_factor {% id %} | rev_factor {% id %} | u_factor {% id %} | not_factor {% id %}
+    factor
+        -> factors {% id %}
+        | u_expr {% id %}
+        | not_expr {% id %}
+
+    u_expr -> "-" u_factor
+        {% d => ({
+            type: 'UnaryExpression',
+            operator: d[0],
+            right:    d[1]
+        }) %}
 
     u_factor
-        -> %unary rev_factor
-            {% d => ({
-                type: 'UnaryExpression',
-                operator: d[0],
-                right:    d[1]
-            }) %}
-        # | rev_factor {% id %}
+        -> number    {% id %}
+        | time       {% id %}
+        | var_name   {% id %}
+        | array      {% id %}
+        | bitarray   {% id %}
+        | point4     {% id %}
+        | point3     {% id %}
+        | point2     {% id %}
+        | expr_seq   {% id %}
+        | fn_call    {% id %}
 
-    not_factor -> %kw_not _ neg_factor
+    not_expr -> %kw_not _ neg_factor
         {% d => ({
             type :    'LogicalExpression',
             operator: d[0],
@@ -968,17 +980,13 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | var_name   {% id %}
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
 
-    norev_factor
-        -> string     {% id %}
+   factors
+        -> string    {% id %}
+        | number     {% id %}
         | path_name  {% id %}
         | name_value {% id %}
         | bool       {% id %}
         | void       {% id %}
-        | %error     {% id %}
-        | "?" {% d => ({type: 'Keyword', value: d[0]}) %}
-
-    rev_factor
-        -> number    {% id %}
         | time       {% id %}
         | var_name   {% id %}
         | array      {% id %}
@@ -987,6 +995,10 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | point3     {% id %}
         | point2     {% id %}
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
+        | "?" {% d => ({type: 'Keyword', value: d[0]}) %}
+        | %error     {% id %}
+
+
 # RESERVED KEYWORDS
     kw_reserved
         -> %kw_uicontrols  {% id %}
