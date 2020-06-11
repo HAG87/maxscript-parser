@@ -116,13 +116,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
         # | %error {% id %}
     #---------------------------------------------------------------
     simple_expr
-        -> math_expr    {% id %}
+         -> math_expr   {% id %}
         | compare_expr {% id %}
         | logical_expr {% id %}
-        | operand     {% id %}
-        | fn_call      {% id %}
-        # | %error {% id %}
-        #| expr_seq #RECURSION!
+        # | operand      {% id %}
+        # | fn_call      {% id %}
 #===============================================================
 # DEFINITIONS
 #===============================================================
@@ -754,74 +752,96 @@ Main -> _ _EXPR _ {% d => d[1] %}
 # MATH EXPRESSION ---  PARTIAL OPERATOR PRECEDENCE....
     # includes "as" operator, for simplicity
 
-    #    math_expr -> sum {% id %}
-    #    sum -> sum _S ("+"|"-") _ prod
-    #            {% d => ({
-    #                type:     'MathExpression',
-    #                operator: d[2],
-    #                left:     d[0],
-    #                right:    d[4]
-    #            })%}
-    #        | prod {% id %}
-    #    prod -> prod _S ("*"|"/") _ exp
-    #            {% d => ({
-    #                type:     'MathExpression',
-    #                operator: d[2],
-    #                left:     d[0],
-    #                right:    d[4]
-    #            })%}
-    #        | exp {% id %}
-    #    exp -> as _S "^" _ exp
-    #            {% d => ({
-    #                type:     'MathExpression',
-    #                operator: d[2],
-    #                left:     d[0],
-    #                right:    d[4]
-    #            })%}
-    #        | as {% id %}
-    #    as -> as _S %kw_as _ var_name
-    #            {% d => ({
-    #                type:     'MathExpression',
-    #                operator: d[2],
-    #                left:     d[0],
-    #                right:    d[4]
-    #            })%}
-    #        | math_operand {% id %}
+    math_expr -> rest {% id %}
 
+    rest -> rest minus_ws sum
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[1],
+                left:     d[0],
+                right:    d[2]
+            })%}
+    | sum {% id %}
+
+    minus_ws
+        -> "-" {% id %}
+        | "-" __ {% d => d[0] %}
+        | __ "-" __ {% d => d[1] %}
+
+    sum -> sum _S "+" _ prod
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4]
+            })%}
+        | prod {% id %}
+    prod -> prod _S ("*"|"/") _ exp
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4]
+            })%}
+        | exp {% id %}
+    exp -> as _S "^" _ exp
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4]
+            })%}
+        | as {% id %}
+    as -> as _S %kw_as _ var_name
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4]
+            })%}
+        | uny {% id %}
+
+    uny -> "-" _  math_operand
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[0],
+                right:    d[2]
+            }) %}
+        | math_operand {% id %}
     #   math_expr -> math_p _S (%math _ math_p):*
     #   math_p -> math_operand | %unary math_p
     #   math_p -> math_operand | "-" math_p
 
-    math_expr
-        -> math_expr _S  %math _ (math_operand | math_as)
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4][0]
-        })%}
-        | math_operand _S  %math _ (math_operand | math_as)
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4][0]
-        })%}
-        | math_as {% id %}
+#    math_expr
+#        -> math_expr _S  %math _ (math_operand | math_as)
+#        {% d => ({
+#            type:     'MathExpression',
+#            operator: d[2],
+#            left:     d[0],
+#            right:    d[4][0]
+#        })%}
+#        | math_operand _S  %math _ (math_operand | math_as)
+#        {% d => ({
+#            type:     'MathExpression',
+#            operator: d[2],
+#            left:     d[0],
+#            right:    d[4][0]
+#        })%}
+#        | math_as {% id %}
 
-    math_as
-        -> math_operand _S %kw_as _ var_name
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4]
-        })%}
-        # | math_operand {% id %}
+#    math_as
+#        -> math_operand _S %kw_as _ var_name
+#        {% d => ({
+#            type:     'MathExpression',
+#            operator: d[2],
+#            left:     d[0],
+#            right:    d[4]
+#        })%}
 
     math_operand
         -> operand   {% id %}
         | fn_call    {% id %}
+        # | u_expr {% id %}
         #| conversion {% id %}
         #| math_expr #recursion!
 #---------------------------------------------------------------
@@ -838,38 +858,30 @@ Main -> _ _EXPR _ {% d => d[1] %}
     #    exp -> math_operand _ "^" _ exp  {% d => [d[0], d[2], d[4] ]%}
     #        | math_operand               {% id %}
 #---------------------------------------------------------------
-# CONVERSION - DISABLED
-    conversion -> operand _S %kw_as _ var_name
-    {% d => ({
-        type:    'ConvertExpression',
-        operand: d[0],
-        class:   d[4]
-    })%}
-#---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     logical_expr
-        -> logical_expr _S %kw_compare _  logical_operand
+        -> logical_expr _S %kw_compare _  (logical_operand | not_operand)
         {% d => ({
             type :    'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4]
+            right:    d[4][0]
         }) %}
-        | logical_operand _S %kw_compare _  logical_operand
+        | logical_operand _S %kw_compare _  (logical_operand | not_operand)
         {% d => ({
             type :    'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4]
+            right:    d[4][0]
         }) %}
-        # | not_operand {% id %}
+        | not_operand {% id %}
 
-    #   not_operand -> %kw_not _ logical_operand
-    #       {% d => ({
-    #           type :    'LogicalExpression',
-    #           operator: d[0],
-    #           right:    d[2]
-    #       }) %}
+    not_operand -> %kw_not _ logical_operand
+        {% d => ({
+            type :    'LogicalExpression',
+            operator: d[0],
+            right:    d[2]
+        }) %}
 
     logical_operand
         -> operand     {% id %}
@@ -888,38 +900,71 @@ Main -> _ _EXPR _ {% d => d[1] %}
 
     compare_operand
         -> math_expr {% id %}
-        | operand    {% id %}
-        | fn_call    {% id %}
+        # | operand    {% id %}
+        # | fn_call    {% id %}
     # compareSym -> ("=="|"!="|">" |"<" |">="|"<=") {% id %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     fn_call
-        -> call_caller _S call_params
+        -> call_caller _S call_args (_S call_params):?
         {% d => ({
             type:  'CallExpression',
             calle: d[0],
-            args:  d[2]
+            args:  merge(d[2], d[3])
         })%}
+        | call_caller _S call_params
+            {% d => ({
+                type:  'CallExpression',
+                calle: d[0],
+                args:  d[2]
+            })%}
     # up to an end of line or lower precedence token?
-    call_params
+    # call_params
         # -> fn_call_args (_S fn_call_args):* {% d => merge(d[0], d[1]) %}
-        -> call_params _S call_args {% d => [].concat(d[0], d[2]) %}
-        | call_args #{% id %}
+        # -> call_params _S call_args {% d => [].concat(d[0], d[2]) %}
+        # | call_args #{% id %}
+        # | "-" call_args
+        #     {% d => ({
+        #         type: 'UnaryExpression',
+        #         operator: d[0],
+        #         right:    d[1]
+        #     }) %}
+
+    call_params
+        -> call_params _S parameter {% d => [].concat(d[0], d[2]) %}
+        | parameter
+
+    call_args
+        -> call_args _S call_arg {% d => [].concat(d[0], d[2]) %}
+        | call_arg
+
+    call_arg
+        ->  __ u_operand
+            {% d => d[1] %}
+        | operand {% id %}
 
     call_caller -> var_name {% id %} | property {% id %}
-    call_args -> operand {% id %} | parameter {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
-    parameter -> param_name _ operand
+    parameter -> param_name _ (operand | u_operand)
         {% d => ({
             type: 'ParameterAssignment',
             param: d[0],
-            value: d[2],
+            value: d[2][0],
             //loc: d[0].loc
         })%}
     param_name -> var_name _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
 #---------------------------------------------------------------
 # OPERANDS --- OK
+    u_operand
+        -> "-" operand
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[1],
+                right:    d[2]
+            }) %}
+        # | operand {% id %}
+
     operand
         -> factor     {% id %}
         | property    {% id %}
@@ -944,43 +989,16 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # FACTORS --- OK?
-    factor
-        -> factors {% id %}
-        | u_expr {% id %}
-        | not_expr {% id %}
-
-    u_expr -> "-" u_factor
-        {% d => ({
-            type: 'UnaryExpression',
-            operator: d[0],
-            right:    d[1]
-        }) %}
-
-    u_factor
-        -> number    {% id %}
-        | time       {% id %}
-        | var_name   {% id %}
-        | array      {% id %}
-        | bitarray   {% id %}
-        | point4     {% id %}
-        | point3     {% id %}
-        | point2     {% id %}
-        | expr_seq   {% id %}
-        | fn_call    {% id %}
-
-    not_expr -> %kw_not _ neg_factor
-        {% d => ({
-            type :    'LogicalExpression',
-            operator: d[0],
-            right:    d[2]
-        }) %}
-
-    neg_factor
-        ->  bool       {% id %}
-        | var_name   {% id %}
-        | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
-
-   factors
+    # factor -> factors {% id %}
+        # | u_expr {% id %}
+        # | not_expr {% id %}
+    # u_expr -> "-" _ expr
+            # {% d => ({
+                # type: 'UnaryExpression',
+                # operator: d[0],
+                # right:    d[2]
+            # }) %}
+   factor
         -> string    {% id %}
         | number     {% id %}
         | path_name  {% id %}
@@ -997,8 +1015,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
         | "?" {% d => ({type: 'Keyword', value: d[0]}) %}
         | %error     {% id %}
-
-
+        # | u_expr     {% id %}
 # RESERVED KEYWORDS
     kw_reserved
         -> %kw_uicontrols  {% id %}
@@ -1058,8 +1075,8 @@ Main -> _ _EXPR _ {% d => d[1] %}
             }) %}
 
         array_expr
-        -> expr {% id %}
-         | array_expr (_ "," _) expr {% d => [].concat(d[0], d[2]) %}
+         -> array_expr (_ "," _) expr {% d => [].concat(d[0], d[2]) %}
+         | expr
 #---------------------------------------------------------------
 # BITARRAY --- OK
     bitarray
@@ -1077,13 +1094,13 @@ Main -> _ _EXPR _ {% d => d[1] %}
         }) %}
 
     bitarray_expr
-    -> bitarray_item {% id %}
-    | bitarray_expr (_ "," _) bitarray_item {% d => [].concat(d[0], d[2]) %}
+    -> bitarray_expr (_ "," _) bitarray_item {% d => [].concat(d[0], d[2]) %}
+    | bitarray_item
 
     # TODO: Fix groups
     bitarray_item
-        -> expr {% id %}
-        |  expr (_S %bitrange _) expr {% d => ({type: 'BitRange', start: d[0], end: d[2]}) %}
+        -> expr (_S %bitrange _) expr {% d => ({type: 'BitRange', start: d[0], end: d[2]}) %}
+        | expr {% id %}
 #===============================================================
 # TOKENS
 #===============================================================
