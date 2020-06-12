@@ -1,5 +1,6 @@
 
 const fs = require('fs');
+const path = require('path');
 //-----------------------------------------------------------------------------------
 const mxsParseSource = require('./mxsParser.js');
 const { FileWrite, JsonFileWrite } = require('./utils.js');
@@ -10,6 +11,7 @@ const { FileWrite, JsonFileWrite } = require('./utils.js');
 // const objectPath = require("object-path");
 //-----------------------------------------------------------------------------------
 const mxLexer = require('./mooTokenize.js');
+const {TokenizeSource} = require('./mxsTokenize.js')
 const { visit, visitorPatterns } = require("./mxsCompactCode");
 //-----------------------------------------------------------------------------------
 const perf = require('execution-time')();
@@ -34,22 +36,15 @@ let examples = {
 const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
 //-----------------------------------------------------------------------------------
 function Main(src) {
+	JsonFileWrite('test/_tokens.json',TokenizeSource(source(src)));
 	try {
-		var msxParser = new mxsParseSource();
-		msxParser.source = source(src);
-		JsonFileWrite('test/CST.json', msxParser.parsedCST);
-		JsonFileWrite('test/TOKENS.json', msxParser.TokenizeSource());
-		// let failedTopkens = collectErrors(msxParser.parsedCST);
-		return msxParser.parsedCST;
+		var mxsParser = new mxsParseSource(source(src));
+		// mxsParser.__parseWhitErrors();
+		// JsonFileWrite('test/CST.json', mxsParser.parsedCST);
+		return mxsParser.parsedCST;
 	} catch (e) {
-		console.log(e.token);
-		try {
-			let toks = msxParser.TokenizeSource();
-			JsonFileWrite('test/TOKENS.json', toks);
-		} catch (err2) {
-			console.log(err2.message);
-		}
-		FileWrite('test/error.txt', e.message);
+		console.log(e.tokens);
+		// FileWrite('test/error.txt', e.message);
 	}
 }
 //-----------------------------------------------------------------------------------
@@ -60,10 +55,32 @@ function compress(source) {
 		return visit(source, visitorPatterns);
 	} catch (err) {
 		console.log(err.message);
+		throw err;
 	}
 }
-let CST = Main('examples/dstlbx_run.ms');
-// let COMPRESS = compress(CST); FileWrite('test/compress.ms', COMPRESS);
+let CST = Main(examples[5]);
+// let CST = Main('examples/common/corelib.ms');
+/*
+const directoryPath = 'examples';
+fs.readdir(directoryPath, function (err, files) {
+    //handling error
+    if (err) {
+        return console.log('Unable to scan directory: ' + err);
+    }
+    //listing all files using forEach
+    files.forEach(function (file) {
+		// Do whatever you want to do with the file
+		let f = path.join(directoryPath, file);
+		console.log(file);
+		Main(f);
+
+    });
+});
+// */
+//-----------------------------------------------------------------------------------
+// CODE MINIFIER TEST
+let COMPRESS = compress(CST);
+FileWrite('test/compress.ms', COMPRESS);
 //-----------------------------------------------------------------------------------
 // At end of your code
 const results = perf.stop();
