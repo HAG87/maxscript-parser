@@ -1025,10 +1025,11 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | %kw_menuitem     {% id %}
         | %kw_separator    {% id %}
         | %kw_submenu      {% id %}
+        | %kw_dontcollect  {% id %}
+        | %kw_continue
+        # | %kw_collect
         # | %kw_return
         # | %kw_throw
-        # | %kw_continue
-        # | %kw_collect
         # | %kw_rollout
 #===============================================================
 # VALUES

@@ -832,6 +832,8 @@ var grammar = {
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_menuitem") ? {type: "kw_menuitem"} : kw_menuitem)], "postprocess": id},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_separator") ? {type: "kw_separator"} : kw_separator)], "postprocess": id},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_submenu") ? {type: "kw_submenu"} : kw_submenu)], "postprocess": id},
+    {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_dontcollect") ? {type: "kw_dontcollect"} : kw_dontcollect)], "postprocess": id},
+    {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_continue") ? {type: "kw_continue"} : kw_continue)]},
     {"name": "point4$subexpression$1", "symbols": ["_S", {"literal":","}, "_"]},
     {"name": "point4$subexpression$2", "symbols": ["_S", {"literal":","}, "_"]},
     {"name": "point4$subexpression$3", "symbols": ["_S", {"literal":","}, "_"]},
