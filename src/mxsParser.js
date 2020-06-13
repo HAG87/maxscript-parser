@@ -123,11 +123,9 @@ class mxsParseSource {
 		let state = this.parserInstance.save();
 		let badTokens = [];
 		let errorReport = [];
-
-		let next = 0;
-		let remain = src.length - 1;
+		let total = src.length - 1;
 		/*
-		while (next < remain)
+		while (next < total)
 		{
 			try {
 				this.parserInstance.feed(src[next].text);
@@ -148,66 +146,56 @@ class mxsParseSource {
 			next += 1;
 		}
 		*/
-		let parsings = () => {
+		let report = () => {
+			console.log('Finishim');
+			console.log('PARSE TREES: ' + this.parserInstance.results.length);
+
+			let newErr = new Error('Parser failed.');
+			if (this.parserInstance.results[0]) {
+				// newErr.name = 'ERR_RECOVER';
+				newErr.recoverable = true;
+			} else {
+				// newErr.name = 'ERR_FATAL';
+				newErr.message +=  ' Unrecoverable errors.';
+				newErr.recoverable = false;
+			}
+			newErr.tokens = badTokens;
+			newErr.details = errorReport;
+			throw newErr;
+		}
+
+		let parsings = (src, next, total) => {
+			// console.log(badTokens);
 			try {
 				this.parserInstance.feed(src[next].text);
-				// process.stdout.write(".");
 			} catch (err) {
 				// catch non parsing related errors.
 				if (!err.token) { throw err; }
-				// console.log(err.token);
+
 				badTokens.push({...src[next]});
-				// replace bad token with whitespace to maintain positions
+				errorReport.push({token:{...src[next]}, alternatives: this._PossibleTokens() });
+
 				let filler = replaceWithWS(err.token.text);
 				err.token.text = filler;
 				err.token.value = filler;
 				err.token.type = "ws";
 
-				src.splice(next, 1, err.token);
+				// src.splice(next, 1, err.token);
+				src[next] = err.token;
 
 				next -= 1;
 				this.parserInstance.restore(state);
 			}
 			state = this.parserInstance.save();
-			if (next < remain) {
-				next += 1;
-				setImmediate(parsings);
-				// process.nextTick(parsings);
+
+			if (next === total) {
+				return report();
+			} else {
+				setImmediate( () => parsings(src, next + 1, total));
+				// return  parsings(src, next + 1, total);
 			}
 		};
-		parsings();
-		//-------------------------------------------------
-		/*
-		// DISABLED: Can't get a working CST, token locations are wrong
-		let newErr;
- 		if (this.parserInstance.results[0]) {
-			this.__parsedCST = this.parserInstance.results[0];
-			// parsing passed
-			newErr = new Error('Parser finished with errors.');
-			newErr.name = 'ERR_RECOVER';
-			newErr.tokens = badTokens;
-			newErr.details = errorReport;
-			// newErr.parsedCST = this.parserInstance.results[0];
-		} else {
-			newErr = new Error('Parser failed. unrecoverable errors.');
-			newErr.name = 'ERR_FATAL';
-			newErr.tokens = badTokens;
-			newErr.details = errorReport;
-		} */
-		// this.__parsedCST = [];
-		this.__parsedCST =  this.parserInstance.results[0];
-
-		console.log('PARSE TREES: ' + this.parserInstance.results.length);
-
-		let newErr = new Error('Parser failed. unrecoverable errors.');
-		newErr.name = 'ERR_FATAL';
-		newErr.tokens = badTokens;
-		newErr.details = errorReport;
-
-		// this.badTokens = [];
-		// this.errorReport = [];
-		// exit with error
-		throw newErr;
+		setImmediate( () => parsings(src, 0, total));
 	}
 	/**
 	 * List of possible tokens to overcome the error

@@ -39,11 +39,11 @@ function Main(src) {
 	JsonFileWrite('test/_tokens.json',TokenizeSource(source(src)));
 	try {
 		var mxsParser = new mxsParseSource(source(src));
-		// mxsParser.__parseWhitErrors();
+		mxsParser.__parseWithErrors();
 		// JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
 	} catch (e) {
-		console.log(e.tokens);
+		console.log(e);
 		// FileWrite('test/error.txt', e.message);
 	}
 }
@@ -79,8 +79,8 @@ fs.readdir(directoryPath, function (err, files) {
 // */
 //-----------------------------------------------------------------------------------
 // CODE MINIFIER TEST
-let COMPRESS = compress(CST);
-FileWrite('test/compress.ms', COMPRESS);
+// let COMPRESS = compress(CST);
+// FileWrite('test/compress.ms', COMPRESS);
 //-----------------------------------------------------------------------------------
 // At end of your code
 const results = perf.stop();
