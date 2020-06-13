@@ -39,7 +39,7 @@ function Main(src) {
 	JsonFileWrite('test/_tokens.json',TokenizeSource(source(src)));
 	try {
 		var mxsParser = new mxsParseSource(source(src));
-		mxsParser.__parseWithErrors();
+		// mxsParser.__parseWithErrors();
 		// JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
 	} catch (e) {

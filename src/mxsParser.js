@@ -6,6 +6,7 @@ const nearley = require('nearley');
 const grammar = require('./grammar.js');
 const mxLexer = require('./mooTokenize.js');
 const { FileWrite, JsonFileWrite } = require('./utils.js');
+const { resolve } = require('path');
 
 //-----------------------------------------------------------------------------------
 function replaceWithWS(str) {
@@ -104,52 +105,42 @@ class mxsParseSource {
 			this.__parsedCST = this.parserInstance.results[0];
 		} catch (err) {
 			this.parserInstance.restore(this.__parserState);
-			this.__parseWithErrors();
+
+			console.log('ERROR PARSING');
+			this.__parseWithErrors()
+			/*
+			.then((response) => {
+				console.log('ERROR CHECK FINISHED');
+				// console.log(response);
+				// throw response;
+				// return Promise.reject(response);
+				return response;
+
+			});
+			*/
+			// console.log('ÑAÑAÑAÑ');
 			// throw err;
 		}
 		// */
 		// this.__parseWhitErrors();
 
 		// this.__parserState = this.parserInstance.save();
+		// return;
 	}
 
 	/**
 	 * Parser with error recovery
 	 */
 	__parseWithErrors() {
-		console.log('ERROR PARSING');
 		// COULD BE A WAY TO FEED TOKENS TO THE PARSER?
 		let src = this.TokenizeSource();
 		let state = this.parserInstance.save();
 		let badTokens = [];
 		let errorReport = [];
 		let total = src.length - 1;
-		/*
-		while (next < total)
-		{
-			try {
-				this.parserInstance.feed(src[next].text);
-			} catch (err) {
-				// catch non parsing related errors.
-				if (!err.token) { throw err; }
-				badTokens.push({...src[next]});
-				// replace bad token with whitespace to maintain positions
-				let filler = replaceWithWS(err.token.text);
-				err.token.text = filler;
-				err.token.value = filler;
-				err.token.type = "ws";
-				src.splice(next, 1, err.token);
-				next -= 1;
-				this.parserInstance.restore(state);
-			}
-			state = this.parserInstance.save();
-			next += 1;
-		}
-		*/
-		let report = () => {
-			console.log('Finishim');
-			console.log('PARSE TREES: ' + this.parserInstance.results.length);
 
+		let report = () => {
+			// console.log('PARSE TREES: ' + this.parserInstance.results.length);
 			let newErr = new Error('Parser failed.');
 			if (this.parserInstance.results[0]) {
 				// newErr.name = 'ERR_RECOVER';
@@ -161,41 +152,81 @@ class mxsParseSource {
 			}
 			newErr.tokens = badTokens;
 			newErr.details = errorReport;
-			throw newErr;
+			return newErr;
 		}
-
-		let parsings = (src, next, total) => {
-			// console.log(badTokens);
+		// /*
+		for (var next = 0; next < src.length; next++) {
+			// console.log(next);
 			try {
 				this.parserInstance.feed(src[next].text);
 			} catch (err) {
 				// catch non parsing related errors.
-				if (!err.token) { throw err; }
-
-				badTokens.push({...src[next]});
-				errorReport.push({token:{...src[next]}, alternatives: this._PossibleTokens() });
+				// if (!err.token) { reject(err); }
+				// if (!err.token) { throw err; }
+				console.log(err.token);
+				badTokens.push(src[next]);
+				// errorReport.push({token:src[next], alternatives: this.PossibleTokens() });
 
 				let filler = replaceWithWS(err.token.text);
 				err.token.text = filler;
 				err.token.value = filler;
 				err.token.type = "ws";
-
 				// src.splice(next, 1, err.token);
 				src[next] = err.token;
-
+				// console.log(src[next]);
+				// console.log(badTokens);
 				next -= 1;
 				this.parserInstance.restore(state);
 			}
 			state = this.parserInstance.save();
+		}
+		report();
+		// */
+		/*
+		let promise = new Promise((resolve, reject) => {
+			let parsings = (src, next, total) => {
+				// console.log(badTokens);
+				try {
+					this.parserInstance.feed(src[next].text);
+				} catch (err) {
+					// catch non parsing related errors.
+					if (!err.token) { reject(err); }
+					if (!err.token) { throw err; }
 
-			if (next === total) {
-				return report();
-			} else {
-				setImmediate( () => parsings(src, next + 1, total));
-				// return  parsings(src, next + 1, total);
-			}
-		};
-		setImmediate( () => parsings(src, 0, total));
+					badTokens.push({...src[next]});
+					errorReport.push({token:{...src[next]}, alternatives: this._PossibleTokens() });
+
+					let filler = replaceWithWS(err.token.text);
+					err.token.text = filler;
+					err.token.value = filler;
+					err.token.type = "ws";
+
+					// src.splice(next, 1, err.token);
+					src[next] = err.token;
+
+					next -= 1;
+					this.parserInstance.restore(state);
+				}
+				state = this.parserInstance.save();
+
+				if (next === total) {
+					resolve(report());
+				} else {
+					setImmediate( () => parsings(src, next + 1, total));
+					// return  parsings(src, next + 1, total);
+				}
+			};
+			parsings(src, 0, total);
+		});
+		return new Promise((resolve, reject) =>{
+			promise.then((response) => {
+				// console.log(response);
+				resolve(response);
+			}, (error) => {
+				reject(error);
+			})
+		});
+		// */
 	}
 	/**
 	 * List of possible tokens to overcome the error
