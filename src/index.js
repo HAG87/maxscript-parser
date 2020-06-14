@@ -40,7 +40,7 @@ function Main(src) {
 	try {
 		var mxsParser = new mxsParseSource(source(src));
 		// mxsParser.__parseWithErrors();
-		// JsonFileWrite('test/CST.json', mxsParser.parsedCST);
+		JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
 	} catch (e) {
 		console.log(e);
