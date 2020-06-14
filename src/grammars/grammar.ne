@@ -56,38 +56,14 @@
 @lexer mxLexer
 #===============================================================
 # ENTRY POINT
-Main -> _ _EXPR _ {% d => d[1] %}
+Main -> _ _expr_seq _ {% d => d[1] %}
 #---------------------------------------------------------------
 # Expressions main recursion
     # _EXPR -> expr (EOL expr):*    {% d => merge(...d) %}
-
-    _EXPR -> _EXPR EOL expr {% d => [].concat(d[0], d[2])%}
-    | expr #{% id %}
-#---------------------------------------------------------------
-# EXPRESSIONS - RECURSION!
-    expr_seq ->
-        LPAREN
-            _expr_seq
-        RPAREN
-        # {% d => d[1] %}
-        {% d => ({
-            type: 'BlockStatement',
-            body: d[1]
-        })%}
-        | "(" _ ")"
-        {% d => ({
-            type: 'BlockStatement',
-            body: []
-        })%}
-
-    _expr_seq
-        # -> expr  (EOL expr):*
-        # {% d => ({
-        #     type: 'BlockStatement',
-        #     body: merge(...d)
-        # })%}
-        -> _expr_seq EOL expr {% d => [].concat(d[0], d[2]) %}
-        | expr #{% id %}
+    
+    # _EXPR
+    #     -> _EXPR EOL expr {% d => [].concat(d[0], d[2])%}
+    #     | expr
 # ---------------------------------------------------------------
 # EXPRESSIONS LIST --- OK
     expr
@@ -113,14 +89,37 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | macroscript_def {% id %}
         | plugin_def      {% id %}
         | change_handler  {% id %}
-        # | %error {% id %}
-    #---------------------------------------------------------------
+#---------------------------------------------------------------
     simple_expr
-         -> math_expr   {% id %}
+        -> math_expr   {% id %}
         | compare_expr {% id %}
         | logical_expr {% id %}
         # | operand      {% id %}
-        # | fn_call      {% id %}
+        # -> operand      {% id %}
+#---------------------------------------------------------------
+# EXPRESSIONS - RECURSION!
+    expr_seq
+        -> LPAREN _expr_seq RPAREN
+            # {% d => d[1] %}
+            {% d => ({
+                type: 'BlockStatement',
+                body: d[1]
+            })%}
+        | "(" _ ")"
+            {% d => ({
+                type: 'BlockStatement',
+                body: []
+            })%}
+
+    # -> expr  (EOL expr):*
+    # {% d => ({
+    #     type: 'BlockStatement',
+    #     body: merge(d[0], d[1])
+    # })%}
+
+    _expr_seq
+        -> _expr_seq EOL expr {% d => [].concat(d[0], d[2]) %}
+        | expr #{% id %}
 #===============================================================
 # DEFINITIONS
 #===============================================================
@@ -128,18 +127,18 @@ Main -> _ _EXPR _ {% d => d[1] %}
     rcmenu_def
         -> (%kw_rcmenu __) var_name _
             LPAREN
-                    rcmenu_clauses:?
+                rcmenu_clauses:?
             RPAREN
         {% d => ({
             type: 'EntityRcmenu',
             id:   d[1],
-            body: d[4]
+            body: d[4],
+            loc: getLoc(d[0][0], d[5])
         })%}
-    #---------------------------------------------------------------
-    # REPLACE WHIS WITH EBNF CAPTURE GROUP
+    
     rcmenu_clauses
-        -> rcmenu_clause {% id %}
-        | rcmenu_clauses EOL rcmenu_clause {% d => [].concat(d[0], d[2]) %}
+        -> rcmenu_clauses EOL rcmenu_clause {% d => [].concat(d[0], d[2]) %}
+        | rcmenu_clause {% id %}
 
     rcmenu_clause
         -> variable_decl {% id %}
@@ -149,8 +148,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | rcmenu_submenu {% id %}
         | rcmenu_sep     {% id %}
         | rcmenu_item    {% id %}
-    #---------------------------------------------------------------
-    #TODO: FINISH PARAMS
+    
     rcmenu_submenu
         -> (%kw_submenu _) string (_ parameter):? _
             LPAREN
@@ -160,15 +158,17 @@ Main -> _ _EXPR _ {% d => d[1] %}
         type:   'EntityRcmenu_submenu',
         label:  d[1],
         params: flatten(d[2]),
-        body:   d[5]
+        body:   d[5],
+        loc: getLoc(d[0][0], d[6])
     })%}
-    #---------------------------------------------------------------
+    
     rcmenu_sep -> (%kw_separator __) var_name (_ rcmenu_param):?
     {% d => ({
         type:   'EntityRcmenu_separator',
         id:     d[1],
         params: flatten(d[2]),
     })%}
+    
     rcmenu_item -> (%kw_menuitem __) var_name _ string (_ rcmenu_param):*
     {% d => ({
         type:   'EntityRcmenu_menuitem',
@@ -176,16 +176,15 @@ Main -> _ _EXPR _ {% d => d[1] %}
         label:  d[3],
         params: flatten(d[4]),
     })%}
+    
     rcmenu_param -> param_name _ (operand | function_def)
         {% d => ({
             type: 'ParameterAssignment',
             param: d[0],
             value: d[2],
-            //loc: d[0].loc
         })%}
-
 #---------------------------------------------------------------
-# PLUGIN DEFINITION --- SHOULD AVOID LEFT RECURSION
+# PLUGIN DEFINITION --- OK
     plugin_def
         -> (%kw_plugin __) var_name __ var_name  (_ parameter):* _
             LPAREN
@@ -196,17 +195,17 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 superclass: d[1],
                 class:      d[3],
                 params:     flatten(d[4]),
-                body:       d[7]
+                body:       d[7],
+                loc:    getLoc(d[0][0], d[8])
             })%}
 
     plugin_clauses
-        -> plugin_clause
-                (EOL plugin_clause):*
-            {% d => merge(d[0], d[1]) %}
-    #plugin_clauses
-    #    -> null
-    #    | plugin_clause {% id %}
-    #    | plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
+        -> plugin_clause (EOL plugin_clause):* {% d => merge(d[0], d[1]) %}
+
+    # plugin_clauses
+        # -> plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
+        # | plugin_clause {% id %}
+        # | null
 
     plugin_clause
         -> variable_decl    {% id %}
@@ -226,13 +225,14 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 type:   'EntityPlugin_params',
                 id:     d[1],
                 params: flatten(d[2]),
-                body:   d[5]
+                body:   d[5],
+                loc: getLoc(d[0][0], d[6])
             })%}
 
     param_clauses
-        -> null
-         | param_clause {% id %}
-         | param_clauses EOL param_clause {% d => [].concat(d[0], d[2]) %}
+        -> param_clauses EOL param_clause {% d => [].concat(d[0], d[2]) %}
+        | param_clause
+        | null
 
     param_clause
         -> param_defs   {% id %}
@@ -249,17 +249,18 @@ Main -> _ _EXPR _ {% d => d[1] %}
     tool_def
         -> (%kw_tool __) var_name (_ parameter):* _
             LPAREN
-                tool_clause
-                ( EOL tool_clause):*
+                tool_clauses
             RPAREN
             {% d => ({
                 type:   'EntityTool',
                 id:     d[1],
                 params: flatten(d[2]),
-                body:   merge(d[5], d[6]),
-                loc:    getLoc(d[0][0], d[7])
+                body:   d[5],
+                loc:    getLoc(d[0][0], d[6])
             })%}
-
+    
+    tool_clauses -> tool_clause (EOL tool_clause):* {% d => merge(...d) %}
+    
     tool_clause
         -> variable_decl {% id %}
         | function_def   {% id %}
@@ -270,17 +271,18 @@ Main -> _ _EXPR _ {% d => d[1] %}
     utility_def
         -> (%kw_utility __) var_name _ operand (_ parameter):* _
             LPAREN
-                utility_clause
-                (EOL utility_clause):*
+                utility_clauses
             RPAREN
             {% d => ({
                 type:   'EntityUtility',
                 id:     d[1],
                 title:  d[3],
                 params: flatten(d[4]),
-                body:   merge(d[7], d[8]),
-                loc:    getLoc(d[0][0], d[9])
+                body:   d[7],
+                loc:    getLoc(d[0][0], d[8])
             })%}
+   
+    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(...d) %}
 
     utility_clause
         -> rollout_clause  {% id %}
@@ -290,28 +292,27 @@ Main -> _ _EXPR _ {% d => d[1] %}
     rollout_def
         -> (%kw_rollout  __) var_name _ operand (_ parameter):* _
             LPAREN
-                rollout_clause
-                (EOL rollout_clause):*
+                rollout_clauses
             RPAREN
             {% d => ({
                 type:   'EntityRollout',
                 id:     d[1],
                 title:  d[3],
                 params: flatten(d[4]),
-                body:   merge(d[7], d[8]),
-                loc:    getLoc(d[0][0], d[9])
+                body:   d[7],
+                loc:    getLoc(d[0][0], d[8])
             })%}
     #---------------------------------------------------------------
     # rollout_clauses
     #    -> LPAREN _rollout_clause RPAREN {% d => d[1] %}
     #     | "(" _ ")" {% d => null %}
 
-    # _rollout_clause -> rollout_clause  (EOL rollout_clause):*
-    #     {% d => ({
-    #         type: 'BlockStatement',
-    #         body: merge(...d)
-    #     })%}
+    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(...d) %}
 
+    #rollout_clauses
+    #    -> rollout_clauses EOL rollout_clause {% d => [].concat(d[0], d[2]) %}
+    #    | rollout_clause
+    
     rollout_clause
         -> variable_decl {% id %}
         | function_def   {% id %}
@@ -325,18 +326,22 @@ Main -> _ _EXPR _ {% d => d[1] %}
     item_group
         -> (%kw_group _) string _
             LPAREN
-                rollout_item
-                (EOL rollout_item):*
+                group_clauses
             RPAREN
             {% d => ({
                 type: 'EntityRolloutGroup',
                 id:   d[1],
-                body: merge(d[4], d[5]),
-                loc:getLoc(d[0][0], d[6])
+                body: d[4],
+                loc:getLoc(d[0][0], d[5])
             })%}
+    
+    group_clauses
+        -> group_clauses EOL rollout_item {% d => [].concat(d[0], d[2]) %}
+        | rollout_item
+        # | null
     #---------------------------------------------------------------
     rollout_item
-        -> item_type __ var_name (_ operand):? ( _ parameter):*
+        -> %kw_uicontrols __ var_name ( _ operand):? ( _ parameter):*
             {% d => ({
                 type:   'EntityRolloutControl',
                 class:  d[0],
@@ -344,42 +349,42 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 text:   (d[3] != null ? d[3][1] : null),
                 params: flatten(d[4])
             })%}
-
-    item_type -> %kw_uicontrols
 #---------------------------------------------------------------
 # MACROSCRIPT --- SHOULD AVOID LEFT RECURSION ?
     macroscript_def
-        -> (%kw_macroscript __) var_name (_ macro_script_param):* _
+        -> (%kw_macroscript __) var_name ( _ macro_script_param):* _
             LPAREN
-                ( macro_script_clauses
-                    ( EOL macro_script_clauses):* ):?
+                (macro_script_body):?
             RPAREN
             {% d => ({
                 type:   'EntityMacroscript',
                 id:     d[1],
                 params: flatten(d[2]),
-                body:   merge(...d[5]),
+                body:   d[5] || [],
                 loc:    getLoc(d[0][0], d[6])
             })%}
 
     macro_script_param
-        -> param_name _ ( operand | resource)
+        -> param_name _ ( operand | resource )
             {% d => ({
                 type: 'ParameterAssignment',
                 param: d[0],
                 value: d[2][0]
             })%}
 
-    macro_script_body
-        -> null
-        | macro_script_clauses
-        | macro_script_body EOL macro_script_clauses {% d => [].concat(d[0], d[2]) %}
+    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(...d) %}
 
-    macro_script_clauses
+    # macro_script_body
+        # -> null
+        # | macro_script_clause
+        # | macro_script_body EOL macro_script_clause {% d => [].concat(d[0], d[2]) %}
+
+    macro_script_clause
         -> expr         {% id %}
         | event_handler {% id %}
 #---------------------------------------------------------------
 # STRUCT DEFINITION --- OK
+    # TODO: FINISH LOCATION
     struct_def
         -> (%kw_struct __ ) var_name _
             LPAREN
@@ -391,10 +396,9 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 body: d[4],
                 loc:  getLoc(d[0][0], d[5])
             })%}
-    # TODO: FINISH LOCATION
     struct_members
         -> struct_members (_ "," _) _struct_member {% d => [].concat(d[0], d[2])%}
-        | _struct_member #{% id %}
+        | _struct_member
 
     _struct_member
     -> str_scope _ struct_member {% d => [].concat(d[0], d[2]) %}
@@ -414,7 +418,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | event_handler  {% id %}
 #===============================================================
 # EVENT HANDLER --- OK
-    # TODO: FINISH LOCATION # check for "the other" event handlers...?
+    # TODO: FINISH LOCATION
     event_handler
         -> (%kw_on __) event_args __ event_action _ expr
             {% d => ({
@@ -438,8 +442,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 event: d[2],
                 args: flatten(d[3])}
             )%}
-
-# CHANGE HANDLER -- UNFINISHED
+# CHANGE HANDLER -- WHEN CONSTRUCTOR
     change_handler
         -> %kw_when __ var_name __ operand __ var_name __
           (when_param _ | when_param _ when_param _):? (var_name __):?
@@ -586,9 +589,6 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 prefix : (d[0] != null ? d[0][0] : empty),
                 context: d[1],
                 args: (filterNull(d[3])).concat(d[4])
-               //     (d[3] != null ? d[3][0] : null),
-                //    d[4]
-                //]
             })%}
 
         undo_label -> string {% id %} | parameter {% id %} | var_name {% id %}
@@ -664,7 +664,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
             })%}
 #---------------------------------------------------------------
 # DO LOOP --- OK
-# TODO: FINISH LOCATION
+    # TODO: FINISH LOCATION
     do_loop -> (%kw_do _) expr (_ %kw_while _) expr
         {% d => ({
             type: 'DoWhileStatement',
@@ -673,7 +673,7 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
-# TODO: FINISH LOCATION
+    # TODO: FINISH LOCATION
     while_loop -> (%kw_while _S) expr (_S %kw_do _) expr
         {% d => ({
             type: 'WhileStatement',
@@ -741,17 +741,14 @@ Main -> _ _EXPR _ {% d => d[1] %}
             operand:  d[0],
             value:    d[2]
         })%}
-    #assignSym -> ("="|"+="|"-="|"*="|"/=")
+
     destination
         -> var_name {% id %}
         | property  {% id %}
         | index     {% id %}
         | path_name {% id %}
-
 #---------------------------------------------------------------
-# MATH EXPRESSION ---  PARTIAL OPERATOR PRECEDENCE....
-    # includes "as" operator, for simplicity
-
+# MATH EXPRESSION ---  OK
     math_expr -> rest {% id %}
 
     rest -> rest minus_ws sum
@@ -808,55 +805,10 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 right:    d[2]
             }) %}
         | math_operand {% id %}
-    #   math_expr -> math_p _S (%math _ math_p):*
-    #   math_p -> math_operand | %unary math_p
-    #   math_p -> math_operand | "-" math_p
-
-#    math_expr
-#        -> math_expr _S  %math _ (math_operand | math_as)
-#        {% d => ({
-#            type:     'MathExpression',
-#            operator: d[2],
-#            left:     d[0],
-#            right:    d[4][0]
-#        })%}
-#        | math_operand _S  %math _ (math_operand | math_as)
-#        {% d => ({
-#            type:     'MathExpression',
-#            operator: d[2],
-#            left:     d[0],
-#            right:    d[4][0]
-#        })%}
-#        | math_as {% id %}
-
-#    math_as
-#        -> math_operand _S %kw_as _ var_name
-#        {% d => ({
-#            type:     'MathExpression',
-#            operator: d[2],
-#            left:     d[0],
-#            right:    d[4]
-#        })%}
 
     math_operand
         -> operand   {% id %}
         | fn_call    {% id %}
-        # | u_expr {% id %}
-        #| conversion {% id %}
-        #| math_expr #recursion!
-#---------------------------------------------------------------
-    # THIS ___needs to drop operand results..
-    #    math_expr -> sum
-    #    {% (d, l, reject) => (
-    #        Array.isArray(d[0]) && d[0].length > 1 ? d[0] : reject
-    #    )%}
-    #    sum -> sum _ ("+"|"-") __ product      {% d => [(d[0][0]), (d[2][0]), d[4] ]%}
-    #        | product
-    #    product -> product _ ("*"|"/") _ exp  {% d => [d[0], (d[2][0]), d[4] ]%}
-    #        | exp                             {% id %}
-    #    # this is right associative!
-    #    exp -> math_operand _ "^" _ exp  {% d => [d[0], d[2], d[4] ]%}
-    #        | math_operand               {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     logical_expr
@@ -902,7 +854,6 @@ Main -> _ _EXPR _ {% d => d[1] %}
         -> math_expr {% id %}
         # | operand    {% id %}
         # | fn_call    {% id %}
-    # compareSym -> ("=="|"!="|">" |"<" |">="|"<=") {% id %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     fn_call
@@ -918,17 +869,6 @@ Main -> _ _EXPR _ {% d => d[1] %}
                 calle: d[0],
                 args:  d[2]
             })%}
-    # up to an end of line or lower precedence token?
-    # call_params
-        # -> fn_call_args (_S fn_call_args):* {% d => merge(d[0], d[1]) %}
-        # -> call_params _S call_args {% d => [].concat(d[0], d[2]) %}
-        # | call_args #{% id %}
-        # | "-" call_args
-        #     {% d => ({
-        #         type: 'UnaryExpression',
-        #         operator: d[0],
-        #         right:    d[1]
-        #     }) %}
 
     call_params
         -> call_params _S parameter {% d => [].concat(d[0], d[2]) %}
@@ -955,21 +895,6 @@ Main -> _ _EXPR _ {% d => d[1] %}
         })%}
     param_name -> var_name _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
 #---------------------------------------------------------------
-# OPERANDS --- OK
-    u_operand
-        -> "-" operand
-            {% d => ({
-                type: 'UnaryExpression',
-                operator: d[1],
-                right:    d[2]
-            }) %}
-        # | operand {% id %}
-
-    operand
-        -> factor     {% id %}
-        | property    {% id %}
-        | index       {% id %}
-#---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK #TODO: Avoid capturing operand?
     property -> operand %delimiter var_name
         {% d => ({
@@ -988,25 +913,31 @@ Main -> _ _EXPR _ {% d => d[1] %}
             loc:     getLoc(d[0], d[4])
         })%}
 #---------------------------------------------------------------
+# OPERANDS --- OK
+    u_operand
+        -> "-" operand
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[1],
+                right:    d[2]
+            }) %}
+        # | operand {% id %}
+
+    operand
+        -> factor     {% id %}
+        | property    {% id %}
+        | index       {% id %}
+#---------------------------------------------------------------
 # FACTORS --- OK?
-    # factor -> factors {% id %}
-        # | u_expr {% id %}
-        # | not_expr {% id %}
-    # u_expr -> "-" _ expr
-            # {% d => ({
-                # type: 'UnaryExpression',
-                # operator: d[0],
-                # right:    d[2]
-            # }) %}
    factor
         -> string    {% id %}
         | number     {% id %}
         | path_name  {% id %}
         | name_value {% id %}
+        | var_name   {% id %}
         | bool       {% id %}
         | void       {% id %}
         | time       {% id %}
-        | var_name   {% id %}
         | array      {% id %}
         | bitarray   {% id %}
         | point4     {% id %}
@@ -1015,22 +946,6 @@ Main -> _ _EXPR _ {% d => d[1] %}
         | expr_seq   {% id %} # HERE IS WHERE THE ITERATION HAPPENS
         | "?" {% d => ({type: 'Keyword', value: d[0]}) %}
         | %error     {% id %}
-        # | u_expr     {% id %}
-# RESERVED KEYWORDS
-    kw_reserved
-        -> %kw_uicontrols  {% id %}
-        | %kw_objectset    {% id %}
-        | %kw_time         {% id %}
-        | %kw_group        {% id %}
-        | %kw_menuitem     {% id %}
-        | %kw_separator    {% id %}
-        | %kw_submenu      {% id %}
-        | %kw_dontcollect  {% id %}
-        | %kw_continue
-        # | %kw_collect
-        # | %kw_return
-        # | %kw_throw
-        # | %kw_rollout
 #===============================================================
 # VALUES
 #===============================================================
@@ -1103,8 +1018,31 @@ Main -> _ _EXPR _ {% d => d[1] %}
         -> expr (_S %bitrange _) expr {% d => ({type: 'BitRange', start: d[0], end: d[2]}) %}
         | expr {% id %}
 #===============================================================
-# TOKENS
+# VARNAME --- IDENTIFIERS --- OK
+    # some keywords can be var_name too...
+    var_name -> var_type
+        {% d => ({ type: 'Identifier', value: d[0] }) %}
+    var_type
+        -> %identity     {% id %}
+         | %global_typed  {% id %}
+         | kw_reserved    {% id %}
+# RESERVED KEYWORDS
+    kw_reserved
+        -> %kw_uicontrols  {% id %}
+        | %kw_objectset    {% id %}
+        | %kw_time         {% id %}
+        | %kw_group        {% id %}
+        | %kw_menuitem     {% id %}
+        | %kw_separator    {% id %}
+        | %kw_submenu      {% id %}
+        | %kw_dontcollect  {% id %}
+        | %kw_continue
+        # | %kw_collect
+        # | %kw_return
+        # | %kw_throw
+        # | %kw_rollout
 #===============================================================
+# TOKENS
     # time
     time -> %time
         {% d => ({ type: 'Literal', value: d[0] }) %}
@@ -1133,38 +1071,18 @@ Main -> _ _EXPR _ {% d => d[1] %}
     #Resources
     resource -> %locale
         {% d => ({ type: 'Literal', value: d[0] }) %}
-#===============================================================
-# VARNAME --- IDENTIFIERS --- OK
-    # some keywords can be var_name too...
-    var_name -> var_type
-        {% d => ({ type: 'Identifier', value: d[0] }) %}
-    var_type
-        -> %identity     {% id %}
-         | %global_typed  {% id %}
-         | kw_reserved    {% id %}
-        #  | %kw_objectset {% id %}
-#===============================================================
-# PATH NAME
-    # pathname cheat
-    # path_name -> "$" | "$" alphanum {% d => d.join('') %}
     #---------------------------------------------------------------
+    # PATH NAME
     # THIS JUST CAPTURES ALL THE LEVEL PATH IN ONE TOKEN....
     path_name -> %path
         {% d => ({ type: 'Identifier', value: d[0] }) %}
-    #---------------------------------------------------------------
-    # path -> (%kw_objectset):? ("/"):? (levels):? level_name
-    # levels -> level | levels "/" level
-    # level -> level_name {% id %}
-    # level_name -> # MISSING
 #===============================================================
 #PARENS
     LPAREN ->  %lparen _    {% d => d[0] %}
     RPAREN ->  ___ %rparen  {% d => d[1] %}
-    # voidparens -> %lparen  %rparen    #{% d => d[0] %} #{% d => ({type:'Empty'}) %}
 #===============================================================
 # WHITESPACE AND NEW LINES
-# comments are skipped in the parse tree!
-#===============================================================
+    # comments are skipped in the parse tree!   
     EOL -> _eol:* ( %newline | %statement ) _S {% d => null %}
 
     _eol
@@ -1186,9 +1104,10 @@ Main -> _ _EXPR _ {% d => d[1] %}
     ___ -> null | ___ (junk | %statement)  {% d => null %}
 
     ws -> %ws | %comment_BLK
+
     junk
-    ->  %ws
-    | %newline
-    | %comment_BLK
-    | %comment_SL
+        -> %ws
+        | %newline
+        | %comment_BLK
+        | %comment_SL
 #---------------------------------------------------------------
