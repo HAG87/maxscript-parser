@@ -882,7 +882,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             {% d => d[1] %}
         | operand {% id %}
 
-    call_caller -> var_name {% id %} | property {% id %}
+    call_caller -> operand {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter -> param_name _ (operand | u_operand)
