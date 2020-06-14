@@ -401,8 +401,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | _struct_member
 
     _struct_member
-    -> str_scope _ struct_member {% d => [].concat(d[0], d[2]) %}
-
+    -> str_scope _EOL_ struct_member {% d => [].concat(d[0], d[2]) %}
     | struct_member {% id %}
     | str_scope     {% id %}
 
@@ -1083,6 +1082,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #===============================================================
 # WHITESPACE AND NEW LINES
     # comments are skipped in the parse tree!   
+    _EOL_
+        -> _EOL_ (junk | %statement) {% d => null %}
+        | wsl {% d => null %}
+        | %statement {% d => null %}
+
     EOL -> _eol:* ( %newline | %statement ) _S {% d => null %}
 
     _eol
@@ -1092,6 +1096,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     | %comment_BLK
     | %comment_SL
 
+    _SL_ -> wsl {% d => null %} | _SL_ junk {% d => null %}
     # one or more whitespace
     _S_ -> ws {% d => null %} | _S_ ws  {% d => null %}
     # zero or any withespace
@@ -1104,6 +1109,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     ___ -> null | ___ (junk | %statement)  {% d => null %}
 
     ws -> %ws | %comment_BLK
+
+    wsl ->  %ws | %newline | %comment_BLK
 
     junk
         -> %ws
