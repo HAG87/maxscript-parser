@@ -719,9 +719,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 
     kw_decl
-        -> %kw_local {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
-        | %kw_global {% d => ({scope: d[0].value, loc:getLoc(d[0])}) %}
-        | %kw_persistent __ %kw_global {% d => ({scope: 'persistent global', loc:getLoc(d[0], d[2])})%}
+        -> %kw_local {% d => ({modifier:null, scope: d[0], loc:getLoc(d[0])}) %}
+        | %kw_global {% d => ({modifier:null, scope: d[0], loc:getLoc(d[0])}) %}
+        | %kw_persistent __ %kw_global {% d => ({modifier: d[0], scope: d[2], loc:getLoc(d[0], d[2])})%}
     # Direct assignment on declaration
     # TODO: LOCATION
     decl_args
