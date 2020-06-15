@@ -4,7 +4,7 @@ var exp = [
     // 'astUtils.js',
     'grammar.js',
     'mooTokenize.js',
-    // 'mxsCompactCode.js',
+    'mxsCompactCode.js',
     'mxsparser.js',
 ]
 
