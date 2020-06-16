@@ -81,7 +81,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | function_def    {% id %}
         | fn_return       {% id %}
         | context_expr    {% id %}
-        | set_context     {% id %}
+        # | set_context     {% id %}
         | utility_def     {% id %}
         | rollout_def     {% id %}
         | tool_def        {% id %}
@@ -219,20 +219,20 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     plugin_parameter
         -> (%kw_parameters __) var_name (_ parameter):* _
             LPAREN
-                param_clauses
+                param_clauses:?
             RPAREN
             {% d => ({
                 type:   'EntityPlugin_params',
                 id:     d[1],
                 params: flatten(d[2]),
-                body:   d[5],
+                body:   d[5] || [],
                 loc: getLoc(d[0][0], d[6])
             })%}
 
     param_clauses
         -> param_clauses EOL param_clause {% d => [].concat(d[0], d[2]) %}
         | param_clause
-        | null
+        # | null
 
     param_clause
         -> param_defs   {% id %}
@@ -530,7 +530,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         })%}
 #===============================================================
 # CONTEXT EXPRESSION -- TODO: FINISH LOCATION
-    set_context -> %kw_set _ context
+    # set_context -> %kw_set _ context
     #---------------------------------------------------------------
     context_expr -> context ( (_S "," _) context ):* _ expr
         {% d => ({
@@ -892,7 +892,15 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             value: d[2][0],
             //loc: d[0].loc
         })%}
-    param_name -> var_name _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
+    param_name -> param_kw _S ":" {% d => ({type:'Identifier', value:d[0]}) %}
+    param_kw
+        -> var_name   {% id %}
+        | %kw_rollout {% id %}
+        | %kw_plugin  {% id %}
+        | %kw_rcmenu  {% id %}
+        | %kw_tool    {% id %}
+        | %kw_to      {% id %}
+        | %kw_utility {% id %}
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK #TODO: Avoid capturing operand?
     property -> operand %delimiter var_name
@@ -1028,18 +1036,25 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # RESERVED KEYWORDS
     kw_reserved
         -> %kw_uicontrols  {% id %}
-        | %kw_objectset    {% id %}
-        | %kw_time         {% id %}
         | %kw_group        {% id %}
+        | %kw_level        {% id %}
         | %kw_menuitem     {% id %}
+        | %kw_objectset    {% id %}
         | %kw_separator    {% id %}
         | %kw_submenu      {% id %}
-        | %kw_dontcollect  {% id %}
-        | %kw_continue
+        | %kw_time         {% id %}
+        | %kw_set          {% id %}
+        # | %kw_parameters   {% id %}
+        # | %kw_dontcollect  {% id %}
+        # | %kw_continue     {% id %}
+        # | %kw_rollout
+        # | %kw_plugin
+        # | %kw_rcmenu
+        # | %kw_tool
+        # | %kw_to
         # | %kw_collect
         # | %kw_return
         # | %kw_throw
-        # | %kw_rollout
 #===============================================================
 # TOKENS
     # time

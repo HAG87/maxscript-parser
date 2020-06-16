@@ -41,8 +41,7 @@ class mxsParseSource {
 	}
 	/** Get the parsed CST, if any */
 	get parsedCST() {
-		return this.__parsedCST || this.parserInstance.results[0];
-		// return this.parserInstance.results[0];
+		return this.__parsedCST || this.parserInstance.results[0] || [];
 	}
 	/** Reset the parser * */
 	reset() { this._declareParser(); }
@@ -52,24 +51,25 @@ class mxsParseSource {
 	 * @param {string} source
 	 */
 	TokenizeSource(filter) {
+		if (!this.__source) {return;}
+
 		if (typeof filter === Array) {
 			mxLexer.next = (next => () => {
 				let tok;
-				// IGNORING COMMENTS....
+				// IGNORE TOKEN TYPE IN FILTER....
 				while ((tok = next.call(mxLexer)) && (filter.includes)) /* empty statement */;
 				return tok;
 			})(mxLexer.next);
 		}
-		//if (!source) {return null;}
 		// feed the tokenizer
 		mxLexer.reset(this.__source);
 
 		let token;
 		let toks = [];
 
+		// read tokens
 		while ((token = mxLexer.next())) {
 			// if ( token.type != "comment_BLK" && token.type != "comment_SL" ) { toks.push(token); }
-			//TODO: Catch tokenizer errors.
 			toks.push(token);
 		}
 		return toks;
@@ -93,19 +93,23 @@ class mxsParseSource {
 	 * @param {Integer} tree Index of the parsed tree I want in return, results are multiple when the parser finds and ambiguity
 	 */
 	ParseSource() {
-		// Set a clean state
-		// /*
+		this.__parserState = this.parserInstance.save();
 		try {
 			this.parserInstance.feed(this.__source);
-			this.__parserState = this.parserInstance.save();
+
 			console.log('PARSE TREES: '+ this.parserInstance.results.length);
-			this.__parsedCST = this.parserInstance.results[0];
+			
+			this.__parsedCST = this.parserInstance.results[0] || [];
 		} catch (err) {
-			// this.parserInstance.restore(this.__parserState);
-			// this.reset();
-			this.__parseWithErrors();
-			// throw err;
+			console.log('--ERROR--');
+			console.log(err.token);
+			
+			this.parserInstance.restore(this.__parserState);
+			let newErr = this.__parseWithErrors();
+			throw newErr;
 			/*
+			// ASYNC VERSION
+			this.__parseWithErrors()
 			.then((response) => {
 				console.log('ERROR CHECK FINISHED');
 				// console.log(response);
@@ -159,8 +163,9 @@ class mxsParseSource {
 				if (!err.token) { throw err; }
 				// console.log(err.token);
 				badTokens.push(src[next]);
-				errorReport.push({token:src[next], alternatives: this.PossibleTokens() });
-				// /*
+				/* FEATURE DISBLED*/
+				errorReport.push({token:src[next], alternatives: this._PossibleTokens() });
+
 				let filler = replaceWithWS(err.token.text);
 				err.token.text = filler;
 				err.token.value = filler;
@@ -168,15 +173,19 @@ class mxsParseSource {
 				src.splice(next, 1, err.token);
 				// src[next] = err.token;
 				next--;
-				// */
+
 				this.parserInstance.restore(state);
 			}
 			next++;
 			state = this.parserInstance.save();
 		}
+
+		this.__parsedCST = this.parserInstance.results[0] || [];
+
 		report();
 		// */
 		/*
+		// ASYNC VERSION
 		let promise = new Promise((resolve, reject) => {
 			let parsings = (src, next, total) => {
 				// console.log(badTokens);
