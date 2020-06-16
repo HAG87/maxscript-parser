@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 const JsonFileWrite = (file, source) =>
 {
@@ -18,4 +19,9 @@ const FileWrite = (file, source) =>
 		return;
 	});
 };
-module.exports = {FileWrite, JsonFileWrite};
+function readDirR(dir) {
+    return fs.statSync(dir).isDirectory()
+        ? Array.prototype.concat(...fs.readdirSync(dir).map(f => readDirR(path.join(dir, f))))
+        : [dir];
+}
+module.exports = {FileWrite, JsonFileWrite, readDirR};
