@@ -186,7 +186,7 @@ let visitorPatterns = {
 	// Plugin
 	EntityPlugin(node, stack) {
 		let body = exprTerm(stack.body);
-		return joinStatements(['plugin', stack.superclass, stack.class, ...stack.params, body]);
+		return joinStatements(['plugin', stack.superclass, stack.class, ...stack.params, '(', body, ')']);
 	},
 	EntityPlugin_params(node, stack) {
 		let body = exprTerm(stack.body);

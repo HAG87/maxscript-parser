@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 //-----------------------------------------------------------------------------------
 const mxsParseSource = require('./mxsParser.js');
-const { FileWrite, JsonFileWrite } = require('./utils.js');
+const { FileWrite, JsonFileWrite, readDirR } = require('./utils.js');
 //-----------------------------------------------------------------------------------
 // const { find, get, set, drop, info, del, arrayFirstOnly, traverse, } = require('ast-monkey');
 // const { pathNext, pathPrev, pathUp } = require('ast-monkey-util');
@@ -36,21 +36,22 @@ let examples = {
 const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
 //-----------------------------------------------------------------------------------
 function Main(src) {
-	JsonFileWrite('test/_tokens.json',TokenizeSource(source(src)));
+	// JsonFileWrite('test/_tokens.json',TokenizeSource(source(src)));
 	try {
 		var mxsParser = new mxsParseSource(source(src));
 		// mxsParser.__parseWithErrors();
 		JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
-	} catch (e) {
-		console.log(e);
-		// FileWrite('test/error.txt', e.message);
+	} catch (err) {
+		// console.log(err);
+		// FileWrite('test/error.txt', err.message);
+		throw err;
 	}
 }
 //-----------------------------------------------------------------------------------
 // COMPRESS CODE
 //-----------------------------------------------------------------------------------
-function compress(source) {
+function minify(source) {
 	try {
 		return visit(source, visitorPatterns);
 	} catch (err) {
@@ -58,28 +59,58 @@ function compress(source) {
 		throw err;
 	}
 }
-let CST = Main(examples[5]);
-// let CST = Main('examples/common/corelib.ms');
+//-----------------------------------------------------------------------------------
+function transfPath(fp) {
+	let file = path.basename(fp);
+	let dir = path.dirname(fp);
+	let ex = path.extname(fp);
+	if (ex === '.ms' | ex === '.mcr') {
+		let nf = path.join(dir, 'min_' + file);
+		return nf;
+	}
+	return;
+}
+//-----------------------------------------------------------------------------------
+function parseAndMinify (fPath) {
+	let min = minify(Main(fPath));
+	let fp = transfPath(fPath);
+	if (fp) {
+		FileWrite(fp, min);
+		console.log('Success');
+	}
+}
+//-----------------------------------------------------------------------------------
+// parseAndMinify('/modules/refGuidesCfg.ms');
+let CST = Main(examples[1]);
+// let CST = Main('examples/refGuidesObject.ms');
 /*
-const directoryPath = 'examples';
-fs.readdir(directoryPath, function (err, files) {
-    //handling error
-    if (err) {
-        return console.log('Unable to scan directory: ' + err);
-    }
-    //listing all files using forEach
-    files.forEach(function (file) {
-		// Do whatever you want to do with the file
-		let f = path.join(directoryPath, file);
-		console.log(file);
-		Main(f);
+let scripts = readDirR('examples');
+scripts.forEach((fp, i) => {
 
-    });
+	let file = path.basename(fp);
+	let dir = path.dirname(fp);
+	let ex = path.extname(fp);
+	if (ex === '.ms' | ex === '.mcr') {
+	// if (ex === '.ms' ) {
+		if (!(/^min_/gmi.test(file))) {
+			console.log(i + ': ' + file);
+			
+			let nf = path.join(dir, 'min', 'min_' + file);
+
+			let CST = Main(fp);
+
+			let COMPRESS = minify(CST);
+			FileWrite(nf, COMPRESS);
+
+			console.log('---------------');
+		}
+	}
 });
 // */
 //-----------------------------------------------------------------------------------
 // CODE MINIFIER TEST
-// let COMPRESS = compress(CST);
+// let CST = Main('examples/example-1.ms');
+// let COMPRESS = minify(CST);
 // FileWrite('test/compress.ms', COMPRESS);
 //-----------------------------------------------------------------------------------
 // At end of your code
