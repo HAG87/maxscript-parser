@@ -80,8 +80,104 @@ function parseAndMinify (fPath) {
 	}
 }
 //-----------------------------------------------------------------------------------
-// parseAndMinify('/modules/refGuidesCfg.ms');
-let CST = Main(examples[1]);
+// parseAndMinify('examples/modules/maptoolsCore.ms');
+// parseAndMinify('examples/common/corelib.ms');
+let CST = Main(examples[2]);
+
+/**
+ * Check if value is node
+ * @param {any} node CST node
+ */
+function isNode(node) {
+	return (typeof node === 'object' && node != undefined);
+}
+/**
+ * filter nodes by type property
+ * @param {any} node CST node
+ */
+function getNodeType(node) {
+	return ('type' in node) ? node.type : undefined;
+}
+
+function visitor(node, callback) {
+	let stack = [];
+	// _visit(node, null, null, 0, stack );
+	// _visit(node, null, null, 0, 0);
+	_visit(node, null, null, 0)
+	// console.log();
+	function _visit(node, parent, key, level = 0) {
+
+		if ('id' in node ) {	
+			console.log (node.type);
+		}
+
+		// let childStack = [];
+		// get the node keys
+		const keys = Object.keys(node);
+		// loop through the keys
+		for (let i = 0; i < keys.length; i++) {
+			// child is the value of each key
+			let key = keys[i];
+			const child = node[key];
+			// could be an array of nodes or just an object
+			if (Array.isArray(child)) {
+				// value is an array, visit each item
+				// let collection = [];
+
+				for (let j = 0; j < child.length; j++) {
+					// visit each node in the array
+					if (isNode(child[j])) {
+						 _visit(child[j], node, key, level + 1)
+					}
+				}
+				// childStack = childStack.concat(collection);
+
+			} else if (isNode(child)) {
+				_visit(child, node, key, level + 1);
+			} else {				
+				// keys that contains values...
+			}
+		}
+	}
+}
+
+let stack = [];
+
+let lastIndex = 0;
+let cstlevel = 0;
+
+let statements = visitor(CST, (node, level) => {
+
+	// console.log(lastIndex +' : '+ level);
+
+	if (level > lastIndex) {
+		// child -> increase level
+		cstlevel++;
+
+		// console.log('> ' + node.type);	
+
+	} else if (level == lastIndex) {
+		// sibling, push in the same level
+		// console.log('= ' + node.type);		
+	} else {
+		// console.log('^ ' + node.type);
+		cstlevel--;
+		// parent  -> return a level
+	}
+
+	if (!stack[cstlevel]) {
+		let newLevel = [node];
+		stack.push(newLevel);
+	} else {
+		stack[cstlevel].push(node);
+	}
+
+	// console.log(stack[cstlevel]);
+	console.log(cstlevel+ ' -> ' + node.type);
+	lastIndex = level;
+});
+// console.log(statements);
+
 // let CST = Main('examples/refGuidesObject.ms');
 /*
 let scripts = readDirR('examples');
