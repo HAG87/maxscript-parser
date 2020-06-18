@@ -25,27 +25,32 @@
             node.type = newtype;
         return node;
     }
-
+    // Offset is not reilable, changed to line - col
     const getLoc = (start, end) => {
         if (!start) {return null;}
 
-        let startOffset = start.loc ? start.loc.start : start.offset;
+        let startOffset = start.loc ? start.loc.start : {line: start.line, col: start.col};
         let endOffset;
 
         if (!end) {
-            if (!start.loc) {
-                endOffset = start.text != null ? start.offset + (start.text.length - 1): null;
+            if (start.loc) {
+                endOffset = start.loc.end;
             } else {
-                endOffset = start.loc.end
+                endOffset = {
+                    line: start.line,
+                    col: (start.text != null ? start.col + (start.text.length - 1): start.col)
+                };                
             }
         } else {
             if (end.loc) {
-                endOffset = end.loc.end
+                endOffset = end.loc.end;
             } else {
-                endOffset = end.text != null ? end.offset + (end.text.length - 1) : null;
+                endOffset = {
+                    line: end.line,
+                    col: (end.text != null ? end.col + (end.text.length - 1) : end.col)                
+                };
             }
         };
-
         return ({start: startOffset, end: endOffset});
     }
     // parser configuration
@@ -103,12 +108,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             # {% d => d[1] %}
             {% d => ({
                 type: 'BlockStatement',
-                body: d[1]
+                body: d[1],
+                //loc: getLoc(d[0], d[2])
             })%}
         | "(" _ ")"
             {% d => ({
                 type: 'BlockStatement',
-                body: []
+                body: [],
+                //loc: getLoc(d[0], d[2])
             })%}
 
     # -> expr  (EOL expr):*
@@ -623,7 +630,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 value:     d[5],
                 sequence: filterNull(d[6]),
                 action:    d[8],
-                body:      d[10]
+                body:      d[10],
+                loc: getLoc(d[0][0])
             })%}
 
     for_sequence
@@ -659,7 +667,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | %kw_exit (__ %kw_with _) expr
             {% d => ({
                 type : 'LoopExit',
-                body:  d[2]
+                body:  d[2],
+                loc: getLoc(d[0])
             })%}
 #---------------------------------------------------------------
 # DO LOOP --- OK
@@ -668,7 +677,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         {% d => ({
             type: 'DoWhileStatement',
             body: d[1],
-            test: d[3]
+            test: d[3],
+            loc: getLoc(d[0][0])
         })%}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
@@ -677,7 +687,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         {% d => ({
             type: 'WhileStatement',
             test: d[1],
-            body: d[3]
+            body: d[3],
+            loc: getLoc(d[0][0])
         })%}
 #---------------------------------------------------------------
 # IF EXPRESSION --- OK
@@ -687,14 +698,16 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 type:       'IfStatement',
                 test:       d[1],
                 operator:   d[3],
-                consequent: d[5]
+                consequent: d[5],
+                loc: getLoc(d[0][0])
             })%}
         | (%kw_if _) expr (_ %kw_then _) expr (_ %kw_else _) expr
             {% d => ({
                 type:       'IfStatement',
                 test:       d[1],
                 consequent: d[3],
-                alternate:  d[5]
+                alternate:  d[5],
+                loc: getLoc(d[0][0])
             })%}
     if_action
         -> %kw_do  {% id %}
@@ -705,7 +718,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     {% d => ({
         type:      'TryStatement',
         block:     d[1],
-        finalizer: d[3]
+        finalizer: d[3],
+        loc: getLoc(d[0][0])
     })%}
     kw_try -> %kw_try _ {% d => d[0] %}
 #---------------------------------------------------------------
@@ -715,7 +729,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             {% d => ({
                 type: 'VariableDeclaration',
                 ...d[0],
-                decls: d[2]
+                decls: d[2],
+                loc: getLoc(d[0])
             })%}
 
     kw_decl
@@ -908,7 +923,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             type:     'AccessorProperty',
             operand:  d[0],
             property: d[2],
-            loc:      getLoc(d[0], d[1])
+            //loc:      getLoc(d[0], d[1])
         })%}
 #---------------------------------------------------------------
 # ACCESSOR - INDEX --- #TODO: Avoid capturing operand?
@@ -917,7 +932,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             type:    'AccessorIndex',
             operand: d[0],
             index:   d[3],
-            loc:     getLoc(d[0], d[4])
+            //loc:     getLoc(d[0], d[4])
         })%}
 #---------------------------------------------------------------
 # OPERANDS --- OK

@@ -4,9 +4,8 @@
  * @param {any} callbackMap Patterns function
  */
 function visit(node, callbackMap) {
-	return _visit(node, null, null, 0, 0);
+	return _visit(node, null, null, 0);
 	function _visit(node, parent, key, level = 0) {
-		const nodeType = getNodeType(node);
 		// captured values
 		let stack = {};
 		// get the node keys
@@ -47,6 +46,7 @@ function visit(node, callbackMap) {
 			}
 			//*/
 		}
+		const nodeType = getNodeType(node);
 		let res;
 		if (nodeType && nodeType in callbackMap) {
 			// setImmediate( () => callbackMap[nodeType](node, stack));
