@@ -161,7 +161,7 @@ class mxsParseSource {
 			} catch (err) {
 				// catch non parsing related errors.
 				if (!err.token) { throw err; }
-				// console.log(err.token);
+				console.log(err.token);
 				badTokens.push(src[next]);
 				/* FEATURE DISBLED*/
 				errorReport.push({token:src[next], alternatives: this._PossibleTokens() });

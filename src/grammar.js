@@ -820,8 +820,8 @@ var grammar = {
         })},
     {"name": "u_operand", "symbols": [{"literal":"-"}, "operand"], "postprocess":  d => ({
             type: 'UnaryExpression',
-            operator: d[1],
-            right:    d[2]
+            operator: d[0],
+            right:    d[1]
         }) },
     {"name": "operand", "symbols": ["factor"], "postprocess": id},
     {"name": "operand", "symbols": ["property"], "postprocess": id},

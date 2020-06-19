@@ -4,8 +4,9 @@
  * @param {any} callbackMap Patterns function
  */
 function visit(node, callbackMap) {
-	return _visit(node, null, null, 0);
+	return _visit(node, null, null, 0, 0);
 	function _visit(node, parent, key, level = 0) {
+		const nodeType = getNodeType(node);
 		// captured values
 		let stack = {};
 		// get the node keys
@@ -46,7 +47,6 @@ function visit(node, callbackMap) {
 			}
 			//*/
 		}
-		const nodeType = getNodeType(node);
 		let res;
 		if (nodeType && nodeType in callbackMap) {
 			// setImmediate( () => callbackMap[nodeType](node, stack));
@@ -236,10 +236,10 @@ let visitorPatterns = {
 	},
 	EventArgs(node, stack) {
 		return [].concat(
-				stack.target || '',
-				stack.event || '',
-				joinStatements(stack.args)
-			)
+			stack.target || '',
+			stack.event || '',
+			joinStatements(stack.args)
+		)
 			.filter(x => x.length > 0)
 			.join(' ');
 	},
@@ -260,16 +260,24 @@ let visitorPatterns = {
 	MathExpression(node, stack) {
 		// binaryNode(stack)
 		let left = stack.left || '';
-		let _right = stack.right || '';
-		let space =
-		/[-]$/gmi.test(stack.operator)
-			&& /^[-]/gmi.test(_right)
-			? ' ' : '';
-		let right = `${space}${_right}`;
-		return `${left}${stack.operator}${right}`;
+		let right = stack.right || '';
+
+		if (/\w+/gmi.test(stack.operator)) {
+			return `${left}${spaceAlphaNum(stack.operator)}${right}`;
+		} else {
+			let space =
+			/[-]$/gmi.test(stack.operator)
+				&& /^[-]/gmi.test(right)
+				? ' ' : '';
+			
+			return `${left}${stack.operator}${space}${right}`;
+		}
 	},
 	LogicalExpression: (node, stack) => binaryNode(stack),
-	UnaryExpression: (node, stack) => `-${stack.right}`,
+	UnaryExpression: (node, stack) => {
+		// console.log(stack.operator);
+		// console.log(stack.right);
+		return `${stack.operator}${stack.right}`},
 	// STATEMENTS
 	IfStatement(node, stack) {
 		let test = stack.test;
@@ -286,7 +294,7 @@ let visitorPatterns = {
 	},
 	LoopExit(node, stack) {
 		let body = exprTerm(stack.body);
-		return joinStatements(['exit with', body])
+		return joinStatements(['exit with', body]);
 	},
 	TryStatement(node, stack) {
 		return joinStatements(['try', stack.block, 'catch', stack.finalizer]);
@@ -297,7 +305,7 @@ let visitorPatterns = {
 	},
 	WhileStatement(node, stack) {
 		let body = exprTerm(stack.body);
-		return joinStatements(['while', stack.test, 'do', body])
+		return joinStatements(['while', stack.test, 'do', body]);
 	},
 	ForStatement(node, stack) {
 		let body = exprTerm(stack.body);
@@ -383,6 +391,12 @@ function spaceSE(str, end = true) {
 	let _start = /^(?:[\w_-]|::)/gmi.test(str) ? ' ' : '';
 	let _end = /[\w_$?-]$/gmi.test(str) && end ? ' ' : '';
 	return `${_start}${str}${_end}`;
+}
+function spaceAlphaNum(str) {
+	let start = /^[\w]/gmi.test(str) ? ' ' : '';
+	let end = /[\w]$/gmi.test(str) ? ' ' : '';
+	return `${start}${str}${end}`; 
+
 }
 /**
  * Check if value is node

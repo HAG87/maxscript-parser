@@ -117,8 +117,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 body: [],
                 //loc: getLoc(d[0], d[2])
             })%}
-
-    # -> expr  (EOL expr):*
+   
+    # _expr_seq -> expr  (EOL expr):*
     # {% d => ({
     #     type: 'BlockStatement',
     #     body: merge(d[0], d[1])
@@ -940,8 +940,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> "-" operand
             {% d => ({
                 type: 'UnaryExpression',
-                operator: d[1],
-                right:    d[2]
+                operator: d[0],
+                right:    d[1]
             }) %}
         # | operand {% id %}
 
