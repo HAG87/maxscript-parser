@@ -38,13 +38,14 @@ const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
 function Main(src) {
 	// JsonFileWrite('test/_tokens.json',TokenizeSource(source(src)));
 	try {
+		// TokenizeSource(source(src));
 		var mxsParser = new mxsParseSource(source(src));
 		// mxsParser.__parseWithErrors();
 		JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
 	} catch (err) {
-		// console.log(err);
-		// FileWrite('test/error.txt', err.message);
+		console.log(err);
+		FileWrite('test/error.txt', err.message);
 		throw err;
 	}
 }
@@ -122,7 +123,8 @@ function collectStatements(node) {
 //-----------------------------------------------------------------------------------
 // parseAndMinify('examples/modules/maptoolsCore.ms');
 // parseAndMinify('examples/common/corelib.ms');
-let CST = Main(examples[2]);
+// let CST = Main('examples/common/corelib.ms');
+// let CST = Main(examples[2]);
 
 /**
  * Check if value is node
@@ -171,6 +173,96 @@ function visitor(node, callback) {
 	}
 }
 //-----------------------------------------------------------------------------------
+const nearley = require('nearley');
+const grammar = require('./grammar.js');
+// this could work combined in a comparator of current document, ot checking if the passed document is still open...
+function parseSourceAsync(source) {
+	// function parser() {
+		return new Promise((resolve, reject) => {
+			// setTimeout(() => resolve('donewithit'), 0)
+			// /*
+			// delay execution
+			setTimeout( () => {
+				// check here if the editor document is valid.
+				console.log("parser called");
+				let mxsParser = new nearley.Parser(
+					nearley.Grammar.fromCompiled(grammar),
+					{
+						keepHistory: true,
+						// lexer: mxLexer
+					});
+				try {
+					mxsParser.feed(source);
+					console.log("parser done");
+
+					resolve(mxsParser.results[0]);
+				} catch (err) {
+					// add here call to the errorParser()
+					reject(err);
+				}
+			},1500);
+			// */
+		});
+	// }
+	/*
+	let p = Promise.race([
+		parser(),
+		new Promise((resolve, reject) => {
+			setTimeout(() => reject(new Error('request timeout')), 100)
+		})
+	]);
+	return new Promise((resolve, reject) => {
+		parser().then( response => {
+			resolve(response);
+		}, err => {
+			reject(err);
+		});
+	});
+	*/
+}
+/*
+parseSourceAsync(source('examples/common/corelib.ms')).then((result) => {
+	console.log("parser finished");
+	console.log(result);
+}, (err) => {
+	// console.log('errors');
+	console.log(err);
+})
+// */
+//-----------------------------------------------------------------------------------
+const cluster = require('cluster');
+const http = require('http');
+let workers = [];
+const numCPUs = require('os').cpus().length; //number of CPUS
+
+if (cluster.isMaster) {
+	// Fork workers.
+	for (var i = 0; i < numCPUs; i++) {
+	  cluster.fork();    //creating child process
+	}
+  
+	//on exit of cluster
+	cluster.on('exit', (worker, code, signal) => {
+		if (signal) {
+		  console.log(`worker was killed by signal: ${signal}`);
+		} else if (code !== 0) {
+		  console.log(`worker exited with error code: ${code}`);
+		} else {
+		  console.log('worker success!');
+		}
+	});
+  } else {
+	  console.log('Message from worker!');
+	// Workers can share any TCP connection
+	// In this case it is an HTTP server
+	// http.createServer((req, res) => {
+	//   res.writeHead(200);
+	//   res.end('hello world\n');
+	// }).listen(3000);
+  }
+
+//-----------------------------------------------------------------------------------
+
 // let CST = Main('examples/refGuidesObject.ms');
 /*
 let scripts = readDirR('examples');
