@@ -1045,8 +1045,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     var_name -> var_type
         {% d => ({ type: 'Identifier', value: d[0] }) %}
     var_type
-        -> %identity     {% id %}
+        -> %identity      {% id %}
          | %global_typed  {% id %}
+         | %typed_iden    {% id %}
          | kw_reserved    {% id %}
 # RESERVED KEYWORDS
     kw_reserved

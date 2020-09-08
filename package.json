@@ -5,9 +5,7 @@
   "main": "src/index.js",
   "dependencies": {
     "ast-monkey": "^7.11.7",
-    "ast-monkey-traverse": "^1.12.9",
-    "ast-monkey-traverse-with-lookahead": "^1.1.2",
-    "ast-monkey-util": "^1.1.5",
+    "ast-monkey-traverse": "^1.12.17",
     "chalk": "^4.0.0",
     "execution-time": "^1.4.1",
     "moo": "^0.5.1",
@@ -19,8 +17,7 @@
     "@types/nearley": "^2.11.1",
     "@types/node": "^12.12.37",
     "@types/object-path": "^0.11.0",
-    "eslint": "^7.0.0",
-    "mz": "^2.7.0"
+    "eslint": "^7.0.0"
   },
   "scripts": {
     "run": "node .",

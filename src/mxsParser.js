@@ -1,17 +1,16 @@
 "use strict";
 const crypto = require('crypto');
-const process = require('process');
+// const process = require('process');
 //-----------------------------------------------------------------------------------
 const nearley = require('nearley');
 const grammar = require('./grammar.js');
 const mxLexer = require('./mooTokenize.js');
-const { FileWrite, JsonFileWrite } = require('./utils.js');
-const { resolve } = require('path');
-
+// const { FileWrite, JsonFileWrite } = require('./utils.js');
+// const { resolve } = require('path');
 //-----------------------------------------------------------------------------------
 function replaceWithWS(str) {
 	let ref = [...str];
-	return ref.reduce((acc,next) => { return acc + ' ';}, '');
+	return ref.reduce((acc, next) => { return acc + ' '; }, '');
 }
 
 class mxsParseSource {
@@ -51,7 +50,7 @@ class mxsParseSource {
 	 * @param {string} source
 	 */
 	TokenizeSource(filter) {
-		if (!this.__source) {return;}
+		if (!this.__source) { return; }
 
 		if (typeof filter === Array) {
 			mxLexer.next = (next => () => {
@@ -96,29 +95,15 @@ class mxsParseSource {
 		this.__parserState = this.parserInstance.save();
 		try {
 			this.parserInstance.feed(this.__source);
-
-			console.log('PARSE TREES: '+ this.parserInstance.results.length);
-			
+			console.log('PARSE TREES: ' + this.parserInstance.results.length);
 			this.__parsedCST = this.parserInstance.results[0] || [];
 		} catch (err) {
 			console.log('--ERROR--');
 			console.log(err.token);
-			
+
 			this.parserInstance.restore(this.__parserState);
 			let newErr = this.__parseWithErrors();
 			throw newErr;
-			/*
-			// ASYNC VERSION
-			this.__parseWithErrors()
-			.then((response) => {
-				console.log('ERROR CHECK FINISHED');
-				// console.log(response);
-				// throw response;
-				// return Promise.reject(response);
-				return response;
-
-			});
-			*/
 		}
 	}
 	/**
@@ -146,7 +131,7 @@ class mxsParseSource {
 				newErr.recoverable = true;
 			} else {
 				// newErr.name = 'ERR_FATAL';
-				newErr.message +=  ' Unrecoverable errors.';
+				newErr.message += ' Unrecoverable errors.';
 				newErr.recoverable = false;
 			}
 			newErr.tokens = badTokens;
@@ -154,9 +139,8 @@ class mxsParseSource {
 			return newErr;
 		}
 		// for (var next = 0; next < total; next++) {
-		while(next <= total) {
+		while (next <= total) {
 			try {
-				// process.stdout.write(src[next].text);
 				this.parserInstance.feed(src[next].toString());
 			} catch (err) {
 				// catch non parsing related errors.
@@ -164,7 +148,7 @@ class mxsParseSource {
 				console.log(err.token);
 				badTokens.push(src[next]);
 				/* FEATURE DISBLED*/
-				errorReport.push({token:src[next], alternatives: this._PossibleTokens() });
+				errorReport.push({ token: src[next], alternatives: this._PossibleTokens() });
 
 				let filler = replaceWithWS(err.token.text);
 				err.token.text = filler;
@@ -183,53 +167,6 @@ class mxsParseSource {
 		this.__parsedCST = this.parserInstance.results[0] || [];
 
 		report();
-		// */
-		/*
-		// ASYNC VERSION
-		let promise = new Promise((resolve, reject) => {
-			let parsings = (src, next, total) => {
-				// console.log(badTokens);
-				try {
-					this.parserInstance.feed(src[next].text);
-				} catch (err) {
-					// catch non parsing related errors.
-					if (!err.token) { reject(err); }
-					if (!err.token) { throw err; }
-
-					badTokens.push({...src[next]});
-					errorReport.push({token:{...src[next]}, alternatives: this._PossibleTokens() });
-
-					let filler = replaceWithWS(err.token.text);
-					err.token.text = filler;
-					err.token.value = filler;
-					err.token.type = "ws";
-
-					// src.splice(next, 1, err.token);
-					src[next] = err.token;
-
-					next -= 1;
-					this.parserInstance.restore(state);
-				}
-				state = this.parserInstance.save();
-
-				if (next === total) {
-					resolve(report());
-				} else {
-					setImmediate( () => parsings(src, next + 1, total));
-					// return  parsings(src, next + 1, total);
-				}
-			};
-			parsings(src, 0, total);
-		});
-		return new Promise((resolve, reject) =>{
-			promise.then((response) => {
-				// console.log(response);
-				resolve(response);
-			}, (error) => {
-				reject(error);
-			})
-		});
-		// */
 	}
 	/**
 	 * List of possible tokens to overcome the error

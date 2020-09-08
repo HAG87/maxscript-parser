@@ -7,7 +7,7 @@ const { FileWrite, JsonFileWrite, readDirR } = require('./utils.js');
 //-----------------------------------------------------------------------------------
 // const { find, get, set, drop, info, del, arrayFirstOnly, traverse, } = require('ast-monkey');
 // const { pathNext, pathPrev, pathUp } = require('ast-monkey-util');
-// const traverse2 = require('ast-monkey-traverse-with-lookahead');
+// const traverse2 = require('ast-monkey-traverse');
 // const objectPath = require("object-path");
 //-----------------------------------------------------------------------------------
 const mxLexer = require('./mooTokenize.js');
@@ -81,7 +81,7 @@ function parseAndMinify (fPath) {
 	}
 }
 //-----------------------------------------------------------------------------------
-function collectStatements(node) {
+function collectStatementsR(node) {
 	return _visit(node, null, null, 0, 0);
 	function _visit(node, parent, key, level = 0) {
 		let childStack = [];
@@ -99,23 +99,25 @@ function collectStatements(node) {
 					// visit each node in the array
 					if (isNode(child[j])) {
 						let res = _visit(child[j], node, key, level + 1)
-						// if (res) childStack = childStack.concat(res);
-						if (res) childStack.push(res);
+						if (res) childStack = childStack.concat(res);
 					}
 				}
 			} else if (isNode(child)) {
 				let res = _visit(child, node, key, level + 1);
-				if (res) childStack.push(res);
+				if (res) childStack = childStack.concat(res);
 			} else {				
 				// keys that contains values...
 			}
 		}
 		// if (isNode(node) && childStack.length > 0) {
 		// }
-		if ('id' in node ) {
-			return {node: node.type, childs: childStack};
+		if ('id' in node ) {			
+			return {node: node, childs: childStack};
 		} else {
-			if (childStack.length > 0) return childStack;
+			if (childStack.length > 0) {
+				// console.log(childStack.length);
+				return childStack
+			}
 			else return;
 		}
 	}
@@ -230,40 +232,31 @@ parseSourceAsync(source('examples/common/corelib.ms')).then((result) => {
 })
 // */
 //-----------------------------------------------------------------------------------
-const cluster = require('cluster');
-const http = require('http');
-let workers = [];
-const numCPUs = require('os').cpus().length; //number of CPUS
 
-if (cluster.isMaster) {
-	// Fork workers.
-	for (var i = 0; i < numCPUs; i++) {
-	  cluster.fork();    //creating child process
-	}
-  
-	//on exit of cluster
-	cluster.on('exit', (worker, code, signal) => {
-		if (signal) {
-		  console.log(`worker was killed by signal: ${signal}`);
-		} else if (code !== 0) {
-		  console.log(`worker exited with error code: ${code}`);
-		} else {
-		  console.log('worker success!');
+let CST = Main('examples/camlister.ms');
+// let stats = collectStatementsR(CST);
+
+function transformStatements(nodes) {
+	let _transformStatements = (node) => {
+		let SymbolCollection = [];
+		for (node of nodes) {
+
+			let theSymbol = {
+				name: node.node.id.value.toString(),
+				childs: node.childs.length > 0 ? transformStatements(node.childs) : []
+			}
+
+			SymbolCollection.push(theSymbol);
 		}
-	});
-  } else {
-	  console.log('Message from worker!');
-	// Workers can share any TCP connection
-	// In this case it is an HTTP server
-	// http.createServer((req, res) => {
-	//   res.writeHead(200);
-	//   res.end('hello world\n');
-	// }).listen(3000);
-  }
+		return SymbolCollection;
+	}
+	return _transformStatements(node);
+}
 
-//-----------------------------------------------------------------------------------
+// let syms = transformStatements(stats);
+// console.log(syms);
+// JsonFileWrite('test/Stats.json', stats);
 
-// let CST = Main('examples/refGuidesObject.ms');
 /*
 let scripts = readDirR('examples');
 scripts.forEach((fp, i) => {

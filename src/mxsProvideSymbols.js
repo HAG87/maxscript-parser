@@ -1,5 +1,5 @@
 "use strict";
-const traverse2 = require('ast-monkey-traverse-with-lookahead');
+const traverse = require('ast-monkey-traverse');
 // const objectPath = require("object-path");
 //-----------------------------------------------------------------------------------
 const { range } = require('./astUtils.js');
@@ -14,8 +14,8 @@ function errSymbolInformation(value, loc) {
 }
 //-----------------------------------------------------------------------------------
 /*
-If traverse2() is currently traversing a plain object, going each key/value pair, key will be the object's current key and val will be the value.
-If traverse2() is currently traversing an array, going through all elements, a key will be the current element and val will be null.
+If traverse() is currently traversing a plain object, going each key/value pair, key will be the object's current key and val will be the value.
+If traverse() is currently traversing an array, going through all elements, a key will be the current element and val will be null.
 
 innerObj keys
 {
@@ -52,7 +52,7 @@ function collectStatementsFromCST(CST, filter = 'id') {
 	let statements = [];
 	//let result = objFromKeys(filter, []);
 	//traverse the CST
-	traverse2(CST, (key1, val1, innerObj) => {
+	traverse(CST, (key1, val1, innerObj) => {
 		const current = val1 != null ? val1 : key1;
 		if (key1 === filter) statements.push(innerObj.path);
 		return current;
@@ -70,7 +70,7 @@ function collectErrors(CST) {
 	let theSymbols = [];
 	let errTokens = [];
 
-	traverse2(CST, (key1, val1, innerObj, stop) => {
+	traverse(CST, (key1, val1, innerObj, stop) => {
 		const current = val1 != null ? val1 : key1;
 		if (key1 === 'type' && val1 === 'error') errTokens.push(innerObj.parent);
 		return current;
