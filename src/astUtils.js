@@ -1,6 +1,6 @@
 "use strict";
 const objectPath = require("object-path");
-const traverse2 = require('ast-monkey-traverse-with-lookahead');
+const traverse2 = require('ast-monkey-traverse');
 //-----------------------------------------------------------------------------------
 /**
  * Retrieve an object-path notation pruning n branches/leafs

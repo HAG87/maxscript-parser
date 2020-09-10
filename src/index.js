@@ -5,13 +5,9 @@ const path = require('path');
 const mxsParseSource = require('./mxsParser.js');
 const { FileWrite, JsonFileWrite, readDirR } = require('./utils.js');
 //-----------------------------------------------------------------------------------
-// const { find, get, set, drop, info, del, arrayFirstOnly, traverse, } = require('ast-monkey');
-// const { pathNext, pathPrev, pathUp } = require('ast-monkey-util');
 // const traverse2 = require('ast-monkey-traverse');
-// const objectPath = require("object-path");
 //-----------------------------------------------------------------------------------
 const mxLexer = require('./mooTokenize.js');
-const {TokenizeSource} = require('./mxsTokenize.js')
 const { visit, visitorPatterns } = require("./mxsCompactCode");
 //-----------------------------------------------------------------------------------
 const perf = require('execution-time')();
@@ -123,25 +119,8 @@ function collectStatementsR(node) {
 	}
 }
 //-----------------------------------------------------------------------------------
-// parseAndMinify('examples/modules/maptoolsCore.ms');
-// parseAndMinify('examples/common/corelib.ms');
-// let CST = Main('examples/common/corelib.ms');
-// let CST = Main(examples[2]);
-
-/**
- * Check if value is node
- * @param {any} node CST node
- */
-function isNode(node) {
-	return (typeof node === 'object' && node != undefined);
-}
-/**
- * filter nodes by type property
- * @param {any} node CST node
- */
-function getNodeType(node) {
-	return ('type' in node) ? node.type : undefined;
-}
+const isNode = node => (typeof node === 'object' && node != null);
+const getNodeType = node => ('type' in node) ? node.type : undefined;
 
 function visitor(node, callback) {
 	_visit(node, null, null, 0)
@@ -174,67 +153,6 @@ function visitor(node, callback) {
 		}
 	}
 }
-//-----------------------------------------------------------------------------------
-const nearley = require('nearley');
-const grammar = require('./grammar.js');
-// this could work combined in a comparator of current document, ot checking if the passed document is still open...
-function parseSourceAsync(source) {
-	// function parser() {
-		return new Promise((resolve, reject) => {
-			// setTimeout(() => resolve('donewithit'), 0)
-			// /*
-			// delay execution
-			setTimeout( () => {
-				// check here if the editor document is valid.
-				console.log("parser called");
-				let mxsParser = new nearley.Parser(
-					nearley.Grammar.fromCompiled(grammar),
-					{
-						keepHistory: true,
-						// lexer: mxLexer
-					});
-				try {
-					mxsParser.feed(source);
-					console.log("parser done");
-
-					resolve(mxsParser.results[0]);
-				} catch (err) {
-					// add here call to the errorParser()
-					reject(err);
-				}
-			},1500);
-			// */
-		});
-	// }
-	/*
-	let p = Promise.race([
-		parser(),
-		new Promise((resolve, reject) => {
-			setTimeout(() => reject(new Error('request timeout')), 100)
-		})
-	]);
-	return new Promise((resolve, reject) => {
-		parser().then( response => {
-			resolve(response);
-		}, err => {
-			reject(err);
-		});
-	});
-	*/
-}
-/*
-parseSourceAsync(source('examples/common/corelib.ms')).then((result) => {
-	console.log("parser finished");
-	console.log(result);
-}, (err) => {
-	// console.log('errors');
-	console.log(err);
-})
-// */
-//-----------------------------------------------------------------------------------
-
-let CST = Main('examples/camlister.ms');
-// let stats = collectStatementsR(CST);
 
 function transformStatements(nodes) {
 	let _transformStatements = (node) => {
@@ -253,34 +171,6 @@ function transformStatements(nodes) {
 	return _transformStatements(node);
 }
 
-// let syms = transformStatements(stats);
-// console.log(syms);
-// JsonFileWrite('test/Stats.json', stats);
-
-/*
-let scripts = readDirR('examples');
-scripts.forEach((fp, i) => {
-
-	let file = path.basename(fp);
-	let dir = path.dirname(fp);
-	let ex = path.extname(fp);
-	if (ex === '.ms' | ex === '.mcr') {
-	// if (ex === '.ms' ) {
-		if (!(/^min_/gmi.test(file))) {
-			console.log(i + ': ' + file);
-			
-			let nf = path.join(dir, 'min', 'min_' + file);
-
-			let CST = Main(fp);
-
-			let COMPRESS = minify(CST);
-			FileWrite(nf, COMPRESS);
-
-			console.log('---------------');
-		}
-	}
-});
-// */
 //-----------------------------------------------------------------------------------
 // CODE MINIFIER TEST
 // let CST = Main('examples/example-1.ms');

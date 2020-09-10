@@ -6,6 +6,7 @@ var exp = [
     'mooTokenize.js',
     'mxsCompactCode.js',
     'mxsparser.js',
+    'astUtils.js',
 ]
 
 exp.forEach( f => {
