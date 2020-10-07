@@ -21,7 +21,8 @@
   },
   "scripts": {
     "run": "node .",
-    "gen-parser": "nearleyc ./src/grammars/grammar.ne -o ./src/grammar.js",
+    "grammar:JS": "nearleyc ./src/grammars/grammar.ne -o ./src/grammar.js",
+    "grammar:TS": "nearleyc ./src/grammars/grammar-ts.ne -o ./src/grammar.ts",
     "build": "node ./src/export.js"
   },
   "repository": {
