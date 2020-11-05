@@ -3,12 +3,10 @@ const fs = require('fs');
 const path = require('path');
 //-----------------------------------------------------------------------------------
 const mxsParseSource = require('./mxsParser.js');
-const { FileWrite, JsonFileWrite, readDirR } = require('./utils.js');
+const { FileWrite, JsonFileWrite, readDirR, prefixPath } = require('./utils.js');
 //-----------------------------------------------------------------------------------
 // const traverse2 = require('ast-monkey-traverse');
 //-----------------------------------------------------------------------------------
-const mxLexer = require('./mooTokenize.js');
-const { visit, visitorPatterns } = require("./mxsCompactCode");
 //-----------------------------------------------------------------------------------
 const perf = require('execution-time')();
 const chalk = require('chalk');
@@ -19,14 +17,14 @@ perf.start();
 // PROVIDE SYMBOLS
 //-----------------------------------------------------------------------------------
 let examples = {
-	1:  'examples/example-1.ms',
-	2:  'examples/example-2.ms',
-	3:  'examples/example-3.ms',
-	4:  'examples/example-4.ms',
-	5:  'examples/example-5.ms',
-	6:  'examples/example-6.ms',
-	7:  'examples/example-7.ms',
-	8:  'examples/example-8.ms',
+	1: './examples/example-1.ms',
+	2: './examples/example-2.ms',
+	3: './examples/example-3.ms',
+	4: './examples/example-4.ms',
+	5: './examples/example-5.ms',
+	6: './examples/example-6.ms',
+	7: './examples/example-7.ms',
+	8: './examples/example-8.ms',
 }
 //-----------------------------------------------------------------------------------
 const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
@@ -48,6 +46,8 @@ function Main(src) {
 //-----------------------------------------------------------------------------------
 // COMPRESS CODE
 //-----------------------------------------------------------------------------------
+const { visit, visitorPatterns } = require("./mxsReFlow");
+
 function minify(source) {
 	try {
 		return visit(source, visitorPatterns);
@@ -56,26 +56,22 @@ function minify(source) {
 		throw err;
 	}
 }
-//-----------------------------------------------------------------------------------
-function transfPath(fp) {
-	let file = path.basename(fp);
-	let dir = path.dirname(fp);
-	let ex = path.extname(fp);
-	if (ex === '.ms' | ex === '.mcr') {
-		let nf = path.join(dir, 'min_' + file);
-		return nf;
-	}
-	return;
-}
-//-----------------------------------------------------------------------------------
-function parseAndMinify (fPath) {
+function parseAndMinify(fPath) {
 	let min = minify(Main(fPath));
-	let fp = transfPath(fPath);
+	let fp = prefixPath(fPath);
 	if (fp) {
 		FileWrite(fp, min);
 		console.log('Success');
 	}
 }
+//-----------------------------------------------------------------------------------
+// TEST
+// /*
+let CST = Main(examples[2]);
+let COMPRESS = minify(CST);
+
+// FileWrite('test/compress.ms', COMPRESS);
+// */
 //-----------------------------------------------------------------------------------
 function collectStatementsR(node) {
 	return _visit(node, null, null, 0, 0);
@@ -101,14 +97,14 @@ function collectStatementsR(node) {
 			} else if (isNode(child)) {
 				let res = _visit(child, node, key, level + 1);
 				if (res) childStack = childStack.concat(res);
-			} else {				
+			} else {
 				// keys that contains values...
 			}
 		}
 		// if (isNode(node) && childStack.length > 0) {
 		// }
-		if ('id' in node ) {			
-			return {node: node, childs: childStack};
+		if ('id' in node) {
+			return { node: node, childs: childStack };
 		} else {
 			if (childStack.length > 0) {
 				// console.log(childStack.length);
@@ -122,12 +118,14 @@ function collectStatementsR(node) {
 const isNode = node => (typeof node === 'object' && node != null);
 const getNodeType = node => ('type' in node) ? node.type : undefined;
 
-function visitor(node, callback) {
-	_visit(node, null, null, 0)
-	function _visit(node, parent, key, level = 0) {
-		if ('id' in node ) {	
-			// console.log (node.type);
-			callback(node, parent, level);
+function visitor(ast, callback) {
+
+	function _visit(node, parent, key, index = 0) {
+		if ('id' in node || 'type' in node) {
+			console.log(node.type);
+			const nodeType = getNodeType(node);
+			// callback[nodeType](node, parent, index);
+			callback(node, parent, index);
 		}
 		// get the node keys
 		const keys = Object.keys(node);
@@ -142,16 +140,15 @@ function visitor(node, callback) {
 				for (let j = 0; j < child.length; j++) {
 					// visit each node in the array
 					if (isNode(child[j])) {
-						 _visit(child[j], node, key, level + 1)
+						_visit(child[j], node, key, j)
 					}
 				}
 			} else if (isNode(child)) {
-				_visit(child, node, key, level + 1);
-			} else {				
-				// keys that contains values...
+				_visit(child, node, key);
 			}
 		}
 	}
+	_visit(ast, null, null, 0)
 }
 
 function transformStatements(nodes) {
@@ -170,12 +167,23 @@ function transformStatements(nodes) {
 	}
 	return _transformStatements(node);
 }
+/*
+let cst = Main(examples[2]);
+visitor(cst,
+	node => {
+		console.log(JSON.stringify(node, null, 2));
+	});
+*/
+//-----------------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------------
-// CODE MINIFIER TEST
-// let CST = Main('examples/example-1.ms');
-// let COMPRESS = minify(CST);
-// FileWrite('test/compress.ms', COMPRESS);
+// SIMPLE CODE FORMATTER: CONTEXT UNAWARE
+/*
+const {mxsSimpleFormatter, mxsSimpleTextEditFormatter} = require('./mxsFormatter.js')
+// let res = mxsSimpleFormatter(source(examples[2]));
+let res = mxsSimpleTextEditFormatter(source(examples[2]));
+FileWrite('formatted.json', JSON.stringify(res, null, 4));
+*/
 //-----------------------------------------------------------------------------------
 // At end of your code
 const results = perf.stop();
