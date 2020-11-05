@@ -1,26 +1,23 @@
+# @preprocessor typescript
 @{%
 	const mxLexer = require('./mooTokenize.js');
     // Utilities
-    // WARN! THIS COULD NOT BE COMPATIBLE!!
-    const empty = '';
+    const $empty = '';
 
     const flatten = arr => arr != null ? arr.flat().filter(e => e != null) : [];
 
-    const collectSub = (arr, index) => arr !== null ? arr.map(e => e[index]) : [];
+    const collectSub = (arr, index) => arr != null ? arr.map(e => e[index]) : [];
 
-    const filterNull = arr => arr !== null ? arr.filter(e => e != null) : [];
+    const filterNull = arr => arr != null ? arr.filter(e => e != null) : [];
 
     const tokenType = (t, newytpe) => {t.type = newytpe; return t;}
 
-    const merge = (a, b) => {
-        if (a != null && b != null) {
-            return ([].concat(a, ...b).filter(e => e != null));
-        } else if (a !== null) {
-            return (Array.isArray(a) ? a.filter(e => e != null) : [a]);
-        } else return null;
+    const merge = (a, ...b) => {
+        if (a == null) {return null;}
+        return b != null ? [].concat(a, ...b).filter(e => e != null) : [].concat(a).filter(e => e != null);
     }
 
-    const convertToken = (token, newytpe) => {
+    const convertToken = (token, newtype) => {
         let node = {...token};
             node.type = newtype;
         return node;
@@ -50,7 +47,7 @@
                     col: (end.text != null ? end.col + (end.text.length - 1) : end.col)                
                 };
             }
-        };
+        }
         return ({start: startOffset, end: endOffset});
     }
     // parser configuration
@@ -207,7 +204,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 
     plugin_clauses
-        -> plugin_clause (EOL plugin_clause):* {% d => merge(d[0], d[1]) %}
+        -> plugin_clause (EOL plugin_clause):* {% d => merge(d[0], ...d[1]) %}
 
     # plugin_clauses
         # -> plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
@@ -266,7 +263,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 loc:    getLoc(d[0][0], d[6])
             })%}
     
-    tool_clauses -> tool_clause (EOL tool_clause):* {% d => merge(...d) %}
+    tool_clauses -> tool_clause (EOL tool_clause):* {% d => merge(d[0], ...d[1]) %}
     
     tool_clause
         -> variable_decl {% id %}
@@ -289,7 +286,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 loc:    getLoc(d[0][0], d[8])
             })%}
    
-    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(...d) %}
+    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(d[0], ...d[1]) %}
 
     utility_clause
         -> rollout_clause  {% id %}
@@ -314,7 +311,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #    -> LPAREN _rollout_clause RPAREN {% d => d[1] %}
     #     | "(" _ ")" {% d => null %}
 
-    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(...d) %}
+    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(d[0], ...d[1]) %}
 
     #rollout_clauses
     #    -> rollout_clauses EOL rollout_clause {% d => [].concat(d[0], d[2]) %}
@@ -379,7 +376,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 value: d[2][0]
             })%}
 
-    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(...d) %}
+    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(d[0],...d[1]) %}
 
     # macro_script_body
         # -> null
@@ -550,35 +547,35 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> %kw_at __ (%kw_level | %kw_time) _ (operand)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : empty,
+                prefix : $empty,
                 context: d[0],
                 args: d[2].concat(d[4])
             })%}
         | %kw_in _ (operand)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : empty,
+                prefix : $empty,
                 context: d[0],
                 args: d[2]
             })%}
         | (%kw_in __):? %kw_coordsys _ (%kw_local | operand)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : (d[0] != null ? d[0][0] : empty),
+                prefix : (d[0] != null ? d[0][0] : $empty),
                 context: d[1],
                 args: d[3]
             })%}
         | %kw_about _ (%kw_coordsys | operand)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : empty,
+                prefix : $empty,
                 context: d[0],
                 args: d[2]
             })%}
         | (%kw_with __):? %kw_context _ (logical_expr | bool)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : (d[0] != null ? d[0][0] : empty),
+                prefix : (d[0] != null ? d[0][0] : $empty),
                 context: d[1],
                 args: d[3]
             })%}
@@ -592,7 +589,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | (%kw_with __):? %kw_undo _ ( undo_label _ ):? (logical_expr | bool)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : (d[0] != null ? d[0][0] : empty),
+                prefix : (d[0] != null ? d[0][0] : $empty),
                 context: d[1],
                 args: (filterNull(d[3])).concat(d[4])
             })%}
@@ -610,15 +607,15 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             {% d => ({
                 type:  'CaseStatement',
                 test:  d[1],
-                cases: merge(d[5], d[6]),
-                loc:   getLoc(d[0][0], d[7])
+                cases: merge(d[5], flatten(d[6])),
+                loc:   getLoc(d[0][0], d[8])
             })%}
 
     case_src -> expr _  {% d => d[0] %} | __ {% id %}
 
     case_item
         -> (factor | %params) (":" _) expr
-        {% d => ({type:'CaseClause', case: d[0], body: d[2] })%}
+        {% d => ({type:'CaseClause', case: d[0][0], body: d[2] })%}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK # TODO: FINISH LOCATION
     for_loop
@@ -790,7 +787,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     prod -> prod _S ("*"|"/") _ exp
             {% d => ({
                 type:     'MathExpression',
-                operator: d[2],
+                operator: d[2][0],
                 left:     d[0],
                 right:    d[4]
             })%}

@@ -1,30 +1,26 @@
-// Generated automatically by nearley, version 2.19.2
+// Generated automatically by nearley, version 2.19.7
 // http://github.com/Hardmath123/nearley
 (function () {
 function id(x) { return x[0]; }
 
 	const mxLexer = require('./mooTokenize.js');
     // Utilities
-    // WARN! THIS COULD NOT BE COMPATIBLE!!
-    const empty = '';
+    const $empty = '';
 
     const flatten = arr => arr != null ? arr.flat().filter(e => e != null) : [];
 
-    const collectSub = (arr, index) => arr !== null ? arr.map(e => e[index]) : [];
+    const collectSub = (arr, index) => arr != null ? arr.map(e => e[index]) : [];
 
-    const filterNull = arr => arr !== null ? arr.filter(e => e != null) : [];
+    const filterNull = arr => arr != null ? arr.filter(e => e != null) : [];
 
     const tokenType = (t, newytpe) => {t.type = newytpe; return t;}
 
-    const merge = (a, b) => {
-        if (a != null && b != null) {
-            return ([].concat(a, ...b).filter(e => e != null));
-        } else if (a !== null) {
-            return (Array.isArray(a) ? a.filter(e => e != null) : [a]);
-        } else return null;
+    const merge = (a, ...b) => {
+        if (a == null) {return null;}
+        return b != null ? [].concat(a, ...b).filter(e => e != null) : [].concat(a).filter(e => e != null);
     }
 
-    const convertToken = (token, newytpe) => {
+    const convertToken = (token, newtype) => {
         let node = {...token};
             node.type = newtype;
         return node;
@@ -54,7 +50,7 @@ function id(x) { return x[0]; }
                     col: (end.text != null ? end.col + (end.text.length - 1) : end.col)                
                 };
             }
-        };
+        }
         return ({start: startOffset, end: endOffset});
     }
     // parser configuration
@@ -172,7 +168,7 @@ var grammar = {
     {"name": "plugin_clauses$ebnf$1", "symbols": []},
     {"name": "plugin_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "plugin_clause"]},
     {"name": "plugin_clauses$ebnf$1", "symbols": ["plugin_clauses$ebnf$1", "plugin_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "plugin_clauses", "symbols": ["plugin_clause", "plugin_clauses$ebnf$1"], "postprocess": d => merge(d[0], d[1])},
+    {"name": "plugin_clauses", "symbols": ["plugin_clause", "plugin_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
     {"name": "plugin_clause", "symbols": ["variable_decl"], "postprocess": id},
     {"name": "plugin_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "plugin_clause", "symbols": ["struct_def"], "postprocess": id},
@@ -219,7 +215,7 @@ var grammar = {
     {"name": "tool_clauses$ebnf$1", "symbols": []},
     {"name": "tool_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "tool_clause"]},
     {"name": "tool_clauses$ebnf$1", "symbols": ["tool_clauses$ebnf$1", "tool_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "tool_clauses", "symbols": ["tool_clause", "tool_clauses$ebnf$1"], "postprocess": d => merge(...d)},
+    {"name": "tool_clauses", "symbols": ["tool_clause", "tool_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
     {"name": "tool_clause", "symbols": ["variable_decl"], "postprocess": id},
     {"name": "tool_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "tool_clause", "symbols": ["struct_def"], "postprocess": id},
@@ -239,7 +235,7 @@ var grammar = {
     {"name": "utility_clauses$ebnf$1", "symbols": []},
     {"name": "utility_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "utility_clause"]},
     {"name": "utility_clauses$ebnf$1", "symbols": ["utility_clauses$ebnf$1", "utility_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "utility_clauses", "symbols": ["utility_clause", "utility_clauses$ebnf$1"], "postprocess": d => merge(...d)},
+    {"name": "utility_clauses", "symbols": ["utility_clause", "utility_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
     {"name": "utility_clause", "symbols": ["rollout_clause"], "postprocess": id},
     {"name": "utility_clause", "symbols": ["rollout_def"], "postprocess": id},
     {"name": "rollout_def$subexpression$1", "symbols": [(mxLexer.has("kw_rollout") ? {type: "kw_rollout"} : kw_rollout), "__"]},
@@ -257,7 +253,7 @@ var grammar = {
     {"name": "rollout_clauses$ebnf$1", "symbols": []},
     {"name": "rollout_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "rollout_clause"]},
     {"name": "rollout_clauses$ebnf$1", "symbols": ["rollout_clauses$ebnf$1", "rollout_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "rollout_clauses", "symbols": ["rollout_clause", "rollout_clauses$ebnf$1"], "postprocess": d => merge(...d)},
+    {"name": "rollout_clauses", "symbols": ["rollout_clause", "rollout_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
     {"name": "rollout_clause", "symbols": ["variable_decl"], "postprocess": id},
     {"name": "rollout_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "rollout_clause", "symbols": ["struct_def"], "postprocess": id},
@@ -312,7 +308,7 @@ var grammar = {
     {"name": "macro_script_body$ebnf$1", "symbols": []},
     {"name": "macro_script_body$ebnf$1$subexpression$1", "symbols": ["EOL", "macro_script_clause"]},
     {"name": "macro_script_body$ebnf$1", "symbols": ["macro_script_body$ebnf$1", "macro_script_body$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "macro_script_body", "symbols": ["macro_script_clause", "macro_script_body$ebnf$1"], "postprocess": d => merge(...d)},
+    {"name": "macro_script_body", "symbols": ["macro_script_clause", "macro_script_body$ebnf$1"], "postprocess": d => merge(d[0],...d[1])},
     {"name": "macro_script_clause", "symbols": ["expr"], "postprocess": id},
     {"name": "macro_script_clause", "symbols": ["event_handler"], "postprocess": id},
     {"name": "struct_def$subexpression$1", "symbols": [(mxLexer.has("kw_struct") ? {type: "kw_struct"} : kw_struct), "__"]},
@@ -471,14 +467,14 @@ var grammar = {
     {"name": "context$subexpression$2", "symbols": ["operand"]},
     {"name": "context", "symbols": [(mxLexer.has("kw_at") ? {type: "kw_at"} : kw_at), "__", "context$subexpression$1", "_", "context$subexpression$2"], "postprocess":  d => ({
             type: 'ContextExpression',
-            prefix : empty,
+            prefix : $empty,
             context: d[0],
             args: d[2].concat(d[4])
         })},
     {"name": "context$subexpression$3", "symbols": ["operand"]},
     {"name": "context", "symbols": [(mxLexer.has("kw_in") ? {type: "kw_in"} : kw_in), "_", "context$subexpression$3"], "postprocess":  d => ({
             type: 'ContextExpression',
-            prefix : empty,
+            prefix : $empty,
             context: d[0],
             args: d[2]
         })},
@@ -489,7 +485,7 @@ var grammar = {
     {"name": "context$subexpression$4", "symbols": ["operand"]},
     {"name": "context", "symbols": ["context$ebnf$1", (mxLexer.has("kw_coordsys") ? {type: "kw_coordsys"} : kw_coordsys), "_", "context$subexpression$4"], "postprocess":  d => ({
             type: 'ContextExpression',
-            prefix : (d[0] != null ? d[0][0] : empty),
+            prefix : (d[0] != null ? d[0][0] : $empty),
             context: d[1],
             args: d[3]
         })},
@@ -497,7 +493,7 @@ var grammar = {
     {"name": "context$subexpression$5", "symbols": ["operand"]},
     {"name": "context", "symbols": [(mxLexer.has("kw_about") ? {type: "kw_about"} : kw_about), "_", "context$subexpression$5"], "postprocess":  d => ({
             type: 'ContextExpression',
-            prefix : empty,
+            prefix : $empty,
             context: d[0],
             args: d[2]
         })},
@@ -508,7 +504,7 @@ var grammar = {
     {"name": "context$subexpression$6", "symbols": ["bool"]},
     {"name": "context", "symbols": ["context$ebnf$2", (mxLexer.has("kw_context") ? {type: "kw_context"} : kw_context), "_", "context$subexpression$6"], "postprocess":  d => ({
             type: 'ContextExpression',
-            prefix : (d[0] != null ? d[0][0] : empty),
+            prefix : (d[0] != null ? d[0][0] : $empty),
             context: d[1],
             args: d[3]
         })},
@@ -531,7 +527,7 @@ var grammar = {
     {"name": "context$subexpression$8", "symbols": ["bool"]},
     {"name": "context", "symbols": ["context$ebnf$3", (mxLexer.has("kw_undo") ? {type: "kw_undo"} : kw_undo), "_", "context$ebnf$4", "context$subexpression$8"], "postprocess":  d => ({
             type: 'ContextExpression',
-            prefix : (d[0] != null ? d[0][0] : empty),
+            prefix : (d[0] != null ? d[0][0] : $empty),
             context: d[1],
             args: (filterNull(d[3])).concat(d[4])
         })},
@@ -545,15 +541,15 @@ var grammar = {
     {"name": "case_expr", "symbols": ["case_expr$subexpression$1", "case_src", (mxLexer.has("kw_of") ? {type: "kw_of"} : kw_of), "_", "LPAREN", "case_item", "case_expr$ebnf$1", "RPAREN"], "postprocess":  d => ({
             type:  'CaseStatement',
             test:  d[1],
-            cases: merge(d[5], d[6]),
-            loc:   getLoc(d[0][0], d[7])
+            cases: merge(d[5], flatten(d[6])),
+            loc:   getLoc(d[0][0], d[8])
         })},
     {"name": "case_src", "symbols": ["expr", "_"], "postprocess": d => d[0]},
     {"name": "case_src", "symbols": ["__"], "postprocess": id},
     {"name": "case_item$subexpression$1", "symbols": ["factor"]},
     {"name": "case_item$subexpression$1", "symbols": [(mxLexer.has("params") ? {type: "params"} : params)]},
     {"name": "case_item$subexpression$2", "symbols": [{"literal":":"}, "_"]},
-    {"name": "case_item", "symbols": ["case_item$subexpression$1", "case_item$subexpression$2", "expr"], "postprocess": d => ({type:'CaseClause', case: d[0], body: d[2] })},
+    {"name": "case_item", "symbols": ["case_item$subexpression$1", "case_item$subexpression$2", "expr"], "postprocess": d => ({type:'CaseClause', case: d[0][0], body: d[2] })},
     {"name": "for_loop$subexpression$1", "symbols": [(mxLexer.has("kw_for") ? {type: "kw_for"} : kw_for), "__"]},
     {"name": "for_loop$ebnf$1$subexpression$1", "symbols": ["_", "for_sequence"]},
     {"name": "for_loop$ebnf$1", "symbols": ["for_loop$ebnf$1$subexpression$1"], "postprocess": id},
@@ -711,7 +707,7 @@ var grammar = {
     {"name": "prod$subexpression$1", "symbols": [{"literal":"/"}]},
     {"name": "prod", "symbols": ["prod", "_S", "prod$subexpression$1", "_", "exp"], "postprocess":  d => ({
             type:     'MathExpression',
-            operator: d[2],
+            operator: d[2][0],
             left:     d[0],
             right:    d[4]
         })},

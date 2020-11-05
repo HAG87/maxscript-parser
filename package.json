@@ -4,20 +4,22 @@
   "description": "parser for maxscript language",
   "main": "src/index.js",
   "dependencies": {
-    "ast-monkey": "^7.11.18",
-    "ast-monkey-traverse": "^1.12.17",
+    "ast-monkey": "^7.11.23",
+    "ast-monkey-traverse": "^1.12.20",
     "chalk": "^4.1.0",
     "execution-time": "^1.4.1",
     "moo": "^0.5.1",
-    "nearley": "^2.19.6",
-    "object-path": "^0.11.4"
+    "nearley": "^2.19.7",
+    "object-path": "^0.11.5",
+    "vscode-languageserver": "^6.1.1",
+    "vscode-languageserver-textdocument": "^1.0.1"
   },
   "devDependencies": {
     "@types/moo": "^0.5.3",
     "@types/nearley": "^2.11.1",
-    "@types/node": "^12.12.56",
+    "@types/node": "^12.19.3",
     "@types/object-path": "^0.11.0",
-    "eslint": "^7.8.1"
+    "eslint": "^7.12.1"
   },
   "scripts": {
     "run": "node .",

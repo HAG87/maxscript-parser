@@ -1,8 +1,6 @@
 const mxLexer = require('./mooTokenize.js');
 
 function TokenizeSource(source, filter) {
-
-
     if (typeof filter === Array) {
         mxLexer.next = (next => () => {
             let tok;
@@ -23,6 +21,7 @@ function TokenizeSource(source, filter) {
         //TODO: Catch tokenizer errors.
         toks.push(token);
     }
+    // console.log(toks);
     return toks;
 }
 
