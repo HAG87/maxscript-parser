@@ -51,15 +51,12 @@ function visit(node, callbackMap) {
 		}
 
 		if (nodeType in callbackMap) {
+			editNode.call(this, callbackMap[nodeType], node, parent, key, level, index);
 
-			callbackMap[nodeType](node, parent, key, level, index);
-			// console.log(node.type +' :: ' + parent.type + ' [' + index + ']');
-			// console.log(parent[key]);
+			// callbackMap[nodeType](node)			
+			// index != null ? parent[key][index] = res : parent[key] = res;
 		} else {
 			// valid nodes but missing from rules...
-			// console.log(node);
-
-			// index != null ? parent[key][index] = node.text : parent[key] = node.text;
 		}
 	}
 	_visit(node, null, null, 0, null);
@@ -71,73 +68,73 @@ function removeNode(node, parent, key, index) {
 		index != null ? parent[key].splice(index, 1) : delete parent[key]
 	}
 }
+function editNode(callback, node, parent, key, level, index) {
+	let res = callback(node);
+	index != null ? parent[key][index] = res : parent[key] = res;
+}
 //-----------------------------------------------------------------------------------
-
+/*
 var wrap = function (func) {
 	return function () {
 		var args = [...arguments].splice(0);
 		return func.apply(this, args);
 	};
 };
-
-
-function nodeText(node, parent, key, level, index) {
+function nodeText(node) {
 	index != null ? parent[key][index] = node.text : parent[key] = node.text;
 }
-function nodeValue(node, parent, key, level, index) {
+function nodeValue(node) {
 	index != null ? parent[key][index] = node.value : parent[key] = node.value;
 }
+*/
 
 //-----------------------------------------------------------------------------------
 const INDENT = '\t';
-const SPACE = ' ';
+const SPACER = ' ';
+const LINEBRK = '\n';
 //-----------------------------------------------------------------------------------
 let tokensValue = {
-	/*
-	global_typed(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	hex(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-
-	identity(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-
-	locale(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	name(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	number(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	path(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	string(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	time(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	typed_iden(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-
-	property(node, parent, key, level, index) { index != null ? parent[key][index] = node.value : parent[key] = node.value; },
-	params(node, parent, key, level, index) { index != null ? parent[key][index] = node.value : parent[key] = node.value; },
-	math(node, parent, key, level, index) { index != null ? parent[key][index] = node.value : parent[key] = node.value; },
-	assign(node, parent, key, level, index) { index != null ? parent[key][index] = node.value : parent[key] = node.value; },
-	comparison(node, parent, key, level, index) { index != null ? parent[key][index] = node.value : parent[key] = node.value; },
-
-	keyword(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_as(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_bool(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_on(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_return(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_exit(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_scope(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_uicontrols(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_group(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_objectset(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_context(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_function(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_time(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_tool(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_utility(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_rollout(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_level(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_global(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_local(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_do(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	kw_then(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
-	error(node, parent, key, level, index) { index != null ? parent[key][index] = node.text : parent[key] = node.text; },
+	// /*
+	global_typed(node) { return node.text; },
+	hex(node) { return node.text; },
+	identity(node) { return node.text; },
+	locale(node) { return node.text; },
+	name(node) { return node.text; },
+	number(node) { return node.text; },
+	path(node) { return node.text; },
+	string(node) { return node.text; },
+	time(node) { return node.text; },
+	typed_iden(node) { return node.text; },
+	property(node) { return node.value; },
+	params(node) { return node.value; },
+	math(node) { return node.value; },
+	assign(node) { return node.value; },
+	comparison(node) { return node.value; },
+	keyword(node) { return node.text; },
+	kw_as(node) { return node.text; },
+	kw_bool(node) { return node.text; },
+	kw_on(node) { return node.text; },
+	kw_return(node) { return node.text; },
+	kw_exit(node) { return node.text; },
+	kw_scope(node) { return node.text; },
+	kw_uicontrols(node) { return node.text; },
+	kw_group(node) { return node.text; },
+	kw_objectset(node) { return node.text; },
+	kw_context(node) { return node.text; },
+	kw_function(node) { return node.text; },
+	kw_time(node) { return node.text; },
+	kw_tool(node) { return node.text; },
+	kw_utility(node) { return node.text; },
+	kw_rollout(node) { return node.text; },
+	kw_level(node) { return node.text; },
+	kw_global(node) { return node.text; },
+	kw_local(node) { return node.text; },
+	kw_do(node) { return node.text; },
+	kw_then(node) { return node.text; },
+	error(node) { return node.text; },
 	// */
 
-	// /*
+	/*
 	global_typed: wrap(nodeText),
 	hex: wrap(nodeText),
 	identity: wrap(nodeText),
@@ -188,85 +185,106 @@ let visitorPatterns = {
 	// TOKENS
 	...tokensValue,
 	// LITERALS
-	Literal(node, parent, key, level, index) {
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
-	},
-	Identifier(node, parent, key, level, index) {
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
-	},
+	Literal(node) { return node.value; },
+	Identifier(node) { return node.value; },
 	// Literal   : wrap(nodeValue),
 	// Identifier: wrap(nodeValue),
 
-	BitRange(node, parent, key, level, index) {
+	BitRange(node) {
 		let res = `${node.start}..${node.end}`;
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	//-------------------------------------------------------------------------------------------
 
 	// DECLARATION
-	Declaration(node, parent, key, level, index) {
+	Declaration(node) {
 		let res;
-		let head = `${node.id} =`;
 
 		if (itemsCheck(node.value)) {
+			let head = [
+				node.id,
+				'=',
+				node.value
+			].join(SPACER);
+
 			res = [
 				head,
 				...node.value,	//.map(x => INDENT + x)
-			].join('\n');
+			].join(LINEBRK);
 		} else {
-			res = head + ' ' + node.value;
+			res = [
+				node.id,
+				'=',
+				node.value
+			].join(SPACER);
 		}
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// /*
 	// Types
-	ObjectArray(node, parent, key, level, index) {
+	ObjectArray(node) {
 		let res;
 		if (Array.isArray(node.elements) && node.elements.length > 1) {
-			res = `#(${node.elements.join(', ')})`;
+			res = ['#(',
+				node.elements.join(',' + SPACER),
+				')'
+			].join('');
 		} else {
 			res = `#(${node.elements})`;
 		}
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ObjectBitArray(node, parent, key, level, index) {
+	ObjectBitArray(node) {
 		let res;
 		if (Array.isArray(node.elements) && node.elements.length > 1) {
-			res = `#{${node.elements.join(', ')}}`;
+			res = ['#{',
+				node.elements.join(',' + SPACER),
+				'}'
+			].join('');
 		}
 		else {
 			res = `#{${node.elements}}`;
 		}
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ObjectPoint4(node, parent, key, level, index) {
-		let res = `[${node.elements.join(', ')}]`;
+	ObjectPoint4(node) {
+		let res = [
+			'[',
+			node.elements.join(',' + SPACER),
+			']'
+		].join('');
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ObjectPoint3(node, parent, key, level, index) {
-		let res = `[${node.elements.join(', ')}]`;
+	ObjectPoint3(node) {
+		let res = [
+			'[',
+			node.elements.join(',' + SPACER),
+			']'
+		].join('');
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ObjectPoint2(node, parent, key, level, index) {
-		let res = `[${node.elements.join(', ')}]`;
+	ObjectPoint2(node) {
+		let res = [
+			'[',
+			node.elements.join(',' + SPACER),
+			']'
+		].join('');
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-
-
 	// Accesors
-	AccessorIndex(node, parent, key, level, index) {
+	AccessorIndex(node) {
 		let res = `${node.operand}[${node.index}]`;
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// */
-	AccessorProperty(node, parent, key, level, index) {
+	AccessorProperty(node) {
 		/*
 		let res;
 		if (itemsCheck(node.operand)) {
@@ -282,56 +300,71 @@ let visitorPatterns = {
 		*/
 		let res = `${node.operand}.${node.property}`;
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// /*
 
 	// Call
-	CallExpression(node, parent, key, level, index) {
+	CallExpression(node) {
 
 		if (!Array.isArray(node.args)) { node.args = [node.args] }
 
 		let res = [
 			node.calle,
 			...node.args
-		].join(' ');
+		].join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// Assign
-	ParameterAssignment(node, parent, key, level, index) {
-		let res = `${node.param}: ${node.value || ' '}`
+	ParameterAssignment(node) {
+		let res = `${node.param}: ${node.value || SPACER}`
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	AssignmentExpression(node, parent, key, level, index) {
-		let res = `${node.operand} ${node.operator} ${node.value}`;
+	AssignmentExpression(node) {
+		let res = [
+			node.operand,
+			node.operator,
+			node.value
+		].join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 
 
 	// Functions
-	Function(node, parent, key, level, index) {
+	Function(node) {
 
-		let decl = `${node.mapped ? 'mapped ' : ''}${node.keyword} ${node.id}`;
-		let args = node.args.join(' ');
-		let params = ('params' in node) ? node.params.join(' ') : '';
+		let args = node.args.join(SPACER);
+		let params = ('params' in node) ? node.params.join(SPACER) : '';
 
-		let res = [decl, args, params, '='].join(' ').concat('\n', node.body);
+		let res = [
+			node.mapped || null,
+			node.keyword,
+			node.id,
+			args,
+			params,
+			'='
+		].filter(e => e != null)
+			.join(SPACER)
+			.concat(LINEBRK, node.body);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	FunctionReturn(node, parent, key, level, index) {
-		let res = `return ${node.body || ''}`;
+	FunctionReturn(node) {
+		let res = [
+			'return',
+			node.body || ';'
+		].join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// Declarations
 	// */
-	VariableDeclaration(node, parent, key, level, index) {
+	VariableDeclaration(node) {
 		let res;
-		let scope = node.modifier != null ? `${node.modifier} ${node.scope} ` : `${node.scope} `;
+		let scope = node.modifier != null ? `${node.modifier}${SPACER}${node.scope} ` : `${node.scope} `;
 
 		if (itemsCheck(node.decls)) {
 			let last = node.decls.pop();
@@ -344,37 +377,50 @@ let visitorPatterns = {
 			res = scope + node.decls;
 		}
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// /*
 
 	// SIMPLE EXPRESSIONS - OK
-	MathExpression(node, parent, key, level, index) {
-		let res = `${node.left || ''} ${node.operator} ${node.right || ''}`;
+	MathExpression(node) {
+		let res = [
+			node.left || null,
+			node.operator,
+			node.right
+		].filter(e => e != null)
+			.join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	LogicalExpression(node, parent, key, level, index) {
-		let res = `${node.left} ${node.operator} ${node.right}`;
+	LogicalExpression(node) {
+		let res = [
+			node.left,
+			node.operator,
+			node.right
+		].filter(e => e != null)
+			.join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	UnaryExpression(node, parent, key, level, index) {
-		let res = `${node.operator} ${node.right}`
+	UnaryExpression(node) {
+		let res = [
+			node.operator,
+			node.right
+		].join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 
 	// STATEMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	// */
-	BlockStatement(node, parent, key, level, index) {
+	BlockStatement(node) {
 		let res;
 		if (itemsCheck(node.body)) {
 			res = [
 				'(',
-				...node.body.flat().map(x => '\t' + x),
+				...node.body.flat(),	//.map(x => '\t' + x),
 				')'
-			].join('\n');
+			].join(LINEBRK);
 		} else {
 			res = `(${node.body})`;
 
@@ -382,10 +428,10 @@ let visitorPatterns = {
 		// console.log(res);
 		// console.log(node.body.map(x => '\t' + x));
 		// console.log('-------------------');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// /*
-	IfStatement(node, parent, key, level, index) {
+	IfStatement(node) {
 
 		if (!Array.isArray(node.consequent)) { node.consequent = [node.consequent] }
 
@@ -404,44 +450,44 @@ let visitorPatterns = {
 			];
 			res = res.concat(alt);
 		}
-		res = res.join('\n');
+		res = res.join(LINEBRK);
 		// console.log(res);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	TryStatement(node, parent, key, level, index) {
+	TryStatement(node) {
 		let res = [
 			'try',
 			node.block,
 			'catch',
 			node.finalizer
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	DoWhileStatement(node, parent, key, level, index) {
+	DoWhileStatement(node) {
 
 		let res = [
 			'do',
 			node.body,
 			'while',
 			node.test
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	WhileStatement(node, parent, key, level, index) {
+	WhileStatement(node) {
 		let res = [
 			'while',
 			node.test,
 			'do',
 			// node.body,
-		].join(' ')
-			.concat('\n', node.body);
+		].join(SPACER)
+			.concat(LINEBRK, node.body);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ForStatement(node, parent, key, level, index) {
+	ForStatement(node) {
 		let res = [
 			'for',
 			node.variable,
@@ -449,71 +495,67 @@ let visitorPatterns = {
 			node.value,
 			node.sequence,
 			node.action
-		].join(' ')
-			.concat('\n', node.body);
+		].join(SPACER)
+			.concat(LINEBRK, node.body);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ForLoopSequence(node, parent, key, level, index) {
+	ForLoopSequence(node) {
 		let res = [
 			_to = (node.to.length > 0) ? `to ${node.to}` : null,
 			_by = (node.by.length > 0) ? `by ${node.by}` : null,
 			_while = (node.while.length > 0) ? `while ${node.while}` : null,
 			_where = (node.where.length > 0) ? `where ${node.where}` : null
 		].filter(e => e != null)
-			.join(' ');
+			.join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	LoopExit(node, parent, key, level, index) {
-		let res = `exit with\n${node.body}`;
+	LoopExit(node) {
+		let res = `exit${SPACER}with${SPACER}${node.body}`;
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	CaseStatement(node, parent, key, level, index) {
+	CaseStatement(node) {
 		res = [
 			`case ${node.test} of`,
 			'(',
 			...node.cases,
 			')'
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	CaseClause(node, parent, key, level, index) {
-		let spacer = /\d$/mi.test(node.case) ? ' ' : '';
-		let short = /\n/mi.test(node.body) ? '\n' : ' ';
+	CaseClause(node) {
+		let spacer = /\d$/mi.test(node.case) ? SPACER : '';
+		let short = /\n/mi.test(node.body) ? LINEBRK : ' ';
 
 		let res = `${node.case}${spacer}:${short}${node.body}`;
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// context expressions
-	ContextStatement(node, parent, key, level, index) {
-		let res = `${node.context}\n${node.body}`
+	ContextStatement(node) {
+		let res = [
+			node.context,
+			node.body
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	ContextExpression(node, parent, key, level, index) {
-		let res;
-		if (node.prefix !== '') {
-			res = [
-				node.prefix,
-				node.context,
-				...node.args
-			].join(' ');
-		} else {
-			res = [
-				node.context,
-				...node.args
-			].join(' ');
-		}
+	ContextExpression(node) {
+		let res = [
+			node.prefix !== '' ? node.prefix : null,
+			node.context,
+			...node.args
+		].filter(e => e != null)
+			.join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// /*
 	// Struct
-	Struct(node, parent, key, level, index) {
+	Struct(node) {
 		// console.log(node);
 		// /*
 		let body;
@@ -521,7 +563,7 @@ let visitorPatterns = {
 			body =
 				node.body.reduce((acc, curr, index, src) => {
 					if (index < src.length - 1) {
-						let sep = /(?:private|public)$/mi.test(curr) ? ';\n\t' : ',\n\t';
+						let sep = /(?:private|public)$/mi.test(curr) ? LINEBRK : ',' + LINEBRK;
 						return (acc + curr + sep);
 					} else {
 						return (acc + curr);
@@ -535,17 +577,14 @@ let visitorPatterns = {
 			'(',
 			`${body}`,
 			')'
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
+		return res;
 	},
-	StructScope(node, parent, key, level, index) {
-
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
-	},
+	StructScope(node) { return node.value; },
 	// StructScope: wrap(nodeValue);
 	// Plugin
-	EntityPlugin(node, parent, key, level, index) {
+	EntityPlugin(node) {
 		let body = exprTerm(node.body);
 		let res = [
 			`plugin ${node.superclass} ${node.class}`,
@@ -553,31 +592,30 @@ let visitorPatterns = {
 			'(',
 			body,
 			')'
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
+		return res;
 	},
-	EntityPlugin_params(node, parent, key, level, index) {
-		let body = exprTerm(node.body);
+	EntityPlugin_params(node) {
 		let res = [
 			`parameters ${node.id}`,
-			...node.params,
+			...node.params.flat(),
 			'(',
 			...node.body.flat(),
-			')'].join('\n');
-		
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
+			')'].join(LINEBRK);
+
+		return res;
 	},
-	PluginParam(node, parent, key, level, index) {
+	PluginParam(node) {
 		let res = [
 			node.id,
 			...node.params.flat()
-		].join(' ');
-	
-		index != null ? parent[key][index] = node.value : parent[key] = node.value;
+		].join(SPACER);
+
+		return res;
 	},
 	// Tool
-	EntityTool(node, parent, key, level, index) {
+	EntityTool(node) {
 
 		let res = [
 			'tool ${node.id}',
@@ -585,12 +623,12 @@ let visitorPatterns = {
 			'(',
 			...node.body.flat(),
 			')'
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 	// MacroScript
-	EntityMacroscript(node, parent, key, level, index) {
+	EntityMacroscript(node) {
 		// console.log(node.body);
 		// console.log(parent[key]);
 		let res = [
@@ -599,112 +637,118 @@ let visitorPatterns = {
 			'(',
 			...node.body.flat(),
 			')'
-		].join('\n');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		].join(LINEBRK);
+		return res;
 	},
 	// rcMenu
-	EntityRcmenu(node, parent, key, level, index) {
+	EntityRcmenu(node) {
 		res = [
 			`rcmenu ${node.id}`,
 			'(',
 			...node.body.flat(),
 			')'
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	EntityRcmenu_submenu(node, parent, key, level, index) {
+	EntityRcmenu_submenu(node) {
 		let res = [
 			`subMenu ${node.label} ${node.params}`,
 			'(',
 			...node.body,
 			')'
-		].join('\n');
+		].join(LINEBRK);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	EntityRcmenu_menuitem(node, parent, key, level, index) {
+	EntityRcmenu_menuitem(node) {
 		let res = [
 			'menuItem',
 			node.id,
 			node.label,
 			...node.params
-		].join(' ');
+		].join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	EntityRcmenu_separator(node, parent, key, level, index) {
+	EntityRcmenu_separator(node) {
 		let res = [
 			'separator',
 			node.id,
 			...node.params
-		].join(' ');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		].join(SPACER);
+		return res;
 	},
 	// Utility - Rollout
-	EntityUtility(node, parent, key, level, index) {
+	EntityUtility(node) {
 		let res = [
 			`utility ${node.id} ${node.title}`,
 			...node.params,
 			'(',
 			...node.body,
 			')'
-		].join('\n');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		].join(LINEBRK);
+		return res;
 	},
-	EntityRollout(node, parent, key, level, index) {
+	EntityRollout(node) {
 		let res = [
 			`rollout ${node.id} ${node.title}`,
 			...node.params,
 			'(',
 			...node.body.flat(),
 			')'
-		].join('\n');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		].join(LINEBRK);
+		return res;
 	},
-	EntityRolloutGroup(node, parent, key, level, index) {
+	EntityRolloutGroup(node) {
 		let res = [
-			`group ${node.id}`,
+			`group${SPACER}${node.id}`,
 			'(',
 			...node.body,
 			')'
-		].join('\n');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		].join(LINEBRK);
+		return res;
 	},
-	EntityRolloutControl(node, parent, key, level, index) {
+	EntityRolloutControl(node) {
 		let res = [
 			node.class,
 			node.id,
 			node.text,
 			...node.params
-		].join(' ');
-		index != null ? parent[key][index] = res : parent[key] = res;
+		].join(SPACER);
+		return res;
 	},
 	// Event
-	Event(node, parent, key, level, index) {
-		let res = `on ${node.args} ${node.modifier}\n${node.body})`
+	Event(node) {
+		let res = [
+			`on ${node.args || ''} ${node.modifier || ''}`,
+			'(',
+			node.body,
+			')'
+		].join(LINEBRK);
+		// `on ${node.args || ''} ${node.modifier || ''}\n${node.body}`
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	EventArgs(node, parent, key, level, index) {
+	EventArgs(node) {
 		let res = [
 			node.target || null,
 			node.event || null,
-			node.args
+			node.args || null
 		].filter(x => x != null)
-			.join(' ');
+			.join(SPACER);
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
-	WhenStatement(node, parent, key, level, index) {
+	WhenStatement(node) {
 		let res = [
 			'when',
 			...node.args.flat(),
 			'do'
-		].join(' ')
-			.concat('\n', node.body)
+		].join(SPACER)
+			.concat(LINEBRK, node.body)
 
-		index != null ? parent[key][index] = res : parent[key] = res;
+		return res;
 	},
 };
 //-----------------------------------------------------------------------------------
