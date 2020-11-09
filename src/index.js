@@ -35,11 +35,11 @@ function Main(src) {
 		// TokenizeSource(source(src));
 		var mxsParser = new mxsParseSource(source(src));
 		// mxsParser.__parseWithErrors();
-		JsonFileWrite('test/CST.json', mxsParser.parsedCST);
+		// JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
 	} catch (err) {
 		console.log(err);
-		FileWrite('test/error.txt', err.message);
+		// FileWrite('test/error.txt', err.message);
 		throw err;
 	}
 }
@@ -67,17 +67,43 @@ function parseAndMinify(fPath) {
 //-----------------------------------------------------------------------------------
 // TEST
 // /*
-let CST = Main(examples[2]);
+let CST = Main(examples[1]);
 let COMPRESS = minify(CST);
 
 // FileWrite('test/compress.ms', COMPRESS);
 // */
 //-----------------------------------------------------------------------------------
-function collectStatementsR(node) {
-	return _visit(node, null, null, 0, 0);
-	function _visit(node, parent, key, level = 0) {
-		let childStack = [];
-		// get the node keys
+const isNode = node => (typeof node === 'object' && node != null);
+const getNodeType = node => ('type' in node) ? node.type : undefined;
+function removeNode(node, parent, key, index) {
+	if (index == null) {
+		delete parent[key];
+	} else {
+		parent[key].splice(index, 1);
+	}
+}
+//-----------------------------------------------------------------------------------
+function collectStatementsR(node, keyFilter = 'id') {
+	let stack = {
+		type: 'main',
+		id: null,
+		loc: null,
+		children: []
+	};
+	function _visit(node, parent, key, index) {
+		let _node;
+		if (keyFilter in node) {
+			// deal with siblings....
+			_node = {
+				type: node.type,
+				[keyFilter]: node[keyFilter],
+				loc: node.loc || null,
+				children: []
+			};
+			parent.children.push(_node);
+		} else {
+			_node = parent
+		}
 		const keys = Object.keys(node);
 		// loop through the keys
 		for (let i = 0; i < keys.length; i++) {
@@ -88,45 +114,80 @@ function collectStatementsR(node) {
 			if (Array.isArray(child)) {
 				// value is an array, visit each item
 				for (let j = 0; j < child.length; j++) {
-					// visit each node in the array
 					if (isNode(child[j])) {
-						let res = _visit(child[j], node, key, level + 1)
-						if (res) childStack = childStack.concat(res);
+						_visit(child[j], _node, key, j)
 					}
 				}
 			} else if (isNode(child)) {
-				let res = _visit(child, node, key, level + 1);
-				if (res) childStack = childStack.concat(res);
-			} else {
-				// keys that contains values...
+				_visit(child, _node, key, null);
 			}
-		}
-		// if (isNode(node) && childStack.length > 0) {
-		// }
-		if ('id' in node) {
-			return { node: node, childs: childStack };
-		} else {
-			if (childStack.length > 0) {
-				// console.log(childStack.length);
-				return childStack
-			}
-			else return;
 		}
 	}
+	_visit(node, stack, null, 0);
+	return stack;
 }
 //-----------------------------------------------------------------------------------
-const isNode = node => (typeof node === 'object' && node != null);
-const getNodeType = node => ('type' in node) ? node.type : undefined;
+let SymbolKindMatch = {
+	'EntityRcmenu'          : 19,
+	'EntityRcmenu_submenu'  : 9,
+	'EntityRcmenu_separator': 19,
+	'EntityRcmenu_menuitem' : 9,
+	'EntityPlugin'          : 19,
+	'EntityPlugin_params'   : 19,
+	'PluginParam'           : 9,
+	'EntityTool'            : 19,
+	'EntityUtility'         : 19,
+	'EntityRollout'         : 19,
+	'EntityRolloutGroup'    : 19,
+	'EntityRolloutControl'  : 9,
+	'EntityMacroscript'     : 19,
+	'Struct'                : 23,
+	'Event'                 : 24,
+	'Function'              : 12,
+	'AssignmentExpression'  : 6,
+	'CallExpression'        : 6,
+	'ParameterAssignment'   : 7,
+	'AccessorProperty'      : 7,
+	'AccessorIndex'         : 7,
+	'Literal'               : 14,
+	'Identifier'            : 7,
+	'VariableDeclaration'   : 13,
+	'Declaration'           : 13,
+	'Include'               : 2,
+};
+
+function mapKind(type) {
+	return SymbolKindMatch[type];
+	//...
+}
+
+function getDocumentPositions(node) {
+	return null;
+	//...
+}
 
 function visitor(ast, callback) {
 
-	function _visit(node, parent, key, index = 0) {
-		if ('id' in node || 'type' in node) {
-			console.log(node.type);
-			const nodeType = getNodeType(node);
-			// callback[nodeType](node, parent, index);
-			callback(node, parent, index);
+	function _visit(node, parent, key, index) {
+
+		if ('id' in node) {
+			let loc = getDocumentPositions(node);
+			let _node = {
+				name: node.id.value.toString(),
+				detail: node.type,
+				kind: mapKind(node.type),
+				range: loc,
+				selectionRange: loc,
+				children: node.children
+			};
+
+			if (index != null) {
+				parent[key][index] = _node;
+			} else {
+				parent[key] = _node;
+			}
 		}
+
 		// get the node keys
 		const keys = Object.keys(node);
 		// loop through the keys
@@ -148,34 +209,16 @@ function visitor(ast, callback) {
 			}
 		}
 	}
-	_visit(ast, null, null, 0)
-}
+	_visit(ast, null, null, 0);
 
-function transformStatements(nodes) {
-	let _transformStatements = (node) => {
-		let SymbolCollection = [];
-		for (node of nodes) {
-
-			let theSymbol = {
-				name: node.node.id.value.toString(),
-				childs: node.childs.length > 0 ? transformStatements(node.childs) : []
-			}
-
-			SymbolCollection.push(theSymbol);
-		}
-		return SymbolCollection;
-	}
-	return _transformStatements(node);
+	console.dir(ast, {depth: null});
 }
 /*
-let cst = Main(examples[2]);
-visitor(cst,
-	node => {
-		console.log(JSON.stringify(node, null, 2));
-	});
+let CST = Main(examples[2]);
+let res = collectStatementsR(CST);
+let docSymbols;
+let res2 = visitor(res.children, docSymbols);
 */
-//-----------------------------------------------------------------------------------
-
 //-----------------------------------------------------------------------------------
 // SIMPLE CODE FORMATTER: CONTEXT UNAWARE
 /*
@@ -187,4 +230,5 @@ FileWrite('formatted.json', JSON.stringify(res, null, 4));
 //-----------------------------------------------------------------------------------
 // At end of your code
 const results = perf.stop();
-console.log(results.time);  // in milliseconds
+console.log('----------------------');
+// console.log(results.time);  // in milliseconds

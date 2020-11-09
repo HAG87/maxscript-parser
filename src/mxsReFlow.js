@@ -13,7 +13,7 @@ function getNodeType(node) {
 	return ('type' in node) ? node.type : undefined;
 }
 
-function itemsCheck(val) {
+function isArray(val) {
 	if (Array.isArray(val) && val.length > 1) {
 		return true;
 	}
@@ -60,7 +60,7 @@ function visit(node, callbackMap) {
 		}
 	}
 	_visit(node, null, null, 0, null);
-	console.log(node[0]);
+	// console.dir(node[0], { depth: null });
 }
 //-----------------------------------------------------------------------------------
 function removeNode(node, parent, key, index) {
@@ -69,9 +69,10 @@ function removeNode(node, parent, key, index) {
 	}
 }
 function editNode(callback, node, parent, key, level, index) {
-	let res = callback(node);
+	let res = callback(node, parent, key, level, index);
 	index != null ? parent[key][index] = res : parent[key] = res;
 }
+
 //-----------------------------------------------------------------------------------
 /*
 var wrap = function (func) {
@@ -88,13 +89,74 @@ function nodeValue(node) {
 }
 */
 
+// join elems with WS, one line:
+class statement {
+	constructor(...args) {
+		this.type = 'statement';
+		this.value = [...args];
+	}
+
+	get toString() {
+		return this.value.filter(e => e != null).join(SPACER);
+	}
+
+	add(...value) {
+		this.value.push(...value);
+	}
+}
+// join elemns with NL.. block of code
+//block
+class codeblock {
+	constructor(...args) {
+		this.type = 'codeblock';
+		this.value = [...args];
+	}
+
+	get toString() {
+		return this.value.filter(e => e != null).join(LINEBRK);
+	}
+
+	add(...value) {
+		this.value.push(...value);
+	}
+}
+// join elems with ',' list of items
+//list
+class elements {
+	constructor(...args) {
+		this.type = 'elements';
+		this.value = [...args];
+	}
+
+	get toString() {
+		return this.value.filter(e => e != null).join(',' + SPACER);
+	}
+
+	add(...value) {
+		this.value.push(...value);
+	}
+}
+// expressions
+class expr {
+	constructor(...args) {
+		this.type = 'expr';
+		this.value = [...args];
+	}
+
+	get toString() {
+		return this.value.filter(e => e != null).join('');
+	}
+
+	add(...value) {
+		this.value.push(...value);
+	}
+}
 //-----------------------------------------------------------------------------------
 const INDENT = '\t';
 const SPACER = ' ';
 const LINEBRK = '\n';
 //-----------------------------------------------------------------------------------
 let tokensValue = {
-	// /*
 	global_typed(node) { return node.text; },
 	hex(node) { return node.text; },
 	identity(node) { return node.text; },
@@ -113,6 +175,7 @@ let tokensValue = {
 	keyword(node) { return node.text; },
 	kw_as(node) { return node.text; },
 	kw_bool(node) { return node.text; },
+	kw_compare(node) { return node.text; },
 	kw_on(node) { return node.text; },
 	kw_return(node) { return node.text; },
 	kw_exit(node) { return node.text; },
@@ -132,54 +195,6 @@ let tokensValue = {
 	kw_do(node) { return node.text; },
 	kw_then(node) { return node.text; },
 	error(node) { return node.text; },
-	// */
-
-	/*
-	global_typed: wrap(nodeText),
-	hex: wrap(nodeText),
-	identity: wrap(nodeText),
-	locale: wrap(nodeText),
-	name: wrap(nodeText),
-	number: wrap(nodeText),
-	path: wrap(nodeText),
-	string: wrap(nodeText),
-	time: wrap(nodeText),
-	typed_iden: wrap(nodeText),
-	property: wrap(nodeValue),
-	params: wrap(nodeValue),
-	math: wrap(nodeValue),
-	assign: wrap(nodeValue),
-	comparison: wrap(nodeValue),
-
-	keyword: wrap(nodeText),
-
-	kw_as: wrap(nodeText),
-	kw_bool: wrap(nodeText),
-	kw_on: wrap(nodeText),
-	kw_return: wrap(nodeText),
-	kw_undo: wrap(nodeText),
-	kw_exit: wrap(nodeText),
-	kw_scope: wrap(nodeText),
-	kw_uicontrols: wrap(nodeText),
-	kw_group: wrap(nodeText),
-	kw_objectset: wrap(nodeText),
-	kw_not: wrap(nodeText),
-	kw_context: wrap(nodeText),
-	kw_function: wrap(nodeText),
-	kw_time: wrap(nodeText),
-	kw_tool: wrap(nodeText),
-	kw_utility: wrap(nodeText),
-	kw_rollout: wrap(nodeText),
-	kw_level: wrap(nodeText),
-	kw_global: wrap(nodeText),
-	kw_local: wrap(nodeText),
-
-	kw_do: wrap(nodeText),
-	kw_then: wrap(nodeText),
-
-	error: wrap(nodeText),
-	// */
-
 };
 let visitorPatterns = {
 	// TOKENS
@@ -190,52 +205,80 @@ let visitorPatterns = {
 	// Literal   : wrap(nodeValue),
 	// Identifier: wrap(nodeValue),
 
+	/*
 	BitRange(node) {
 		let res = `${node.start}..${node.end}`;
 		return res;
 	},
+	*/
 	//-------------------------------------------------------------------------------------------
 
 	// DECLARATION
 	Declaration(node) {
 		let res;
+		// console.dir(parent, {depth: null});
+		if (node.value) {
+			res = new statement(node.id, '=');
 
-		if (itemsCheck(node.value)) {
-			let head = [
-				node.id,
-				'=',
-				node.value
-			].join(SPACER);
-
-			res = [
-				head,
-				...node.value,	//.map(x => INDENT + x)
-			].join(LINEBRK);
+			if (isArray(node.value)) {
+				res.add(
+					new codeblock(node.value)
+				);
+			} else {
+				res.add(node.value);
+			}
 		} else {
-			res = [
-				node.id,
-				'=',
-				node.value
-			].join(SPACER);
+			res = new statement(node.id);
 		}
+		// console.log(res.toString);
+
+		// console.log('---');
 
 		return res;
 	},
 	// /*
 	// Types
 	ObjectArray(node) {
+		// console.log(node);
 		let res;
-		if (Array.isArray(node.elements) && node.elements.length > 1) {
+
+		res = new statement('#(');
+
+		
+		if (isArray(node.elements)) {
+			// console.log('elems');
+			
+			let elems = new elements();
+			
+			node.elements.forEach(
+				e => {
+					// console.log(e);
+					if (isArray(e)) {
+						elems.add(
+							new codeblock(...e)
+						);
+					} else {
+						elems.add( e );
+					}
+				});
+				// console.log(elems);
+				res.add(elems);
+			/*
 			res = ['#(',
 				node.elements.join(',' + SPACER),
 				')'
 			].join('');
+			*/
 		} else {
-			res = `#(${node.elements})`;
+			res.add(node.elements);
 		}
 
+		res.add(')');
+
+		// console.log(res);
 		return res;
 	},
+	/*
 	ObjectBitArray(node) {
 		let res;
 		if (Array.isArray(node.elements) && node.elements.length > 1) {
@@ -250,42 +293,46 @@ let visitorPatterns = {
 
 		return res;
 	},
+	*/
 	ObjectPoint4(node) {
-		let res = [
+		let res = new statement(
 			'[',
-			node.elements.join(',' + SPACER),
+			new elements(...node.elements),
 			']'
-		].join('');
-
+		)
 		return res;
 	},
 	ObjectPoint3(node) {
-		let res = [
+		let res = new statement(
 			'[',
-			node.elements.join(',' + SPACER),
+			new elements(...node.elements),
 			']'
-		].join('');
-
+		)
+		// console.dir(res, {depth: null});
 		return res;
 	},
 	ObjectPoint2(node) {
-		let res = [
+		let res = new statement(
 			'[',
-			node.elements.join(',' + SPACER),
+			new elements(...node.elements),
 			']'
-		].join('');
-
+		)
 		return res;
 	},
 	// Accesors
 	AccessorIndex(node) {
-		let res = `${node.operand}[${node.index}]`;
-
+		let res = new expr(
+			node.operand,
+			'[',
+			node.index,
+			']'
+		);
+		// console.dir(res, {depth: null});
+		
 		return res;
 	},
-	// */
+	/*
 	AccessorProperty(node) {
-		/*
 		let res;
 		if (itemsCheck(node.operand)) {
 			let last = node.operand.pop();
@@ -297,12 +344,10 @@ let visitorPatterns = {
 		} else {
 			res = `${node.operand}.${node.property}`;
 		}
-		*/
 		let res = `${node.operand}.${node.property}`;
 
 		return res;
 	},
-	// /*
 
 	// Call
 	CallExpression(node) {
@@ -322,16 +367,17 @@ let visitorPatterns = {
 
 		return res;
 	},
+	*/
 	AssignmentExpression(node) {
-		let res = [
+		let res = new statement(
 			node.operand,
 			node.operator,
 			node.value
-		].join(SPACER);
+		);
 
 		return res;
 	},
-
+/*
 
 	// Functions
 	Function(node) {
@@ -347,9 +393,9 @@ let visitorPatterns = {
 			params,
 			'='
 		].filter(e => e != null)
-			.join(SPACER)
-			.concat(LINEBRK, node.body);
-
+			.join(SPACER);
+		//.concat(LINEBRK, node.body);
+		res = [res].concat(node.body);
 		return res;
 	},
 	FunctionReturn(node) {
@@ -361,26 +407,30 @@ let visitorPatterns = {
 		return res;
 	},
 	// Declarations
-	// */
 	VariableDeclaration(node) {
 		let res;
 		let scope = node.modifier != null ? `${node.modifier}${SPACER}${node.scope} ` : `${node.scope} `;
 
-		if (itemsCheck(node.decls)) {
-			let last = node.decls.pop();
+		if (isArray(node.decls)) {
+
+			node.decls.forEach(e => {
+				if (isArray(e)) {
+					e[e.length-1] +=  ',' + SPACER
+				} else {
+					e += ',' + SPACER
+				}
+			});
 			res = [
 				scope,
-				...node.decls.map(x => x + ','),
-				last
-			]
+				node.decls
+			];
+
 		} else {
 			res = scope + node.decls;
 		}
 
 		return res;
 	},
-	// /*
-
 	// SIMPLE EXPRESSIONS - OK
 	MathExpression(node) {
 		let res = [
@@ -390,54 +440,58 @@ let visitorPatterns = {
 		].filter(e => e != null)
 			.join(SPACER);
 
-		return res;
+		return [res];
 	},
+	*/
 	LogicalExpression(node) {
-		let res = [
+		let res =  new statement(
 			node.left,
 			node.operator,
 			node.right
-		].filter(e => e != null)
-			.join(SPACER);
-
+		);
 		return res;
 	},
 	UnaryExpression(node) {
-		let res = [
+		let res = new statement(
 			node.operator,
 			node.right
-		].join(SPACER);
-
+		);
 		return res;
 	},
-
+	
 	// STATEMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	// */
 	BlockStatement(node) {
 		let res;
-		if (itemsCheck(node.body)) {
-			res = [
-				'(',
-				...node.body.flat(),	//.map(x => '\t' + x),
-				')'
-			].join(LINEBRK);
-		} else {
-			res = `(${node.body})`;
 
+		if (isArray(node.body)) {
+			res = new codeblock(
+				'(',
+				// ...node.body.flat(),	//.map(x => '\t' + x),
+				...node.body, //.flat(),	//.map(x => '\t' + x),
+				')'
+			);
+		} else {
+
+			// res = `(${SPACER}${node.body}${SPACER})`;
+			res = new statement(
+				'(',
+				node.body,
+				')'
+			)
 		}
-		// console.log(res);
+		console.dir(res, {depth: null});
 		// console.log(node.body.map(x => '\t' + x));
 		// console.log('-------------------');
 		return res;
 	},
-	// /*
+	/*
 	IfStatement(node) {
 
 		if (!Array.isArray(node.consequent)) { node.consequent = [node.consequent] }
 
 		let res = [
 			`if ${node.test} ${node.operator || 'then'}`,
-			...node.consequent
+			node.consequent
 		];
 
 		if (node.alternate) {
@@ -446,11 +500,11 @@ let visitorPatterns = {
 
 			let alt = [
 				'else',
-				...node.alternate
+				node.alternate
 			];
 			res = res.concat(alt);
 		}
-		res = res.join(LINEBRK);
+		// res = res.join(LINEBRK);
 		// console.log(res);
 
 		return res;
@@ -704,9 +758,9 @@ let visitorPatterns = {
 		let res = [
 			`group${SPACER}${node.id}`,
 			'(',
-			...node.body,
+			node.body,
 			')'
-		].join(LINEBRK);
+		];//.join(LINEBRK);
 		return res;
 	},
 	EntityRolloutControl(node) {
@@ -750,6 +804,7 @@ let visitorPatterns = {
 
 		return res;
 	},
+	//*/
 };
 //-----------------------------------------------------------------------------------
 function mxsMinify(cst) {

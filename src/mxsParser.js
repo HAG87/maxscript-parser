@@ -95,7 +95,7 @@ class mxsParseSource {
 		this.__parserState = this.parserInstance.save();
 		try {
 			this.parserInstance.feed(this.__source);
-			console.log('PARSE TREES: ' + this.parserInstance.results.length);
+			// console.log('PARSE TREES: ' + this.parserInstance.results.length);
 			this.__parsedCST = this.parserInstance.results[0] || [];
 		} catch (err) {
 			console.log('--ERROR--');
