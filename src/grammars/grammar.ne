@@ -12,9 +12,9 @@
 
     const tokenType = (t, newytpe) => {t.type = newytpe; return t;}
 
-    const merge = (a, ...b) => {
-        if (a == null) {return null;}
-        return b != null ? [].concat(a, ...b).filter(e => e != null) : [].concat(a).filter(e => e != null);
+    const merge = (...args) => {
+        let res = [].concat(...args).filter(e => e != null);
+        return res.length === 0 ? null : res;
     }
 
     const convertToken = (token, newtype) => {
@@ -204,7 +204,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 
     plugin_clauses
-        -> plugin_clause (EOL plugin_clause):* {% d => merge(d[0], ...d[1]) %}
+        -> plugin_clause (EOL plugin_clause):* {% d => merge(...d) %}
 
     # plugin_clauses
         # -> plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
@@ -263,7 +263,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 loc:    getLoc(d[0][0], d[6])
             })%}
     
-    tool_clauses -> tool_clause (EOL tool_clause):* {% d => merge(d[0], ...d[1]) %}
+    tool_clauses -> tool_clause (EOL tool_clause):* {% d => merge(...d) %}
     
     tool_clause
         -> variable_decl {% id %}
@@ -286,7 +286,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 loc:    getLoc(d[0][0], d[8])
             })%}
    
-    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(d[0], ...d[1]) %}
+    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(...d) %}
 
     utility_clause
         -> rollout_clause  {% id %}
@@ -311,7 +311,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #    -> LPAREN _rollout_clause RPAREN {% d => d[1] %}
     #     | "(" _ ")" {% d => null %}
 
-    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(d[0], ...d[1]) %}
+    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(...d) %}
 
     #rollout_clauses
     #    -> rollout_clauses EOL rollout_clause {% d => [].concat(d[0], d[2]) %}
@@ -340,7 +340,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
     
     group_clauses
-        -> group_clauses EOL rollout_item {% d => [].concat(d[0], d[2]) %}
+        -> group_clauses EOL rollout_item {% d => merge(d[0], d[2]) %}
         | rollout_item
         # | null
     #---------------------------------------------------------------
@@ -351,7 +351,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 class:  d[0],
                 id:     d[2],
                 text:   (d[3] != null ? d[3][1] : null),
-                params: flatten(d[4])
+                params: flatten(d[4]),
+                loc: getLoc(d[0])
             })%}
 #---------------------------------------------------------------
 # MACROSCRIPT --- SHOULD AVOID LEFT RECURSION ?
@@ -376,7 +377,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 value: d[2][0]
             })%}
 
-    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(d[0],...d[1]) %}
+    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(...d) %}
 
     # macro_script_body
         # -> null
@@ -426,9 +427,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> (%kw_on __) event_args __ event_action _ expr
             {% d => ({
                 type:     'Event',
+                id:       d[1].event,
                 args:     d[1],
                 modifier: d[3],
-                body:     d[5]
+                body:     d[5],
+                loc:      getLoc(d[0][0])
             }) %}
 
     event_action -> %kw_do {% id %} | %kw_return {% id %}

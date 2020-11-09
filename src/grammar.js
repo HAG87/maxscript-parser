@@ -15,9 +15,9 @@ function id(x) { return x[0]; }
 
     const tokenType = (t, newytpe) => {t.type = newytpe; return t;}
 
-    const merge = (a, ...b) => {
-        if (a == null) {return null;}
-        return b != null ? [].concat(a, ...b).filter(e => e != null) : [].concat(a).filter(e => e != null);
+    const merge = (...args) => {
+        let res = [].concat(...args).filter(e => e != null);
+        return res.length === 0 ? null : res;
     }
 
     const convertToken = (token, newtype) => {
@@ -168,7 +168,7 @@ var grammar = {
     {"name": "plugin_clauses$ebnf$1", "symbols": []},
     {"name": "plugin_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "plugin_clause"]},
     {"name": "plugin_clauses$ebnf$1", "symbols": ["plugin_clauses$ebnf$1", "plugin_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "plugin_clauses", "symbols": ["plugin_clause", "plugin_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
+    {"name": "plugin_clauses", "symbols": ["plugin_clause", "plugin_clauses$ebnf$1"], "postprocess": d => merge(...d)},
     {"name": "plugin_clause", "symbols": ["variable_decl"], "postprocess": id},
     {"name": "plugin_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "plugin_clause", "symbols": ["struct_def"], "postprocess": id},
@@ -215,7 +215,7 @@ var grammar = {
     {"name": "tool_clauses$ebnf$1", "symbols": []},
     {"name": "tool_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "tool_clause"]},
     {"name": "tool_clauses$ebnf$1", "symbols": ["tool_clauses$ebnf$1", "tool_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "tool_clauses", "symbols": ["tool_clause", "tool_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
+    {"name": "tool_clauses", "symbols": ["tool_clause", "tool_clauses$ebnf$1"], "postprocess": d => merge(...d)},
     {"name": "tool_clause", "symbols": ["variable_decl"], "postprocess": id},
     {"name": "tool_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "tool_clause", "symbols": ["struct_def"], "postprocess": id},
@@ -235,7 +235,7 @@ var grammar = {
     {"name": "utility_clauses$ebnf$1", "symbols": []},
     {"name": "utility_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "utility_clause"]},
     {"name": "utility_clauses$ebnf$1", "symbols": ["utility_clauses$ebnf$1", "utility_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "utility_clauses", "symbols": ["utility_clause", "utility_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
+    {"name": "utility_clauses", "symbols": ["utility_clause", "utility_clauses$ebnf$1"], "postprocess": d => merge(...d)},
     {"name": "utility_clause", "symbols": ["rollout_clause"], "postprocess": id},
     {"name": "utility_clause", "symbols": ["rollout_def"], "postprocess": id},
     {"name": "rollout_def$subexpression$1", "symbols": [(mxLexer.has("kw_rollout") ? {type: "kw_rollout"} : kw_rollout), "__"]},
@@ -253,7 +253,7 @@ var grammar = {
     {"name": "rollout_clauses$ebnf$1", "symbols": []},
     {"name": "rollout_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "rollout_clause"]},
     {"name": "rollout_clauses$ebnf$1", "symbols": ["rollout_clauses$ebnf$1", "rollout_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "rollout_clauses", "symbols": ["rollout_clause", "rollout_clauses$ebnf$1"], "postprocess": d => merge(d[0], ...d[1])},
+    {"name": "rollout_clauses", "symbols": ["rollout_clause", "rollout_clauses$ebnf$1"], "postprocess": d => merge(...d)},
     {"name": "rollout_clause", "symbols": ["variable_decl"], "postprocess": id},
     {"name": "rollout_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "rollout_clause", "symbols": ["struct_def"], "postprocess": id},
@@ -269,7 +269,7 @@ var grammar = {
             body: d[4],
             loc:getLoc(d[0][0], d[5])
         })},
-    {"name": "group_clauses", "symbols": ["group_clauses", "EOL", "rollout_item"], "postprocess": d => [].concat(d[0], d[2])},
+    {"name": "group_clauses", "symbols": ["group_clauses", "EOL", "rollout_item"], "postprocess": d => merge(d[0], d[2])},
     {"name": "group_clauses", "symbols": ["rollout_item"]},
     {"name": "rollout_item$ebnf$1$subexpression$1", "symbols": ["_", "operand"]},
     {"name": "rollout_item$ebnf$1", "symbols": ["rollout_item$ebnf$1$subexpression$1"], "postprocess": id},
@@ -282,7 +282,8 @@ var grammar = {
             class:  d[0],
             id:     d[2],
             text:   (d[3] != null ? d[3][1] : null),
-            params: flatten(d[4])
+            params: flatten(d[4]),
+            loc: getLoc(d[0])
         })},
     {"name": "macroscript_def$subexpression$1", "symbols": [(mxLexer.has("kw_macroscript") ? {type: "kw_macroscript"} : kw_macroscript), "__"]},
     {"name": "macroscript_def$ebnf$1", "symbols": []},
@@ -308,7 +309,7 @@ var grammar = {
     {"name": "macro_script_body$ebnf$1", "symbols": []},
     {"name": "macro_script_body$ebnf$1$subexpression$1", "symbols": ["EOL", "macro_script_clause"]},
     {"name": "macro_script_body$ebnf$1", "symbols": ["macro_script_body$ebnf$1", "macro_script_body$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "macro_script_body", "symbols": ["macro_script_clause", "macro_script_body$ebnf$1"], "postprocess": d => merge(d[0],...d[1])},
+    {"name": "macro_script_body", "symbols": ["macro_script_clause", "macro_script_body$ebnf$1"], "postprocess": d => merge(...d)},
     {"name": "macro_script_clause", "symbols": ["expr"], "postprocess": id},
     {"name": "macro_script_clause", "symbols": ["event_handler"], "postprocess": id},
     {"name": "struct_def$subexpression$1", "symbols": [(mxLexer.has("kw_struct") ? {type: "kw_struct"} : kw_struct), "__"]},
@@ -334,9 +335,11 @@ var grammar = {
     {"name": "event_handler$subexpression$1", "symbols": [(mxLexer.has("kw_on") ? {type: "kw_on"} : kw_on), "__"]},
     {"name": "event_handler", "symbols": ["event_handler$subexpression$1", "event_args", "__", "event_action", "_", "expr"], "postprocess":  d => ({
             type:     'Event',
+            id:       d[1].event,
             args:     d[1],
             modifier: d[3],
-            body:     d[5]
+            body:     d[5],
+            loc:      getLoc(d[0][0])
         }) },
     {"name": "event_action", "symbols": [(mxLexer.has("kw_do") ? {type: "kw_do"} : kw_do)], "postprocess": id},
     {"name": "event_action", "symbols": [(mxLexer.has("kw_return") ? {type: "kw_return"} : kw_return)], "postprocess": id},
