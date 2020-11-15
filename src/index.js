@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 //-----------------------------------------------------------------------------------
 const mxsParseSource = require('./mxsParser.js');
+const tokenizer = require('./mxsTokenize');
 const { FileWrite, JsonFileWrite, readDirR, prefixPath } = require('./utils.js');
 //-----------------------------------------------------------------------------------
 // const traverse2 = require('ast-monkey-traverse');
@@ -35,7 +36,7 @@ function Main(src) {
 		// TokenizeSource(source(src));
 		var mxsParser = new mxsParseSource(source(src));
 		// mxsParser.__parseWithErrors();
-		// JsonFileWrite('test/CST.json', mxsParser.parsedCST);
+		JsonFileWrite('test/CST.json', mxsParser.parsedCST);
 		return mxsParser.parsedCST;
 	} catch (err) {
 		console.log(err);
@@ -46,7 +47,8 @@ function Main(src) {
 //-----------------------------------------------------------------------------------
 // COMPRESS CODE
 //-----------------------------------------------------------------------------------
-const { visit, visitorPatterns } = require("./mxsReFlow");
+// const { visit, visitorPatterns } = require("./mxsReFlow");
+const { visit, visitorPatterns } = require("./mxsCompactCode");
 
 function minify(source) {
 	try {
@@ -65,10 +67,13 @@ function parseAndMinify(fPath) {
 	}
 }
 //-----------------------------------------------------------------------------------
+let toks = tokenizer.TokenizeSource(source(examples[2]));
+// FileWrite('test/TOKENS.js', toks);
+JsonFileWrite('test/TOKENS.json', toks);
 // TEST
 // /*
-let CST = Main(examples[1]);
-let COMPRESS = minify(CST);
+// let CST = Main(examples[2]);
+// let COMPRESS = minify(CST);
 
 // FileWrite('test/compress.ms', COMPRESS);
 // */

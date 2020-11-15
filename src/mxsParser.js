@@ -99,11 +99,11 @@ class mxsParseSource {
 			this.__parsedCST = this.parserInstance.results[0] || [];
 		} catch (err) {
 			console.log('--ERROR--');
-			console.log(err.token);
+			console.log(err);
 
-			this.parserInstance.restore(this.__parserState);
-			let newErr = this.__parseWithErrors();
-			throw newErr;
+			// this.parserInstance.restore(this.__parserState);
+			// let newErr = this.__parseWithErrors();
+			// throw newErr;
 		}
 	}
 	/**
