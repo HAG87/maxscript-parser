@@ -3,7 +3,9 @@ const fs = require('fs');
 const path = require('path');
 //-----------------------------------------------------------------------------------
 const mxsParseSource = require('./mxsParser.js');
+
 const tokenizer = require('./mxsTokenize');
+
 const { FileWrite, JsonFileWrite, readDirR, prefixPath } = require('./utils.js');
 //-----------------------------------------------------------------------------------
 // const traverse2 = require('ast-monkey-traverse');
@@ -47,8 +49,8 @@ function Main(src) {
 //-----------------------------------------------------------------------------------
 // COMPRESS CODE
 //-----------------------------------------------------------------------------------
-// const { visit, visitorPatterns } = require("./mxsReFlow");
-const { visit, visitorPatterns } = require("./mxsCompactCode");
+const { visit, visitorPatterns } = require("./mxsReFlow");
+// const { visit, visitorPatterns } = require("./mxsCompactCode");
 
 function minify(source) {
 	try {
@@ -67,15 +69,14 @@ function parseAndMinify(fPath) {
 	}
 }
 //-----------------------------------------------------------------------------------
-let toks = tokenizer.TokenizeSource(source(examples[2]));
-// FileWrite('test/TOKENS.js', toks);
-JsonFileWrite('test/TOKENS.json', toks);
+// let toks = tokenizer.TokenizeSource(source(examples[2]));
+// JsonFileWrite('test/TOKENS.json', toks);
 // TEST
 // /*
-// let CST = Main(examples[2]);
-// let COMPRESS = minify(CST);
+let CST = Main(examples[2]);
+let COMPRESS = minify(CST);
 
-// FileWrite('test/compress.ms', COMPRESS);
+FileWrite('test/compress.ms', COMPRESS);
 // */
 //-----------------------------------------------------------------------------------
 const isNode = node => (typeof node === 'object' && node != null);

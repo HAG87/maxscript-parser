@@ -49,29 +49,27 @@
             } else {
                 endOffset = {
                     line: first.line,
-                    character: (first.text != null ? first.col + first.text.length - 1 : first.col)
+                    character: (first.text != null ? first.col + first.text.length : first.col)
                 };                
             }
         } else {
             // end could be an array...
-            let last = Array.isArray(end) ? end[end.length - 1] : end;
-
+            let last = Array.isArray(end) ? end[end.length-1] : end;
+           // console.log(last);
             if (last) {
                 if (last.range) {
                     endOffset = last.range.end;
                 } else {
                     endOffset = {
                         line: last.line,
-                        character: (last.text != null ? last.col + last.text.length - 1 : last.col)                
+                        character: (last.text != null ? last.col + last.text.length : last.col)                
                     };
                 }
             }
-            /*
-            else {
+            /*else {
                 // undefined nodes????
-                console.log(start);
-            }
-            */
+                console.log(end);
+            }//*/
         }
         
         let range = {
@@ -181,9 +179,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             range: getLoc(d[0][0], d[5])
         })%}
     
-    rcmenu_clauses
-        -> rcmenu_clauses EOL rcmenu_clause {% d => [].concat(d[0], d[2]) %}
-        | rcmenu_clause {% id %}
+    rcmenu_clauses -> rcmenu_clause (EOL rcmenu_clause):* {% d => merge(...d) %}
+
+    # rcmenu_clauses
+    #     -> rcmenu_clauses EOL rcmenu_clause {% d => [].concat(d[0], d[2]) %}
+    #     | rcmenu_clause
 
     rcmenu_clause
         -> variable_decl {% id %}
@@ -250,11 +250,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 range:    getLoc(d[0][0], d[8])
             })%}
 
-    # plugin_clauses -> plugin_clause (EOL plugin_clause):* {% d => merge(...d) %}
+    plugin_clauses -> plugin_clause (EOL plugin_clause):* {% d => merge(...d) %}
 
-    plugin_clauses
-        -> plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
-        | plugin_clause
+    # plugin_clauses
+    #     -> plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
+    #     | plugin_clause
 
     plugin_clause
         -> variable_decl    {% id %}
@@ -278,9 +278,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 range: getLoc(d[0][0], d[6])
             })%}
 
-    param_clauses
-        -> param_clauses EOL param_clause {% d => [].concat(d[0], d[2]) %}
-        | param_clause
+    param_clauses -> param_clause (EOL param_clause):* {% d => merge(...d) %}
+
+    # param_clauses
+    #     -> param_clauses EOL param_clause {% d => [].concat(d[0], d[2]) %}
+    #     | param_clause
 
     param_clause
         -> param_defs   {% id %}
@@ -335,11 +337,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 range:  getLoc(d[0][0], d[8])
             })%}
    
-    # utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(...d) %}
+    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(...d) %}
 
-    utility_clauses
-        -> utility_clauses EOL utility_clause  {% d => [].concat(d[0], d[2]) %}
-        | utility_clause
+    # utility_clauses
+    #     -> utility_clauses EOL utility_clause  {% d => [].concat(d[0], d[2]) %}
+    #     | utility_clause
 
     utility_clause
         -> rollout_clause  {% id %}
@@ -364,11 +366,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #    -> LPAREN _rollout_clause RPAREN {% d => d[1] %}
     #     | "(" _ ")" {% d => null %}
 
-    # rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(...d) %}
+    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => merge(...d) %}
 
-    rollout_clauses
-        -> rollout_clauses EOL rollout_clause {% d => [].concat(d[0], d[2]) %}
-        | rollout_clause
+    # rollout_clauses
+    #     -> rollout_clauses EOL rollout_clause {% d => [].concat(d[0], d[2]) %}
+    #     | rollout_clause
     
     rollout_clause
         -> variable_decl {% id %}
@@ -398,17 +400,18 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         # | null
     #---------------------------------------------------------------
     rollout_item
-        -> %kw_uicontrols __ var_name ( _ operand):? ( _ parameter):*
+        -> %kw_uicontrols __ var_name ( _ operand):? ( _ parameter_seq):?
             {% d => {
              let res = {
                     type:   'EntityRolloutControl',
                     class:  d[0],
                     id:     d[2],
-                    text:   (d[3] != null ? d[3][1] : null),
-                    params: flatten(d[4]),
+                    text:   d[3] != null ? d[3][1] : null,
+                    params: d[4] != null ? d[4][1] : null,
                     range:  getLoc(d[0])
                 };
-                addLoc(res, d[3] != null ? d[3][1] : d[2]);
+                if (d[4] != null) { addLoc(res, d[4][1]); }
+                else if (d[3] != null) { addLoc(res, d[3][1]); }
                 return res;
             }%}
 #---------------------------------------------------------------
@@ -416,13 +419,13 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     macroscript_def
         -> (%kw_macroscript __) var_name ( _ macro_script_param):* _
             LPAREN
-                (macro_script_body):?
+                macro_script_body:?
             RPAREN
             {% d => ({
                 type:   'EntityMacroscript',
                 id:     d[1],
                 params: flatten(d[2]),
-                body:   d[5] || [],
+                body:   d[5],
                 range:  getLoc(d[0][0], d[6])
             })%}
 
@@ -434,11 +437,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 value: d[2][0]
             })%}
 
-    # macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(...d) %}
+    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => merge(...d) %}
 
-    macro_script_body
-       -> macro_script_body EOL macro_script_clause {% d => [].concat(d[0], d[2]) %}
-       | macro_script_clause
+    # macro_script_body
+    #    -> macro_script_body EOL macro_script_clause {% d => [].concat(d[0], d[2]) %}
+    #    | macro_script_clause
 
     macro_script_clause
         -> expr         {% id %}
@@ -484,7 +487,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> (%kw_on __) event_args __ event_action _ expr
             {% d => ({
                 type:     'Event',
-                id:       d[1].event,
+                id:       d[1].target || d[1].event,
                 args:     d[1],
                 modifier: d[3],
                 body:     d[5],
@@ -495,15 +498,22 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 
     event_args
         -> var_name
-            {% d => ({type: 'EventArgs', event: d[0]}) %}
+            {% d => ({
+                type: 'EventArgs',
+                event: d[0]
+            }) %}
         | var_name __ var_name
-            {% d => ({type: 'EventArgs', target: d[0], event: d[2]}) %}
-        | var_name __ var_name ( __ var_name):+
             {% d => ({
                 type: 'EventArgs',
                 target: d[0],
-                event: d[2],
-                args: flatten(d[3])
+                event: d[2]
+            }) %}
+        | var_name __ var_name ( __ var_name):+
+            {% d => ({
+                type:   'EventArgs',
+                target: d[0],
+                event:  d[2],
+                args:   flatten(d[3])
             }) %}
 #---------------------------------------------------------------
 # CHANGE HANDLER -- WHEN CONSTRUCTOR -- OK
@@ -511,21 +521,21 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> %kw_when __ var_name __ operand __ var_name __
           (when_param _ | when_param _ when_param _):? (var_name __):?
           %kw_do _ expr
-        {% d=> ({
-            type:'WhenStatement',
-            args: merge(...d.slice(2,10)),
-            body:d[12],
-            range: getLoc(d[0], d[12])
-        })%}
+            {% d=> ({
+                type:  'WhenStatement',
+                args:  merge(...d.slice(2,10)),
+                body:  d[12],
+                range: getLoc(d[0], d[12])
+            })%}
         | %kw_when __ operand __ var_name __
           (when_param _ | when_param _ when_param _):? (var_name _):?
           %kw_do _ expr
-        {% d=> ({
-            type:'WhenStatement',
-            args:merge(...d.slice(2,8)),
-            body:d[10],
-            range: getLoc(d[0], d[10])
-        })%}
+            {% d=> ({
+                type:  'WhenStatement',
+                args:  merge(...d.slice(2,8)),
+                body:  d[10],
+                range: getLoc(d[0], d[10])
+            })%}
 
     when_param -> param_name _ name_value
         {% d => ({
@@ -610,13 +620,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # CONTEXT EXPRESSION --- OK
     # set_context -> %kw_set _ context
     #---------------------------------------------------------------
-    context_expr -> context ( (_S "," _) context ):* _ expr
-        {% d => ({
-            type: 'ContextStatement',
-            context: merge(d[0], collectSub(d[1], 1)),
-            body: d[3],
-            range : getLoc(d[0], d[3])
-        })%}
+    context_expr ->
+        context ( (_S "," _) context ):* _ expr
+            {% d => ({
+                type: 'ContextStatement',
+                context: merge(d[0], collectSub(d[1], 1)),
+                body: d[3],
+                range : getLoc(d[0], d[3])
+            })%}
 
     context
         -> %kw_at __ (%kw_level | %kw_time) _ operand
@@ -737,10 +748,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 
     for_iterator -> "=" {% id %} | %kw_in {% id %}
 
-    for_to    -> (%kw_to _S)    expr {% d => d[1] %}
-    for_by    -> (%kw_by _S)    expr {% d => d[1] %}
-    for_where -> (%kw_where _S) expr {% d => d[1] %}
-    for_while -> (%kw_while _S) expr {% d => d[1] %}
+    for_to    -> %kw_to    _S expr {% d => d[2] %}
+    for_by    -> %kw_by    _S expr {% d => d[2] %}
+    for_where -> %kw_where _S expr {% d => d[2] %}
+    for_while -> %kw_while _S expr {% d => d[2] %}
 
     for_action -> %kw_do {% id %} | %kw_collect {% id %}
 #---------------------------------------------------------------
@@ -918,21 +929,23 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                     right:    d[4],
                     range: getLoc(d[0], d[4])
                 })%}
-            | math_operand {% id %}
+            | uny {% id %}
+            # | math_operand {% id %}
 
-        #   | uny {% id %}
-        # uny -> "-" _  math_operand
-        #         {% d => ({
-        #             type: 'UnaryExpression',
-        #             operator: d[0],
-        #             right:    d[2]
-        #         }) %}
+         uny -> "-" _  math_operand
+                 {% d => ({
+                     type: 'UnaryExpression',
+                     operator: d[0],
+                     right:    d[2],
+                     range: getLoc(d[0], d[2])
+                 }) %}
+            | math_operand {% id %}
 
     # fn_call | operand | u_operand | passthrough math expression
     # FIXME: fn_call should be passed to operand? I've done it this way to avoid operator ambiguity...
     math_operand
         -> operand   {% id %}
-        | u_operand  {% id %}
+        # | u_operand  {% id %}
         | fn_call    {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
@@ -984,19 +997,25 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # FUNCTION CALL --- OK
     fn_call
         -> call_caller _S call_args (_S call_params):?
-        {% d => ({
-            type:  'CallExpression',
-            calle: d[0],
-            args:  merge(d[2], d[3]),
-            range: getLoc(d[0], d[3] != null ? d[3][1] : d[2])
-        })%}
-        | call_caller _S call_params
-            {% d => ({
+        {% d => {
+            let res = {
                 type:  'CallExpression',
                 calle: d[0],
-                args:  d[2],
-                range: getLoc(d[0], d[2])
-            })%}
+                args:  merge(d[2], d[3]),
+                range: getLoc(d[0], d[3] != null ? d[3][1] : d[2])
+            };
+            return res;
+        }%}
+        | call_caller _S call_params
+            {% d => {
+                let res = {
+                    type:  'CallExpression',
+                    calle: d[0],
+                    args:  d[2],
+                    range: getLoc(d[0], d[2])
+                    };
+                return res;
+            }%}
 
     call_params
         -> call_params _S parameter {% d => [].concat(d[0], d[2]) %}
@@ -1037,6 +1056,12 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 value: d[0],
                 range: getLoc(d[0], d[1])
             }) %}
+        | kw_override ":"
+            {% d => ({
+                type:'Parameter',
+                value: d[0],
+                range: getLoc(d[0], d[1])
+            }) %}
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
     property
@@ -1059,7 +1084,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #---------------------------------------------------------------
 # OPERANDS --- OK
     u_operand
-        -> "-" _ operand
+        -> "-" operand
             {% d => ({
                 type: 'UnaryExpression',
                 operator: d[0],
@@ -1189,17 +1214,28 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | %kw_submenu      {% id %}
         | %kw_time         {% id %}
         | %kw_set          {% id %}
-        # | %kw_parameters   {% id %}
-        # | %kw_dontcollect  {% id %}
-        # | %kw_continue     {% id %}
-        # | %kw_rollout
-        # | %kw_plugin
-        # | %kw_rcmenu
-        # | %kw_tool
-        # | %kw_to
-        # | %kw_collect
-        # | %kw_return
-        # | %kw_throw
+
+kw_override
+        -> %kw_uicontrols  {% id %}
+        | %kw_group        {% id %}
+        | %kw_level        {% id %}
+        | %kw_menuitem     {% id %}
+        | %kw_objectset    {% id %}
+        | %kw_separator    {% id %}
+        | %kw_submenu      {% id %}
+        | %kw_time         {% id %}
+        | %kw_set          {% id %}
+        | %kw_parameters   {% id %}
+        | %kw_dontcollect  {% id %}
+        | %kw_continue     {% id %}
+        | %kw_rollout      {% id %}
+        | %kw_plugin       {% id %}
+        | %kw_rcmenu       {% id %}
+        | %kw_tool         {% id %}
+        | %kw_to           {% id %}
+        | %kw_collect      {% id %}
+        | %kw_return       {% id %}
+        | %kw_throw        {% id %}
 #===============================================================
 # TOKENS
     # time
