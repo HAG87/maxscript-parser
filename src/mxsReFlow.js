@@ -173,65 +173,67 @@ let tokensValue = {
 	assign(node) { return node.value; },
 	comparison(node) { return node.value; },
 	keyword(node) { return node.text; },
-	
-	kw_about         (node) { return node.text; },
-	kw_as            (node) { return node.text; },
-	kw_at            (node) { return node.text; },
-	kw_bool          (node) { return node.text; },
-	kw_by            (node) { return node.text; },
-	kw_case          (node) { return node.text; },
-	kw_catch         (node) { return node.text; },
-	kw_collect       (node) { return node.text; },
-	kw_compare       (node) { return node.text; },
-	kw_context       (node) { return node.text; },
-	kw_coordsys      (node) { return node.text; },
-	kw_defaultAction (node) { return node.text; },
-	kw_do            (node) { return node.text; },
-	kw_else          (node) { return node.text; },
-	kw_exit          (node) { return node.text; },
-	kw_for           (node) { return node.text; },
-	kw_from          (node) { return node.text; },
-	kw_function      (node) { return node.text; },
-	kw_global        (node) { return node.text; },
-	kw_group         (node) { return node.text; },
-	kw_if            (node) { return node.text; },
-	kw_in            (node) { return node.text; },
-	kw_level         (node) { return node.text; },
-	kw_local         (node) { return node.text; },
-	kw_macroscript   (node) { return node.text; },
-	kw_mapped        (node) { return node.text; },
-	kw_menuitem      (node) { return node.text; },
-	kw_not           (node) { return node.text; },
-	kw_null          (node) { return node.text; },
-	kw_objectset     (node) { return node.text; },
-	kw_of            (node) { return node.text; },
-	kw_on            (node) { return node.text; },
-	kw_parameters    (node) { return node.text; },
-	kw_persistent    (node) { return node.text; },
-	kw_plugin        (node) { return node.text; },
-	kw_rcmenu        (node) { return node.text; },
-	kw_return        (node) { return node.text; },
-	kw_rollout       (node) { return node.text; },
-	kw_scope         (node) { return node.text; },
-	kw_separator     (node) { return node.text; },
-	kw_set           (node) { return node.text; },
-	kw_struct        (node) { return node.text; },
-	kw_submenu       (node) { return node.text; },
-	kw_then          (node) { return node.text; },
-	kw_time          (node) { return node.text; },
-	kw_to            (node) { return node.text; },
-	kw_tool          (node) { return node.text; },
-	kw_try           (node) { return node.text; },
-	kw_uicontrols    (node) { return node.text; },
-	kw_undo          (node) { return node.text; },
-	kw_utility       (node) { return node.text; },
-	kw_when          (node) { return node.text; },
-	kw_where         (node) { return node.text; },
-	kw_while         (node) { return node.text; },
-	kw_with          (node) { return node.text; },
-	
+
+	kw_about(node) { return node.text; },
+	kw_as(node) { return node.text; },
+	kw_at(node) { return node.text; },
+	kw_bool(node) { return node.text; },
+	kw_by(node) { return node.text; },
+	kw_case(node) { return node.text; },
+	kw_catch(node) { return node.text; },
+	kw_collect(node) { return node.text; },
+	kw_compare(node) { return node.text; },
+	kw_context(node) { return node.text; },
+	kw_coordsys(node) { return node.text; },
+	kw_defaultAction(node) { return node.text; },
+	kw_do(node) { return node.text; },
+	kw_else(node) { return node.text; },
+	kw_exit(node) { return node.text; },
+	kw_for(node) { return node.text; },
+	kw_from(node) { return node.text; },
+	kw_function(node) { return node.text; },
+	kw_global(node) { return node.text; },
+	kw_group(node) { return node.text; },
+	kw_if(node) { return node.text; },
+	kw_in(node) { return node.text; },
+	kw_level(node) { return node.text; },
+	kw_local(node) { return node.text; },
+	kw_macroscript(node) { return node.text; },
+	kw_mapped(node) { return node.text; },
+	kw_menuitem(node) { return node.text; },
+	kw_not(node) { return node.text; },
+	kw_null(node) { return node.text; },
+	kw_objectset(node) { return node.text; },
+	kw_of(node) { return node.text; },
+	kw_on(node) { return node.text; },
+	kw_parameters(node) { return node.text; },
+	kw_persistent(node) { return node.text; },
+	kw_plugin(node) { return node.text; },
+	kw_rcmenu(node) { return node.text; },
+	kw_return(node) { return node.text; },
+	kw_rollout(node) { return node.text; },
+	kw_scope(node) { return node.text; },
+	kw_separator(node) { return node.text; },
+	kw_set(node) { return node.text; },
+	kw_struct(node) { return node.text; },
+	kw_submenu(node) { return node.text; },
+	kw_then(node) { return node.text; },
+	kw_time(node) { return node.text; },
+	kw_to(node) { return node.text; },
+	kw_tool(node) { return node.text; },
+	kw_try(node) { return node.text; },
+	kw_uicontrols(node) { return node.text; },
+	kw_undo(node) { return node.text; },
+	kw_utility(node) { return node.text; },
+	kw_when(node) { return node.text; },
+	kw_where(node) { return node.text; },
+	kw_while(node) { return node.text; },
+	kw_with(node) { return node.text; },
+
 	error(node) { return node.text; },
 };
+
+// Transformation rules.
 let visitorPatterns = {
 	// TOKENS
 	...tokensValue,
@@ -241,95 +243,82 @@ let visitorPatterns = {
 	// Literal   : wrap(nodeValue),
 	// Identifier: wrap(nodeValue),
 
-	/*
-	BitRange(node) {
-		let res = `${node.start}..${node.end}`;
-		return res;
+	Parameter(node) {
+		return new expr(node.value, ':');
 	},
-	*/
+	BitRange(node) {
+		return new expr(node.start, '..', node.end);
+	},
 	//-------------------------------------------------------------------------------------------
-
 	// DECLARATION
 	Declaration(node) {
 		let res;
 		// console.dir(parent, {depth: null});
+		res = new statement(node.id);
+
 		if (node.value) {
-			res = new statement(node.id, '=');
+			// console.log(node.value);
 
-			if (isArray(node.value)) {
-				res.add(
-					new codeblock(node.value)
-				);
-			} else {
-				res.add(node.value);
-			}
-		} else {
-			res = new statement(node.id);
+			res.add(node.operator, ...toArray(node.value));
+			// if (isArrayUsed(node.value)) {
+			// }
 		}
-		// console.log(res.toString);
-
-		// console.log('---');
+		console.log(res);
 
 		return res;
 	},
 	// /*
 	// Types
 	ObjectArray(node) {
-		// console.log(node);
-		let res;
+		let res = new statement('#(');
 
-		res = new statement('#(');
-
-		
-		if (isArray(node.elements)) {
+		if (isArrayUsed(node.elements)) {
 			// console.log('elems');
-			
+
 			let elems = new elements();
-			
 			node.elements.forEach(
 				e => {
-					// console.log(e);
-					if (isArray(e)) {
+					// jsut to be safe, it should be reduced by now...
+					if (isArrayUsed(e)) {
 						elems.add(
 							new codeblock(...e)
 						);
 					} else {
-						elems.add( e );
+						elems.add(e);
 					}
 				});
-				// console.log(elems);
-				res.add(elems);
-			/*
-			res = ['#(',
-				node.elements.join(',' + SPACER),
-				')'
-			].join('');
-			*/
+			res.add(elems);
 		} else {
 			res.add(node.elements);
 		}
-
 		res.add(')');
 
-		// console.log(res);
 		return res;
 	},
-	/*
 	ObjectBitArray(node) {
-		let res;
-		if (Array.isArray(node.elements) && node.elements.length > 1) {
-			res = ['#{',
-				node.elements.join(',' + SPACER),
-				'}'
-			].join('');
+		let res = new statement('#{');
+
+		if (isArrayUsed(node.elements)) {
+			let elems = new elements();
+			node.elements.forEach(
+				e => {
+					// jsut to be safe, it should be reduced by now...
+					if (isArrayUsed(e)) {
+						elems.add(
+							new codeblock(...e)
+						);
+					} else {
+						elems.add(e);
+					}
+				});
+			res.add(elems);
+		} else {
+			res.add(node.elements);
 		}
-		else {
-			res = `#{${node.elements}}`;
-		}
+		res.add('}');
 
 		return res;
 	},
-	*/
 	ObjectPoint4(node) {
 		let res = new statement(
 			'[',
@@ -363,291 +352,324 @@ let visitorPatterns = {
 			node.index,
 			']'
 		);
-		// console.dir(res, {depth: null});
-		
 		return res;
 	},
-	/*
 	AccessorProperty(node) {
-		let res;
-		if (itemsCheck(node.operand)) {
-			let last = node.operand.pop();
-			// append to last item
-			res = [
-				...node.operand,
-				`${last}.${node.property}`
-			]
-		} else {
-			res = `${node.operand}.${node.property}`;
-		}
-		let res = `${node.operand}.${node.property}`;
-
+		let res = new expr(
+			node.operand,
+			'.',
+			node.property
+		);
 		return res;
 	},
-
 	// Call
 	CallExpression(node) {
-
-		if (!Array.isArray(node.args)) { node.args = [node.args] }
-
-		let res = [
+		let args = Array.isArray(node.args) ? node.args : [node.args];
+		let res = new statement(
 			node.calle,
-			...node.args
-		].join(SPACER);
-
+			...args
+		);
+		// console.dir(res, { depth: null });
 		return res;
 	},
 	// Assign
 	ParameterAssignment(node) {
-		let res = `${node.param}: ${node.value || SPACER}`
-
+		// let res = `${node.param}: ${node.value || SPACER}`
+		let res = new statement(
+			node.param,
+			node.value,
+		);
+		// console.dir(res, { depth: null });
 		return res;
 	},
-	*/
 	AssignmentExpression(node) {
 		let res = new statement(
 			node.operand,
 			node.operator,
 			node.value
 		);
-
 		return res;
 	},
-/*
-
 	// Functions
 	Function(node) {
-
-		let args = node.args.join(SPACER);
-		let params = ('params' in node) ? node.params.join(SPACER) : '';
-
-		let res = [
+		let stat = new statement(
 			node.mapped || null,
 			node.keyword,
 			node.id,
-			args,
-			params,
+			...toArray(node.args),
+			...toArray(node.params),
 			'='
-		].filter(e => e != null)
-			.join(SPACER);
-		//.concat(LINEBRK, node.body);
-		res = [res].concat(node.body);
+		);
+		let res = new codeblock(
+			stat,
+			node.body
+		);
 		return res;
 	},
 	FunctionReturn(node) {
-		let res = [
+		let res = new statement(
 			'return',
 			node.body || ';'
-		].join(SPACER);
-
+		);
 		return res;
 	},
 	// Declarations
 	VariableDeclaration(node) {
-		let res;
-		let scope = node.modifier != null ? `${node.modifier}${SPACER}${node.scope} ` : `${node.scope} `;
-
-		if (isArray(node.decls)) {
-
-			node.decls.forEach(e => {
-				if (isArray(e)) {
-					e[e.length-1] +=  ',' + SPACER
-				} else {
-					e += ',' + SPACER
-				}
-			});
-			res = [
-				scope,
-				node.decls
-			];
-
+		let decls;
+		if (isArrayUsed(node.decls)) {
+			if (node.decls.length > 1) {
+				decls = new elements(...node.decls);
+				decls.listed = true;
+			} else {
+				decls = node.decls
+			}
 		} else {
-			res = scope + node.decls;
+			decls = [node.decls]
 		}
 
+		let res = new statement(
+			node.modifier,
+			node.scope,
+			...decls
+		);
+		// console.dir(res, { depth: null });
 		return res;
 	},
 	// SIMPLE EXPRESSIONS - OK
+	// TODO: This will need and exeption for --
 	MathExpression(node) {
-		let res = [
-			node.left || null,
+		let res = new statement(
+			node.left,
 			node.operator,
 			node.right
-		].filter(e => e != null)
-			.join(SPACER);
-
-		return [res];
+		);
+		// console.dir(res, { depth: null });
+		return res;
 	},
-	*/
 	LogicalExpression(node) {
-		let res =  new statement(
+		let res = new statement(
 			node.left,
 			node.operator,
 			node.right
 		);
 		return res;
 	},
+	// TODO: This will need and exeption for --
 	UnaryExpression(node) {
-		let res = new statement(
+		let res = new expr(
 			node.operator,
 			node.right
 		);
 		return res;
 	},
-	
 	// STATEMENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	BlockStatement(node) {
-		let res;
-
-		if (isArray(node.body)) {
+		let res = new codeblock(
+			'(',
+			...toArray(node.body), //.flat(),	//.map(x => '\t' + x),
+			')'
+		);
+		/*
+		if (isArrayUsed(node.body)) {
 			res = new codeblock(
 				'(',
-				// ...node.body.flat(),	//.map(x => '\t' + x),
-				...node.body, //.flat(),	//.map(x => '\t' + x),
+				...toArray(node.body),
 				')'
 			);
 		} else {
-
-			// res = `(${SPACER}${node.body}${SPACER})`;
 			res = new statement(
 				'(',
 				node.body,
 				')'
-			)
+			);
 		}
-		console.dir(res, {depth: null});
+		*/
+		// console.dir(res, {depth: null});
 		// console.log(node.body.map(x => '\t' + x));
 		// console.log('-------------------');
 		return res;
 	},
-	/*
 	IfStatement(node) {
-
-		if (!Array.isArray(node.consequent)) { node.consequent = [node.consequent] }
-
-		let res = [
-			`if ${node.test} ${node.operator || 'then'}`,
+		let res = new statement(
+			'if',
+			node.test,
+			node.operator,
 			node.consequent
-		];
-
+		);
 		if (node.alternate) {
-
-			if (!Array.isArray(node.alternate)) { node.alternate = [node.alternate] }
-
-			let alt = [
+			res.add(
 				'else',
 				node.alternate
-			];
-			res = res.concat(alt);
+			);
 		}
-		// res = res.join(LINEBRK);
-		// console.log(res);
-
 		return res;
 	},
 	TryStatement(node) {
-		let res = [
+		let test = new statement(
 			'try',
-			node.block,
+			node.body
+		);
+		let catcher = new statement(
 			'catch',
 			node.finalizer
-		].join(LINEBRK);
-
+		);
+		let res = new codeblock(
+			test,
+			catcher
+		);
 		return res;
 	},
 	DoWhileStatement(node) {
-
-		let res = [
+		// let res = new codeblock(
+		let stat = new statement(
 			'do',
 			node.body,
+		);
+		let test = new statement(
 			'while',
 			node.test
-		].join(LINEBRK);
-
+		);
+		let res = new codebloc(
+			stat,
+			test,
+		);
 		return res;
 	},
 	WhileStatement(node) {
-		let res = [
+		// let stat = new statement(
+		let res = new statement(
 			'while',
 			node.test,
 			'do',
-			// node.body,
-		].join(SPACER)
-			.concat(LINEBRK, node.body);
-
+			node.body
+		);
+		/* let res = new codeblock(
+			stat,
+			node.body,
+		); */
 		return res;
 	},
 	ForStatement(node) {
-		let res = [
+		// let stat = new statement(
+		let res = new statement(
 			'for',
 			node.variable,
 			node.iteration,
 			node.value,
-			node.sequence,
-			node.action
-		].join(SPACER)
-			.concat(LINEBRK, node.body);
-
+			...toArray(node.sequence.value),
+			node.action,
+			node.body
+		);
+		/* let res = new codeblock(
+			stat,
+			node.body
+		); */
 		return res;
 	},
 	ForLoopSequence(node) {
-		let res = [
-			_to = (node.to.length > 0) ? `to ${node.to}` : null,
-			_by = (node.by.length > 0) ? `by ${node.by}` : null,
-			_while = (node.while.length > 0) ? `while ${node.while}` : null,
-			_where = (node.where.length > 0) ? `where ${node.where}` : null
-		].filter(e => e != null)
-			.join(SPACER);
+		let _to = isArrayUsed(node.to) ? ['to', node.to] : null;
+		let _by = isArrayUsed(node.by) ? ['by', node.by] : null;
+		let _while = isArrayUsed(node.while) ? ['while', node.while] : null;
+		let _where = isArrayUsed(node.where) ? ['where', node.where] : null;
+
+		let stats = [].join(_to, _by, _while, _where).filter(e => e != null);
+
+		let res = new statement(
+			...stats
+		);
 
 		return res;
 	},
 	LoopExit(node) {
-		let res = `exit${SPACER}with${SPACER}${node.body}`;
-
+		let res = new statement('exit');
+		if (node.body) {
+			res.add(
+				'with',
+				node.body
+			);
+		} else {
+			res.add(';')
+		}
 		return res;
 	},
 	CaseStatement(node) {
-		res = [
-			`case ${node.test} of`,
+		let stat  = new statement(
+			'case',
+			node.test,
+			'of'
+		);
+		let res = new codeblock(
+			stat,
 			'(',
-			...node.cases,
+			...toArray(node.cases),
 			')'
-		].join(LINEBRK);
-
+		);
 		return res;
 	},
 	CaseClause(node) {
-		let spacer = /\d$/mi.test(node.case) ? SPACER : '';
-		let short = /\n/mi.test(node.body) ? LINEBRK : ' ';
-
-		let res = `${node.case}${spacer}:${short}${node.body}`;
-
+		//let spacer = /\d$/mi.test(node.case) ? SPACER : '';
+		//let short = /\n/mi.test(node.body) ? LINEBRK : ' ';
+		// let res = `${node.case}${spacer}:${short}${node.body}`;
+		let res = new statement(
+			node.case,
+			':',
+			node.body
+		);
+		// console.dir(res, { depth: null });
 		return res;
 	},
 	// context expressions
 	ContextStatement(node) {
-		let res = [
+		let res = new statement(
 			node.context,
 			node.body
-		].join(LINEBRK);
-
+		);
 		return res;
 	},
 	ContextExpression(node) {
-		let res = [
-			node.prefix !== '' ? node.prefix : null,
+		let res = new statement(
+			node.prefix,
 			node.context,
-			...node.args
-		].filter(e => e != null)
-			.join(SPACER);
-
+			...toArray(node.args)
+		);
 		return res;
 	},
-	// /*
-	// Struct
+	// Struct >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	Struct(node) {
-		// console.log(node);
-		// /*
+		let stat = new statement(
+			'struct',
+			node.id
+		);
+		let res = new codeblock(stat, '(');
+		if (isArrayUsed(node.body)) {
+			// handle struct members...
+			let stack;
+			//let temp;
+			node.body.forEach( e => {
+				// test for structScope
+				if (typeof e === 'string' && /(?:private|public)$/mi.test(e)) {
+					res.add(e);
+					if (stack) {
+						res.add(stack);
+						stack = undefined;
+					}
+				} else {
+					if (!stack) {
+						stack = new elements(e);
+						stack.list = true;
+					} else {
+						stack.add(e);
+					}
+				}
+			});
+		} else {
+			res.add(node.body);
+		}
+		res.add(')');
+
+		// console.dir(res, { depth: null });
+
+		/*
 		let body;
 		if (Array.isArray(node.body)) {
 			body =
@@ -668,179 +690,208 @@ let visitorPatterns = {
 			`${body}`,
 			')'
 		].join(LINEBRK);
-
+		*/
 		return res;
 	},
 	StructScope(node) { return node.value; },
 	// StructScope: wrap(nodeValue);
+	//-------------------------------------------------------------------------
 	// Plugin
 	EntityPlugin(node) {
-		let body = exprTerm(node.body);
-		let res = [
-			`plugin ${node.superclass} ${node.class}`,
-			...node.params.flat(),
+		let stat = new statement(
+			'plugin',
+			node.superclass,
+			node.class,
+			...toArray(node.params)
+		)
+		let res = new codeblock(
+			stat,
 			'(',
-			body,
+			node.body,
 			')'
-		].join(LINEBRK);
-
+		)
 		return res;
 	},
 	EntityPlugin_params(node) {
-		let res = [
-			`parameters ${node.id}`,
-			...node.params.flat(),
+		let stat = new statement(
+			'parameters',
+			node.id,
+			...toArray(node.params)
+		);
+		let res = new codeblock(
+			stat,
 			'(',
-			...node.body.flat(),
-			')'].join(LINEBRK);
-
+			node.body,
+			')'
+		);
 		return res;
 	},
 	PluginParam(node) {
-		let res = [
+		let res = new statement(
 			node.id,
-			...node.params.flat()
-		].join(SPACER);
-
+			...toArray(node.params)
+		);
 		return res;
 	},
 	// Tool
 	EntityTool(node) {
-
-		let res = [
-			'tool ${node.id}',
-			...node.params,
+		let decl = new statement(
+			'tool',
+			node.id,
+			...toArray(node.params)
+		);
+		let res = new codeblock(
+			decl,
 			'(',
-			...node.body.flat(),
+			node.body,
 			')'
-		].join(LINEBRK);
-
+		);
 		return res;
 	},
 	// MacroScript
 	EntityMacroscript(node) {
-		// console.log(node.body);
-		// console.log(parent[key]);
-		let res = [
-			`macroScript ${node.id}`,
-			...node.params,
-			'(',
-			...node.body.flat(),
-			')'
-		].join(LINEBRK);
-		return res;
-	},
-	// rcMenu
-	EntityRcmenu(node) {
-		res = [
-			`rcmenu ${node.id}`,
-			'(',
-			...node.body.flat(),
-			')'
-		].join(LINEBRK);
-
-		return res;
-	},
-	EntityRcmenu_submenu(node) {
-		let res = [
-			`subMenu ${node.label} ${node.params}`,
-			'(',
-			...node.body,
-			')'
-		].join(LINEBRK);
-
-		return res;
-	},
-	EntityRcmenu_menuitem(node) {
-		let res = [
-			'menuItem',
+		let decl = new statement(
+			'macroScript',
 			node.id,
-			node.label,
-			...node.params
-		].join(SPACER);
-
-		return res;
-	},
-	EntityRcmenu_separator(node) {
-		let res = [
-			'separator',
-			node.id,
-			...node.params
-		].join(SPACER);
+			node.title,
+		);
+		let res = new codeblock(
+			decl,
+			...toArray(node.params),
+			'(',
+			node.body,
+			')'
+		);
+		// console.dir(res, { depth: null });
 		return res;
 	},
 	// Utility - Rollout
 	EntityUtility(node) {
-		let res = [
-			`utility ${node.id} ${node.title}`,
-			...node.params,
-			'(',
-			...node.body,
-			')'
-		].join(LINEBRK);
-		return res;
-	},
-	EntityRollout(node) {
-		let res = [
-			`rollout ${node.id} ${node.title}`,
-			...node.params,
-			'(',
-			...node.body.flat(),
-			')'
-		].join(LINEBRK);
-		return res;
-	},
-	EntityRolloutGroup(node) {
-		let res = [
-			`group${SPACER}${node.id}`,
+		let decl = new statement(
+			'utility',
+			node.id,
+			node.title,
+			...toArray(node.params)
+		);
+		let res = new codeblock(
+			decl,
 			'(',
 			node.body,
 			')'
-		];//.join(LINEBRK);
+		);
+		return res;
+	},
+	EntityRollout(node) {
+		let decl = new statement(
+			'rollout',
+			node.id,
+			node.title,
+			...toArray(node.params)
+		);
+		let res = new codeblock(
+			decl,
+			'(',
+			node.body,
+			')'
+		);
+		// console.dir(res, { depth: null });
+		return res;
+	},
+	EntityRolloutGroup(node) {
+		let res = new codeblock(
+			new statement('group', node.id),
+			'(',
+			node.body,
+			')'
+		);
+		// console.dir(res, {depth: null});
 		return res;
 	},
 	EntityRolloutControl(node) {
-		let res = [
+		let res = new statement(
 			node.class,
 			node.id,
 			node.text,
-			...node.params
-		].join(SPACER);
+			...toArray(node.params)
+		);
+		// console.dir(res, {depth: null});
+		return res;
+	},
+	// rcMenu
+	EntityRcmenu(node) {
+		let res = new codeblock(
+			new statement('rcmenu', node.id),
+			'(',
+			node.body,
+			')'
+		);
+		return res;
+	},
+	EntityRcmenu_submenu(node) {
+		let stat = new statement(
+			'subMenu',
+			node.label,
+			...toArray(node.params)
+		);
+		let res = new codeblock(
+			stat,
+			'(',
+			node.body, //TODO: this should be spreaded in all rules
+			')'
+		);
+		return res;
+	},
+	EntityRcmenu_menuitem(node) {
+		let res = new statement(
+			'menuItem',
+			node.id,
+			node.label,
+			...toArray(node.params)
+		);
+		return res;
+	},
+	EntityRcmenu_separator(node) {
+		let res = new statement(
+			'separator',
+			node.id,
+			...toArray(node.params)
+		);
 		return res;
 	},
 	// Event
 	Event(node) {
-		let res = [
-			`on ${node.args || ''} ${node.modifier || ''}`,
-			'(',
-			node.body,
-			')'
-		].join(LINEBRK);
-		// `on ${node.args || ''} ${node.modifier || ''}\n${node.body}`
-
+		let stat = new statement(
+			'on',
+			...toArray(node.args),
+			node.modifier
+		);
+		let res = new codeblock(
+			stat,
+			node.body
+		);
+		// console.dir(res, {depth: null});
 		return res;
 	},
 	EventArgs(node) {
-		let res = [
-			node.target || null,
-			node.event || null,
-			node.args || null
-		].filter(x => x != null)
-			.join(SPACER);
-
+		let res = new statement(
+			node.target,
+			node.event,
+			...toArray(node.args)
+		);
 		return res;
 	},
 	WhenStatement(node) {
-		let res = [
+		let stat = new statement(
 			'when',
 			...node.args.flat(),
 			'do'
-		].join(SPACER)
-			.concat(LINEBRK, node.body)
-
+		);
+		let res = new codeblock(
+			stat,
+			node.body
+		);
 		return res;
 	},
-	//*/
 };
 //-----------------------------------------------------------------------------------
 function mxsMinify(cst) {
