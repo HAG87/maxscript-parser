@@ -120,7 +120,6 @@ var grammar = {
     {"name": "expr", "symbols": ["function_def"], "postprocess": id},
     {"name": "expr", "symbols": ["fn_return"], "postprocess": id},
     {"name": "expr", "symbols": ["context_expr"], "postprocess": id},
-    {"name": "expr", "symbols": ["utility_def"], "postprocess": id},
     {"name": "expr", "symbols": ["rollout_def"], "postprocess": id},
     {"name": "expr", "symbols": ["tool_def"], "postprocess": id},
     {"name": "expr", "symbols": ["rcmenu_def"], "postprocess": id},
@@ -276,36 +275,20 @@ var grammar = {
     {"name": "tool_clause", "symbols": ["function_def"], "postprocess": id},
     {"name": "tool_clause", "symbols": ["struct_def"], "postprocess": id},
     {"name": "tool_clause", "symbols": ["event_handler"], "postprocess": id},
-    {"name": "utility_def$subexpression$1", "symbols": [(mxLexer.has("kw_utility") ? {type: "kw_utility"} : kw_utility), "__"]},
-    {"name": "utility_def$ebnf$1$subexpression$1", "symbols": ["_", "parameter_seq"]},
-    {"name": "utility_def$ebnf$1", "symbols": ["utility_def$ebnf$1$subexpression$1"], "postprocess": id},
-    {"name": "utility_def$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "utility_def", "symbols": ["utility_def$subexpression$1", "var_name", "_", "operand", "utility_def$ebnf$1", "_", "LPAREN", "utility_clauses", "RPAREN"], "postprocess":  d => ({
-            type:   'EntityUtility',
-            id:     d[1],
-            title:  d[3],
-            params: d[4] != null ? d[4][1] : null,
-            body:   d[7],
-            range:  getLoc(d[0][0], d[8])
-        })},
-    {"name": "utility_clauses$ebnf$1", "symbols": []},
-    {"name": "utility_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "utility_clause"]},
-    {"name": "utility_clauses$ebnf$1", "symbols": ["utility_clauses$ebnf$1", "utility_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "utility_clauses", "symbols": ["utility_clause", "utility_clauses$ebnf$1"], "postprocess": d => merge(...d)},
-    {"name": "utility_clause", "symbols": ["rollout_clause"], "postprocess": id},
-    {"name": "utility_clause", "symbols": ["rollout_def"], "postprocess": id},
-    {"name": "rollout_def$subexpression$1", "symbols": [(mxLexer.has("kw_rollout") ? {type: "kw_rollout"} : kw_rollout), "__"]},
+    {"name": "rollout_def$subexpression$1", "symbols": ["uistatement_def", "__"]},
     {"name": "rollout_def$ebnf$1$subexpression$1", "symbols": ["_", "parameter_seq"]},
     {"name": "rollout_def$ebnf$1", "symbols": ["rollout_def$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "rollout_def$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "rollout_def", "symbols": ["rollout_def$subexpression$1", "var_name", "_", "operand", "rollout_def$ebnf$1", "_", "LPAREN", "rollout_clauses", "RPAREN"], "postprocess":  d => ({
-            type:   'EntityRollout',
+            type:   d[0][0].type === 'kw_rollout' ? 'EntityRollout' : 'EntityUtility',
             id:     d[1],
             title:  d[3],
             params: d[4] != null ? d[4][1] : null,
             body:   d[7],
             range:  getLoc(d[0][0], d[8])
         })},
+    {"name": "uistatement_def", "symbols": [(mxLexer.has("kw_rollout") ? {type: "kw_rollout"} : kw_rollout)], "postprocess": id},
+    {"name": "uistatement_def", "symbols": [(mxLexer.has("kw_utility") ? {type: "kw_utility"} : kw_utility)], "postprocess": id},
     {"name": "rollout_clauses$ebnf$1", "symbols": []},
     {"name": "rollout_clauses$ebnf$1$subexpression$1", "symbols": ["EOL", "rollout_clause"]},
     {"name": "rollout_clauses$ebnf$1", "symbols": ["rollout_clauses$ebnf$1", "rollout_clauses$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
@@ -676,8 +659,8 @@ var grammar = {
     {"name": "for_sequence$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "for_sequence", "symbols": ["for_sequence$ebnf$4", "for_where"], "postprocess":  d => ({
             type: 'ForLoopSequence',
-            to: [],
-            by: [],
+            to: null,
+            by: null,
             while: filterNull(d[0]),
             where: d[1]
         })},
@@ -762,15 +745,17 @@ var grammar = {
     {"name": "decl", "symbols": ["var_name"], "postprocess":  d => ({
             type:   'Declaration',
             id:     d[0],
-            value:  d[0],
+            value:  null,
             range:  getLoc(d[0])
         }) },
-    {"name": "decl", "symbols": ["assignment"], "postprocess":  d => ({
-            type:   'Declaration',
-            id:     d[0].operand,
-            value:  d[0],
-            range:  getLoc(d[0].operand)
-        }) },
+    {"name": "decl", "symbols": ["assignment"], "postprocess":  d => {
+            let res = {...d[0]};
+            res.type = 'Declaration';
+            res.id = res.operand;
+            delete res.operand;
+            // console.log(res);
+            return res
+        } },
     {"name": "assignment$subexpression$1", "symbols": ["_S", (mxLexer.has("assign") ? {type: "assign"} : assign), "_"]},
     {"name": "assignment", "symbols": ["destination", "assignment$subexpression$1", "expr"], "postprocess":  d => ({
             type:     'AssignmentExpression',

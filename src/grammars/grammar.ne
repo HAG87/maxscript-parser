@@ -129,7 +129,6 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | function_def    {% id %} # RANGE OK
         | fn_return       {% id %} # RANGE OK
         | context_expr    {% id %} # RANGE OK
-        | utility_def     {% id %} # RANGE OK
         | rollout_def     {% id %} # RANGE OK
         | tool_def        {% id %} # RANGE OK
         | rcmenu_def      {% id %} # RANGE OK
@@ -322,39 +321,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | struct_def     {% id %}
         | event_handler  {% id %}
 #---------------------------------------------------------------
-# UTILITY DEFINITION --- OK
-    utility_def
-        -> (%kw_utility __) var_name _ operand (_ parameter_seq):? _
-            LPAREN
-                utility_clauses
-            RPAREN
-            {% d => ({
-                type:   'EntityUtility',
-                id:     d[1],
-                title:  d[3],
-                params: d[4] != null ? d[4][1] : null,
-                body:   d[7],
-                range:  getLoc(d[0][0], d[8])
-            })%}
-   
-    utility_clauses -> utility_clause (EOL utility_clause):* {% d => merge(...d) %}
-
-    # utility_clauses
-    #     -> utility_clauses EOL utility_clause  {% d => [].concat(d[0], d[2]) %}
-    #     | utility_clause
-
-    utility_clause
-        -> rollout_clause  {% id %}
-        | rollout_def      {% id %}
-#---------------------------------------------------------------
-# ROLLOUT DEFINITION --- OK
+# ROLLOUT / UTILITY DEFINITION --- OK
     rollout_def
-        -> (%kw_rollout  __) var_name _ operand (_ parameter_seq):? _
+        -> (uistatement_def  __) var_name _ operand (_ parameter_seq):? _
             LPAREN
                 rollout_clauses
             RPAREN
             {% d => ({
-                type:   'EntityRollout',
+                type:   d[0][0].type === 'kw_rollout' ? 'EntityRollout' : 'EntityUtility',
                 id:     d[1],
                 title:  d[3],
                 params: d[4] != null ? d[4][1] : null,
@@ -362,6 +336,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 range:  getLoc(d[0][0], d[8])
             })%}
     #---------------------------------------------------------------
+    uistatement_def -> %kw_rollout {% id %} | %kw_utility {% id %}
     # rollout_clauses
     #    -> LPAREN _rollout_clause RPAREN {% d => d[1] %}
     #     | "(" _ ")" {% d => null %}
@@ -740,8 +715,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | (for_while _):? for_where
         {% d => ({
            type: 'ForLoopSequence',
-           to: [],
-           by: [],
+           to: null,
+           by: null,
            while: filterNull(d[0]),
            where: d[1]
        })%}
@@ -848,16 +823,18 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             {% d => ({
                 type:   'Declaration',
                 id:     d[0],
-                value:  d[0],
+                value:  null,
                 range:  getLoc(d[0])
             }) %}
         | assignment
-            {% d => ({
-                type:   'Declaration',
-                id:     d[0].operand,
-                value:  d[0],
-                range:  getLoc(d[0].operand)
-            }) %}
+            {% d => {
+                let res = {...d[0]};
+                res.type = 'Declaration';
+                res.id = res.operand;
+                delete res.operand;
+                // console.log(res);
+                return res
+            } %}
 #---------------------------------------------------------------
 #ASSIGNEMENT --- OK
     assignment
