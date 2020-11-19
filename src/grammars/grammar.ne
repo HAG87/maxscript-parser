@@ -441,7 +441,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | _struct_member
 
     _struct_member
-        -> str_scope _EOL_ struct_member {% d => [].concat(d[0], d[2]) %}
+        -> str_scope EOL struct_member {% d => [].concat(d[0], d[2]) %}
         | struct_member {% id %}
         | str_scope     {% id %}
 
@@ -705,21 +705,29 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 
     for_sequence
         -> for_to (_ for_by):? (_ for_while):? (_ for_where):?
-        {% d => ({
-            type: 'ForLoopSequence',
-            to: d[0],
-            by: filterNull(d[1]),
-            while: filterNull(d[2]),
-            where: filterNull(d[3])
-        })%}
+            {% d => ({
+                type: 'ForLoopSequence',
+                to: d[0],
+                by: filterNull(d[1]),
+                while: filterNull(d[2]),
+                where: filterNull(d[3])
+            })%}
         | (for_while _):? for_where
-        {% d => ({
-           type: 'ForLoopSequence',
-           to: null,
-           by: null,
-           while: filterNull(d[0]),
-           where: d[1]
-       })%}
+            {% d => ({
+            type: 'ForLoopSequence',
+            to: null,
+            by: null,
+            while: filterNull(d[0]),
+            where: d[1]
+            })%}
+        | for_while
+            {% d => ({
+                type: 'ForLoopSequence',
+                to: null,
+                by: null,
+                while: d[0],
+                where: null
+            })%}
 
     for_iterator -> "=" {% id %} | %kw_in {% id %}
 
@@ -1251,43 +1259,42 @@ kw_override
 #===============================================================
 #PARENS
     LPAREN ->  %lparen _    {% d => d[0] %}
-    RPAREN ->  ___ %rparen  {% d => d[1] %}
+    RPAREN ->  _ %rparen  {% d => d[1] %}
 #===============================================================
 # WHITESPACE AND NEW LINES
     # comments are skipped in the parse tree!   
-    _EOL_
-        -> _EOL_ (junk | %statement) {% d => null %}
-        | wsl {% d => null %}
-        | %statement {% d => null %}
 
-    EOL -> _eol:* ( %newline | %statement ) _S {% d => null %}
+    # MANDATORY EOL
+    EOL -> junk:* ( %newline | %statement ) _S {% d => null %}
+    
+    # MANDATORY WHITESPACE | one or more whitespace
+    _S_ -> ws:+ {% d => null %}
+    # OPTIONAL WHITESPACE | zero or any whitespace
+    _S -> ws:* {% d => null %}
+    # MANDATORY WHITESPACE NL | one or more whitespace with NL
+    __ -> wsl junk:* {% d => null %}
+    # OPTIONAL WHITESPACE NL | zero or any whitespace with NL
+    _ -> junk:*  {% d => null %}
 
-    _eol
-    -> %ws
-    | %statement
-    | %newline
-    | %comment_BLK
-    | %comment_SL
 
-    _SL_ -> wsl {% d => null %} | _SL_ junk {% d => null %}
+    #_SL_ -> wsl {% d => null %} | _SL_ junk {% d => null %}
     # one or more whitespace
-    _S_ -> ws {% d => null %} | _S_ ws  {% d => null %}
+    #_S_ -> ws {% d => null %} | _S_ ws  {% d => null %}
     # zero or any whitespace
-    _S -> null | _S ws  {% d => null %}
+    #_S -> null | _S ws  {% d => null %}
     # one or more whitespace with NL
-    __ -> ws {% d => null %} | __ junk {% d => null %}
+    #__ -> ws {% d => null %} | __ junk {% d => null %}
     # zero or any withespace with NL
-    _ -> null | _ junk  {% d => null %}
-    # this is for optional EOL
-    ___ -> null | ___ (junk | %statement)  {% d => null %}
+    #_ -> null | _ junk  {% d => null %}
+
 
     ws -> %ws | %comment_BLK
-
-    wsl ->  %ws | %newline | %comment_BLK
+    wsl ->  %ws | %newline | %comment_BLK | %statement
 
     junk
         -> %ws
         | %newline
+        | %statement
         | %comment_BLK
         | %comment_SL
 #---------------------------------------------------------------
