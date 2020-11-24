@@ -20,8 +20,19 @@
     const tokenType = (t, newytpe) => {t.type = newytpe; return t;};
 
     const merge = (...args) => {
-        let res = [].concat(...args).filter(e => e != null);
-        return res.length === 0 ? null : res;
+        let res = [];
+        args.forEach( elem => {
+            if (Array.isArray(elem)) {
+                // console.log(elem);
+                // res.push(...elem);
+                res = res.concat.apply(res, elem);
+            } else {
+                res.push(elem);
+            }
+        });
+        //let res = [].concat(...args).filter(e => e != null);
+
+        return res.length ? res.filter(e => e != null) : null;
     };
 
     const convertToken = (token, newtype) => {
@@ -99,6 +110,11 @@
     // parser configuration
     //let capture_ws = false;
     //let capture_comments = false;
+    //----------------------------------------------------------
+    // RULES
+    //----------------------------------------------------------
+    const Literal = d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) });
+    const Identifier = d => ({ type: 'Identifier', value: d[0], range:getLoc(d[0]) });
 %}
 # USING MOO LEXER
 @lexer mxLexer
@@ -160,8 +176,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
    
     _expr_seq
-        -> _expr_seq EOL expr {% d => [].concat(d[0], d[2]) %}
-        | expr #{% id %}
+        -> expr (EOL expr):* {% d => merge(...d) %}
+        # -> _expr_seq EOL expr {% d => [].concat(d[0], d[2]) %}
+        # | expr #{% id %}
 #===============================================================
 # DEFINITIONS
 #===============================================================
@@ -708,9 +725,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             {% d => ({
                 type: 'ForLoopSequence',
                 to: d[0],
-                by: filterNull(d[1]),
-                while: filterNull(d[2]),
-                where: filterNull(d[3])
+                by: d[1],
+                while: d[2],
+                where: d[3]
             })%}
         | (for_while _):? for_where
             {% d => ({
@@ -1050,11 +1067,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
     property
-        -> operand %delimiter var_name
+        -> operand %delimiter (var_name | void | kw_override)
             {% d => ({
                 type:     'AccessorProperty',
                 operand:  d[0],
-                property: d[2],
+                property: d[2][0],
                 range:    getLoc(d[0], d[2])
             })%}
 #---------------------------------------------------------------
@@ -1147,8 +1164,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             }) %}
 
         array_expr
-         -> array_expr (_ "," _) expr {% d => [].concat(d[0], d[2]) %}
-         | expr
+            -> expr (_ "," _) array_expr {% d => [].concat(d[0], d[2]) %}
+            | expr
 #---------------------------------------------------------------
 # BITARRAY --- OK
     bitarray
@@ -1156,18 +1173,18 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         {% d => ({
             type:     'ObjectBitArray',
             elements: [],
-            range:      getLoc(d[0], d[2])
+            range:    getLoc(d[0], d[2])
         }) %}
     | ( %bitarraydef _) bitarray_expr (_ %rbrace)
         {% d => ({
             type:     'ObjectBitArray',
             elements: d[1],
-            range:      getLoc(d[0][0], d[2][1])
+            range:    getLoc(d[0][0], d[2][1])
         }) %}
 
     bitarray_expr
-    -> bitarray_expr (_ "," _) bitarray_item {% d => [].concat(d[0], d[2]) %}
-    | bitarray_item
+        -> bitarray_expr (_ "," _) bitarray_item {% d => [].concat(d[0], d[2]) %}
+        | bitarray_item
 
     # TODO: Fix groups
     bitarray_item
@@ -1176,19 +1193,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #===============================================================
 # VARNAME --- IDENTIFIERS --- OK
     # some keywords can be var_name too...
-    var_name -> var_type
-        {% d => ({
-            type: 'Identifier',
-            value: d[0],
-            range: getLoc(d[0])
-        }) %}
+    var_name -> var_type {% Identifier %}
     var_type
         -> %identity      {% id %}
          | %global_typed  {% id %}
          | %typed_iden    {% id %}
          | kw_reserved    {% id %}
-
-# CONTEXTUAL KEYWORDS...
+        #  | void           {% id %}
+# CONTEXTUAL KEYWORDS...can be used as identifiers outside the context...
     kw_reserved
         -> %kw_uicontrols  {% id %}
         | %kw_group        {% id %}
@@ -1222,40 +1234,31 @@ kw_override
         | %kw_return       {% id %}
         | %kw_throw        {% id %}
 #===============================================================
+# PATH NAME
+    # THIS JUST CAPTURES ALL THE LEVEL PATH IN ONE TOKEN....
+    path_name -> %path {% Identifier %}
+    #---------------------------------------------------------------
 # TOKENS
     # time
-    time -> %time
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
+    time -> %time          {% Literal %}
     # Bool
     bool
-        -> %kw_bool
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
-        | %kw_on
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
+        -> %kw_bool        {% Literal %}
+        | %kw_on           {% Literal %}
     # Void values
-    void -> %kw_null
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
+    void -> %kw_null       {% Literal %}
     #---------------------------------------------------------------
     # Numbers
-    number -> number_types
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
+    number -> number_types {% Literal %}
     number_types
         -> %number  {% id %}
          | %hex     {% id %}
     # string
-    string -> %string
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
+    string -> %string      {% Literal %}
     # names
-    name_value -> %name
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
+    name_value -> %name    {% Literal %}
     #Resources
-    resource -> %locale
-        {% d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) }) %}
-    #---------------------------------------------------------------
-    # PATH NAME
-    # THIS JUST CAPTURES ALL THE LEVEL PATH IN ONE TOKEN....
-    path_name -> %path
-        {% d => ({ type: 'Identifier', value: d[0], range:getLoc(d[0]) }) %}
+    resource -> %locale    {% Literal %}
 #===============================================================
 #PARENS
     LPAREN ->  %lparen _    {% d => d[0] %}

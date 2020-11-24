@@ -107,7 +107,11 @@ var mxLexer = moo.compile({
 		// { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
 	],
 	// whitespace -  also matches line continuations
-	ws: { match: /(?:[ \t]+|(?:[\\][ \t\r\n]+))/, lineBreaks: true },
+	// ws: { match: /(?:[ \t]+|(?:[\\][ \t\r\n]+))/, lineBreaks: true },
+	ws: [
+		{ match: /\\(?:[ \t]*[\r\n]+)/, lineBreaks: true },
+		/[ \t]+/
+	],
 	// newline: { match: /(?:[\r\n]|[\\]\s*[\r\n])+/, lineBreaks: true },
 	newline: { match: /(?:[\r\n]+)/, lineBreaks: true },
 	
