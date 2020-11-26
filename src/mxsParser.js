@@ -13,78 +13,95 @@ function replaceWithWS(str) {
 	return ref.reduce((acc, next) => { return acc + ' '; }, '');
 }
 
+/**
+ * Tokenize mxs string
+ */
+function tokenizeSource(source, filter) {
+	if (!source) { return; }
+
+	if (typeof filter === Array) {
+		mxLexer.next = (next => () => {
+			let tok;
+			// IGNORE TOKEN TYPE IN FILTER....
+			while ((tok = next.call(mxLexer)) && (filter.includes)) /* empty statement */;
+			// if ( token.type != "comment_BLK" && token.type != "comment_SL" ) { toks.push(token); }
+			return tok;
+		})(mxLexer.next);
+	}
+	// feed the tokenizer
+	mxLexer.reset(source);
+
+	let token;
+	let toks = [];
+
+	// read tokens
+	while ((token = mxLexer.next())) {
+		toks.push(token);
+	}
+	// return JSON.stringify(toks);
+	return toks;
+}
+
+/** Declare a new parser isntance */
+function declareParser() {
+	return new nearley.Parser(
+		nearley.Grammar.fromCompiled(grammar),
+		{
+			keepHistory: true,
+			// lexer: mxLexer
+		});
+}
+
+/**
+ * List of possible tokens to overcome the error
+ */
+function PossibleTokens(parserInstance) {
+	var possibleTokens = [];
+	var lastColumnIndex = parserInstance.table.length - 2;
+	var lastColumn = parserInstance.table[lastColumnIndex];
+	var expectantStates = lastColumn.states
+		.filter(function (state) {
+			var nextSymbol = state.rule.symbols[state.dot];
+			return nextSymbol && typeof nextSymbol !== "string";
+		});
+	// Display a "state stack" for each expectant state
+	// - which shows you how this state came to be, step by step.
+	// If there is more than one derivation, we only display the first one.
+	var stateStacks = expectantStates
+		.map(function (state) {
+			return parserInstance.buildFirstStateStack(state, []);
+		}, this);
+	// Display each state that is expecting a terminal symbol next.
+	stateStacks.forEach(function (stateStack) {
+		var state = stateStack[0];
+		var nextSymbol = state.rule.symbols[state.dot];
+
+		possibleTokens.push(nextSymbol);
+	}, this);
+	return possibleTokens;
+}
+
 class mxsParseSource {
 	constructor(source) {
 		this._declareParser();
 		this.__source = source || '';
-		this.hash = mxsParseSource.HashSource(this.__source);
 		this.ParseSource();
 	}
 	/** Declare a new parser isntance */
-	_declareParser() {
-		this.parserInstance = new nearley.Parser(
-			nearley.Grammar.fromCompiled(grammar),
-			{
-				keepHistory: true,
-				// lexer: mxLexer
-			});
-	}
+	_declareParser() { this.parserInstance = declareParser(); }
 	/** get the source Stream */
 	get source() { return this.__source; }
 	/**	Set new source, and re-parse */
 	set source(newSource) {
 		this.__source = newSource;
-		this.hash = mxsParseSource.HashSource(this.__source);
-		this.reset();
+		this._declareParser();
 		this.ParseSource();
 	}
 	/** Get the parsed CST, if any */
-	get parsedCST() {
-		return this.__parsedCST || this.parserInstance.results[0] || [];
-	}
-	/** Reset the parser * */
-	reset() { this._declareParser(); }
-	/**
-	 * Tokenize mxs string
-	 * @param {moo.lexer} lexer
-	 * @param {string} source
-	 */
-	TokenizeSource(filter) {
-		if (!this.__source) { return; }
+	get parsedCST() { return this.__parsedCST || this.parserInstance.results[0] || []; }
+	/** Tokenize mxs string */
+	TokenizeSource(filter) { return tokenizeSource(this.__source, filter); }
 
-		if (typeof filter === Array) {
-			mxLexer.next = (next => () => {
-				let tok;
-				// IGNORE TOKEN TYPE IN FILTER....
-				while ((tok = next.call(mxLexer)) && (filter.includes)) /* empty statement */;
-				return tok;
-			})(mxLexer.next);
-		}
-		// feed the tokenizer
-		mxLexer.reset(this.__source);
-
-		let token;
-		let toks = [];
-
-		// read tokens
-		while ((token = mxLexer.next())) {
-			// if ( token.type != "comment_BLK" && token.type != "comment_SL" ) { toks.push(token); }
-			toks.push(token);
-		}
-		return toks;
-	}
-	/** feed Stream to active parser */
-	feed(str) {
-		try {
-			this.parserInstance.feed(str);
-		} catch (err) {
-			err.details = [{ token: err.token, expected: this._PossibleTokens() }];
-			this.parserInstance.restore(this.__parserState);
-			throw err;
-		}
-		this.__parserState = this.parserInstance.save();
-		this.__parsedCST = this.parserInstance.results[0];
-	}
 	/**
 	 *
 	 * @param {String} source String to parse
@@ -94,26 +111,35 @@ class mxsParseSource {
 	ParseSource() {
 		this.__parserState = this.parserInstance.save();
 		try {
+			/*
+			let srcSplit = this.__source.split(/(?:[^\\][\s\t]*)(?=\n)/g);
+			for (const line of srcSplit) {
+				console.log(line);
+				this.parserInstance.feed(line);
+				console.log(process.memoryUsage().heapUsed + '  ' + process.memoryUsage().heapTotal);
+				// console.log(process.memoryUsage().heapTotal);
+				// process.memoryUsage().heapUsed
+			}
+			*/
 			this.parserInstance.feed(this.__source);
 			// console.log('PARSE TREES: ' + this.parserInstance.results.length);
-			this.__parsedCST = this.parserInstance.results[0] || [];
+			this.__parsedCST = this.parserInstance ? this.parserInstance.results[0] || [] : [];
 		} catch (err) {
 			console.log('--ERROR--');
+			throw err;
 			// console.log(err);
 
 			// this.parserInstance.restore(this.__parserState);
-			// let newErr = this.__parseWithErrors();
+			// let newErr = this.parseWithErrors();
 			// throw newErr;
 		}
 	}
-	/**
-	 * Parser with error recovery
-	 */
-	__parseWithErrors() {
+	/** Parser with error recovery */
+	parseWithErrors() {
 		// regen the parser
-		this.reset();
+		this._declareParser()
 		// COULD BE A WAY TO FEED TOKENS TO THE PARSER?
-		console.log('PARSE ERRORS')
+		// console.log('PARSE ERRORS')
 		let src = this.TokenizeSource();
 		// let state;
 		let state = this.parserInstance.save();
@@ -141,65 +167,36 @@ class mxsParseSource {
 		// for (var next = 0; next < total; next++) {
 		while (next <= total) {
 			try {
-				this.parserInstance.feed(src[next].toString());
+				this.parserInstance.feed(src[next].value);
+				state = this.parserInstance.save();
+				// console.log(src[next].value);
 			} catch (err) {
+				// return;
+				// /*
 				// catch non parsing related errors.
 				if (!err.token) { throw err; }
-				console.log(err.token);
+				// console.log(err.token);
 				badTokens.push(src[next]);
-				/* FEATURE DISBLED*/
-				errorReport.push({ token: src[next], alternatives: this._PossibleTokens() });
+				// FEATURE DISBLED 
+				// errorReport.push({ token: src[next], alternatives: PossibleTokens() });
 
 				let filler = replaceWithWS(err.token.text);
 				err.token.text = filler;
 				err.token.value = filler;
 				err.token.type = "ws";
-				src.splice(next, 1, err.token);
-				// src[next] = err.token;
+				// src.splice(next, 1, err.token);
+				src[next] = err.token;
 				next--;
 
 				this.parserInstance.restore(state);
+				// */
 			}
-			next++;
-			state = this.parserInstance.save();
+			next++;			
 		}
 
 		this.__parsedCST = this.parserInstance.results[0] || [];
-
 		report();
-	}
-	/**
-	 * List of possible tokens to overcome the error
-	 */
-	_PossibleTokens() {
-		var possibleTokens = [];
-		var lastColumnIndex = this.parserInstance.table.length - 2;
-		var lastColumn = this.parserInstance.table[lastColumnIndex];
-		var expectantStates = lastColumn.states
-			.filter(function (state) {
-				var nextSymbol = state.rule.symbols[state.dot];
-				return nextSymbol && typeof nextSymbol !== "string";
-			});
-		// Display a "state stack" for each expectant state
-		// - which shows you how this state came to be, step by step.
-		// If there is more than one derivation, we only display the first one.
-		var stateStacks = expectantStates
-			.map(function (state) {
-				return this.parserInstance.buildFirstStateStack(state, []);
-			}, this);
-		// Display each state that is expecting a terminal symbol next.
-		stateStacks.forEach(function (stateStack) {
-			var state = stateStack[0];
-			var nextSymbol = state.rule.symbols[state.dot];
-
-			possibleTokens.push(nextSymbol);
-		}, this);
-		return possibleTokens;
-	}
-	/** MD5 hash */
-	static HashSource(source) {
-		return crypto.createHash('md5').update(source).digest('hex');
 	}
 }
 //-----------------------------------------------------------------------------------
-module.exports = mxsParseSource;
+module.exports = { mxsParseSource, tokenizeSource, declareParser };

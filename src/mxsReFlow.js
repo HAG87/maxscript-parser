@@ -61,20 +61,15 @@ function derive(node, callbackMap) {
 				_visit(child, node, key, level + 1, null);
 			}
 		}
-
 		if (nodeType in callbackMap) {
 			if (parent) {
 				editNode.call(this, callbackMap[nodeType], node, parent, key, level, index);
 			} else {
-				// console.log(node);
+				return node;
 			}
-		} else {
-			// valid nodes but missing from rules...
 		}
 	}
 	_visit(node, null, null, 0, null);
-	// return node;
-	// console.dir(node, { depth: null });
 }
 
 /**
@@ -83,17 +78,13 @@ function derive(node, callbackMap) {
  */
 function reduce(tree) {
 	function _visit(node, parent, key, level, index) {
-
 		// if (key === 'value') {level++;}
-
 		const keys = Object.keys(node);
 		for (let i = 0; i < keys.length; i++) {
 			let key = keys[i];
-			// console.log(key);
 			// for (const key in node) {
 			const child = node[key];
 			if (Array.isArray(child)) {
-				// level++;
 				for (let j = 0; j < child.length; j++) {
 					if (isNode(child[j])) {
 						_visit(child[j], node, key, level + 1, j)
@@ -101,21 +92,14 @@ function reduce(tree) {
 				}
 			}
 			else if (isNode(child)) {
-				// level++;
-
 				_visit(child, node, key, level, null);
 			}
 		}
-		// level++;
-		// if (key === 'value') {level++;}
-
 		// TODO: INDENTATION...
 		if (node.type && parent) {
 			if (node.type === 'codeblock') {
 				node.indent = level;
 			}
-			// INDENT = '-'.repeat(level);
-
 			index != null ? parent[key][index] = node.toString : parent[key] = node.toString;
 			/*
 			if (parent) {
@@ -168,13 +152,13 @@ class statement {
 
 	get toString() {
 		if (SPACER !== '') {
-			return this.value.filter(e => e != null).join(SPACER);
+			return this.value.join(SPACER);
 		} else {
 			let w = /\w$/im;
 			let s = /\W$/im;
 			let m = /-$/im;
 
-			let res = this.value.filter(e => e != null).reduce((acc, curr) => {
+			let res = this.value.reduce((acc, curr) => {
 				let sep = '';
 				if (
 					// alpha - alpha
@@ -207,7 +191,7 @@ class codeblock {
 	}
 
 	get toString() {
-		if (this.value.length > 3 || this.value[1].includes('\n')) {
+		if (this.value.length > 3 || this.value.length > 3 && this.value[1].includes('\n')) {
 			// console.log(this.value);
 			// console.log(this.value.join(LINEBRK));
 			// console.log('--------');
@@ -221,7 +205,7 @@ class codeblock {
 			// return this.value.join(LINEBRK + INDENT.repeat(this.indent));
 			return this.value.join(LINEBRK);
 		} else {
-			return this.value.filter(e => e != null).join('');
+			return this.value.join('');
 		}
 	}
 
@@ -242,18 +226,14 @@ class codeGroup {
 
 	get toString() {
 		console.log(this.value);
-		if (this.value.length > 2 || (this.value.length > 2 && this.value[2].includes('\n'))) {
-			// /*
-			// let first = this.value.shift();
-			// let last = this.value.pop();
+		if (this.value.length > 2 || (this.value.length > 2 && this.value[1].includes('\n'))) {
+
 			let str = this.value.join(LINEBRK + INDENT.repeat(this.indent));
-			return [].concat('(', str, ')').join(LINEBRK);
-			// return str.concat(LINEBRK, '-'.repeat(this.indent > 0 ? this.indent-1 : 0), last);
-			// */
-			// return this.value.filter(e => e != null).join(LINEBRK + INDENT.repeat(this.indent));
-			// return this.value.filter(e => e != null).join(LINEBRK);
+			let res = [].concat('(', str).join(LINEBRK + INDENT.repeat(this.indent));
+			res.concat(LINEBRK, ')');
+			return res;
 		} else {
-			return '(' + this.value.join('') + '~';
+			return '(' + this.value.join('') + ')';
 		}
 	}
 
@@ -276,9 +256,9 @@ class elements {
 
 	get toString() {
 		if (this.listed && LINEBRK !== ';') {
-			return this.value.filter(e => e != null).join(',' + LINEBRK);
+			return this.value.join(',' + LINEBRK);
 		} else {
-			return this.value.filter(e => e != null).join(',' + SPACER);
+			return this.value.join(',' + SPACER);
 		}
 	}
 
@@ -297,7 +277,7 @@ class expr {
 	}
 
 	get toString() {
-		return this.value.filter(e => e != null).join('');
+		return this.value.join('');
 	}
 
 	add(...value) {
