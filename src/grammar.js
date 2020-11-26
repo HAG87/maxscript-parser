@@ -151,7 +151,7 @@ var grammar = {
             range: getLoc(d[0], d[2])
         })},
     {"name": "expr_seq", "symbols": [{"literal":"("}, "_", {"literal":")"}], "postprocess":  d => ({
-            type: 'BlockStatement',
+            type: 'EmptyParens',
             body: [],
             range: getLoc(d[0], d[2])
         })},

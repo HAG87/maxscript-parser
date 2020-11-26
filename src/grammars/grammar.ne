@@ -170,7 +170,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
         | "(" _ ")"
             {% d => ({
-                type: 'BlockStatement',
+                type: 'EmptyParens',
                 body: [],
                 range: getLoc(d[0], d[2])
             })%}
