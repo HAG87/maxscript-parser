@@ -633,12 +633,10 @@ var grammar = {
         })},
     {"name": "case_src", "symbols": ["expr", "_"], "postprocess": d => d[0]},
     {"name": "case_src", "symbols": ["__"], "postprocess": id},
-    {"name": "case_item$subexpression$1", "symbols": ["factor"]},
-    {"name": "case_item$subexpression$1", "symbols": [(mxLexer.has("params") ? {type: "params"} : params)]},
-    {"name": "case_item$subexpression$2", "symbols": [{"literal":":"}, "_"]},
-    {"name": "case_item", "symbols": ["case_item$subexpression$1", "case_item$subexpression$2", "expr"], "postprocess":  d => ({
+    {"name": "case_item$subexpression$1", "symbols": ["_", {"literal":":"}, "_"]},
+    {"name": "case_item", "symbols": ["factor", "case_item$subexpression$1", "expr"], "postprocess":  d => ({
             type:'CaseClause',
-            case: d[0][0],
+            case: d[0],
             body: d[2],
             range: getLoc(d[0][0], d[2])
         })},
@@ -738,6 +736,7 @@ var grammar = {
     {"name": "if_expr", "symbols": ["if_expr$subexpression$2", "expr", "if_expr$subexpression$3", "expr", "if_expr$subexpression$4", "expr"], "postprocess":  d => ({
             type:       'IfStatement',
             test:       d[1],
+            operator:   d[2][1],
             consequent: d[3],
             alternate:  d[5],
             range: getLoc(d[0][0], d[5])
