@@ -4,6 +4,7 @@ class reflowOptions {
 		this.indent = indent || '\t';
 		this.spacer = spacer || ' ';
 		this.linebreak = linebreak || '\n';
+		this.wrapIdentities = false,
 		this.elements = {
 			useLineBreaks: true
 		}
@@ -12,7 +13,8 @@ class reflowOptions {
 		}
 		this.codeblock = {
 			newlineAtParens: true,
-			newlineAllways: true
+			newlineAllways: true,
+			spaced: true
 		}
 	}
 	/*
@@ -122,10 +124,11 @@ function reduce(tree) {
 		if (getNodeType(node) && parent) {
 			let res;
 			// TODO: options.indent...
-			if (node.type === 'codeblock') {
+			if ('indent' in node) {
 				node.indent = level;
 			}
 			res = node.toString;
+			// console.log(level,'|',res);
 			index != null ? parent[key][index] = res : parent[key] = res;
 		} else {
 			// res = node;
@@ -158,17 +161,20 @@ function wrapInParens(node, key) {
 	];
 }
 */
-function optionalWS(values, ws = '') {
+function optionalWS(values, empty = '', ws = ' ') {
 	// at the end
 	let w_ = /\w$/im;
 	let s_ = /\W$/im;
 	let m_ = /-$/im;
+	let d_ = /\d$/im;
+	let c_ = /\:$/im;
 	// at the start
 	let _w = /^\w/im;
 	let _s = /^\W/im;
 	let _m = /^-/im;
+	let _d = /^\d/im;
+	let _c = /^\:/im;
 
-	let sep = ' ';
 	let res = values.reduce((acc, curr) => {
 		if (
 			// alpha - alpha
@@ -179,16 +185,16 @@ function optionalWS(values, ws = '') {
 			|| w_.test(acc) && _m.test(curr)
 			// minus - alpha
 			// || m_.test(acc) && _w.test(curr)
+			// number - colon
+			|| d_.test(acc) && _c.test(curr)
+			// colon - number
+			// || c_.test(acc) && _d.test(curr)
 		) {
-			return (acc + sep + curr);
-		} else {
-			// console.log(acc, '---', curr);
-			// console.log('-----');
 			return (acc + ws + curr);
+		} else {
+			return (acc + empty + curr);
 		}
-	}, '');
-	// console.log(res);
-
+	});
 	return res;
 }
 //-----------------------------------------------------------------------------------
@@ -200,12 +206,24 @@ class statement {
 		this.value = [];
 		this.add(...args);
 		this.optionalWhitespace = false
+		this.indent = 0
 	}
 
 	get toString() {
 
 		if (!options.statements.optionalWhitespace && !this.optionalWhitespace) {
-			return this.value.join(options.spacer);
+			// /*
+			let res = this.value.reduce((acc, curr) => {
+				if (curr.includes(options.linebreak)) {
+					// console.log(curr);
+					return acc + options.linebreak + options.indent.repeat(this.indent) + curr;
+				} else {
+					return acc + options.spacer +  curr;
+				}
+			});
+			// */
+			return res;
+			// return this.value.join(options.spacer);
 		} else {
 			return optionalWS(this.value);
 		}
@@ -223,38 +241,45 @@ class codeblock {
 		this.value = [];
 		this.add(...args);
 		this.indent = 0;
-		this.wrapped = false;		
+		this.wrapped = false;
 	}
 
 	get toString() {
-
-
-		// if (this.value.length > 3 || this.value.length > 1 && (this.value[0].includes(options.linebreak) || this.value[1].includes(options.linebreak))) {
-			// /*
-			if (this.wrapped) {
-				if (options.codeblock.newlineAtParens /* && this.value.length > 1 */) {
-					return [].concat('(', this.value, ')').join(options.linebreak);
-				} else {
-					return `(${options.spacer}${this.value.join(options.linebreak)}${options.spacer})`
-				}
+		// test for linebreaks...
+		// pass
+		let pass = true;
+		if (Array.isArray(this.value)) {
+			pass = this.value.length > 1 || this.value[0].includes(options.linebreak);
+		}
+		if (this.indent > 1) {this.indent--};
+		if (this.wrapped) {
+			if (options.codeblock.newlineAtParens && pass) {
+				let res = [].concat('(', this.value).join(options.linebreak + options.indent.repeat(this.indent));
+				// res = res.padStart( res.length + this.indent, options.indent);
+				res = res.concat(options.linebreak , options.indent.repeat(this.indent > 0 ? this.indent - 1 : this.indent) , ')')
+				return res;
+				// return [].concat('(', this.value, ')').join(options.linebreak + options.indent.repeat(this.indent));
 			} else {
-
-				// insert breackline if (
-				// insert breackline if newlineAllways
-
-				return this.value.join(options.linebreak);
+				return options.codeblock.spaced
+				? `(${options.spacer}${this.value.join(options.linebreak)}${options.spacer})`
+				: `(${this.value.join(options.linebreak)})`;
 			}
-			// */
-			// return this.value.join(options.linebreak);
-		// } else {
-			// return this.value.join('');
-			// /*
-			// return this.wrapped
-				// ? `(${optionalWS(this.value)})`
-				// : optionalWS(this.value, options.spacer);
-			// : this.value.join(' ');
-			// */
-		// }
+		} else  if ( options.codeblock.newlineAllways/* pass */) {
+			/*
+			let res = this.value.reduce((acc, curr, index) => {
+				if (/^[ \t-]*\(/m.test(curr)) {
+					return acc + options.linebreak + curr;
+				} else {
+					return acc + options.linebreak + options.indent.repeat(this.indent) + curr;
+				}
+			});
+			*/
+			return this.value.join(options.linebreak + options.indent.repeat(this.indent));
+		} else {			
+			return options.codeblock.spaced
+			? this.value.join(options.spacer)
+			: optionalWS(this.value);
+		}
 	}
 
 	add(...value) {
@@ -263,7 +288,6 @@ class codeblock {
 		}
 	}
 }
-
 //list
 // join elems with ',' list of items
 class elements {
@@ -272,11 +296,12 @@ class elements {
 		this.type = 'elements';
 		this.value = [];
 		this.add(...args);
+		this.indent = 0
 	}
 
 	get toString() {
 		return this.listed && options.elements.useLineBreaks
-			? this.value.join(',' + options.linebreak)
+			? this.value.join(',' + options.linebreak + options.indent.repeat(this.indent))
 			: this.value.join(',' + options.spacer);
 	}
 
@@ -390,7 +415,9 @@ let conversionRules = {
 	...tokensValue,
 	// LITERALS
 	Literal(node) { return node.value; },
-	Identifier(node) { return node.value; },
+	Identifier(node) {
+		return options.wrapIdentities ? `'${node.value}'` : node.value;
+	},
 	EmptyParens(node) { return '()'; },
 	Parameter(node) {
 		return new expr(node.value, ':');
@@ -593,7 +620,7 @@ let conversionRules = {
 	BlockStatement(node) {
 		// /*
 		let res = new codeblock(...toArray(node.body));
-			res.wrapped = true;
+		res.wrapped = true;
 		return res;
 		// */
 		/*
@@ -730,7 +757,7 @@ let conversionRules = {
 			'of'
 		);
 		let body = new codeblock(...toArray(node.cases));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			stat,
 			body
@@ -768,7 +795,7 @@ let conversionRules = {
 			node.id
 		);
 		let body = new codeblock();
-			body.wrapped = true;
+		body.wrapped = true;
 		if (isArrayUsed(node.body)) {
 			// handle struct members...
 			let stack;
@@ -807,20 +834,11 @@ let conversionRules = {
 			...toArray(node.params)
 		)
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		let res = new codeblock(
 			stat,
 			body
 		)
-		// */
-		/*
-		let res = new codeblock(
-			stat,
-			'(',
-			body,
-			')'
-		)
-		// */
 		return res;
 	},
 	EntityPlugin_params(node) {
@@ -830,7 +848,7 @@ let conversionRules = {
 			...toArray(node.params)
 		);
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			stat,
 			body
@@ -850,7 +868,7 @@ let conversionRules = {
 			...toArray(node.params)
 		);
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			decl,
 			body
@@ -880,7 +898,7 @@ let conversionRules = {
 			...toArray(node.params)
 		);
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			decl,
 			body
@@ -894,7 +912,7 @@ let conversionRules = {
 			...toArray(node.params)
 		);
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			decl,
 			body
@@ -902,7 +920,7 @@ let conversionRules = {
 	},
 	EntityRolloutGroup(node) {
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			new statement('group', node.id),
 			body
@@ -919,7 +937,7 @@ let conversionRules = {
 	// rcMenu
 	EntityRcmenu(node) {
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			new statement('rcmenu', node.id),
 			body
@@ -932,7 +950,7 @@ let conversionRules = {
 			...toArray(node.params)
 		);
 		let body = new codeblock(...toArray(node.body));
-			body.wrapped = true;
+		body.wrapped = true;
 		return new codeblock(
 			stat,
 			body
@@ -992,11 +1010,7 @@ function mxsReflow(cst) {
 	derive(cst, conversionRules);
 	// reduce the tree. use options
 	reduce(cst);
-	// console.log(cst);
-	if (cst.length > 1) {
-		return cst.join(options.linebreak);
-	} else {
-		return cst[0];
-	}
+	return cst.join(options.linebreak);
+	// return cst[0];
 }
 module.exports = { mxsReflow, options };
