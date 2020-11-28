@@ -7,15 +7,15 @@ class reflowOptions {
 		this.wrapIdentities = false,
 		this.elements = {
 			useLineBreaks: true
-		}
+		};
 		this.statements = {
 			optionalWhitespace: false
-		}
+		};
 		this.codeblock = {
 			newlineAtParens: true,
 			newlineAllways: true,
 			spaced: true
-		}
+		};
 	}
 	reset() {
 		this.indent = '\t';
@@ -95,7 +95,7 @@ function derive(node, callbackMap) {
 			if (Array.isArray(child)) {
 				for (let j = 0; j < child.length; j++) {
 					if (isNode(child[j])) {
-						_visit(child[j], node, key, level + 1, j)
+						_visit(child[j], node, key, level + 1, j);
 					}
 				}
 			}
@@ -130,7 +130,7 @@ function reduce(tree) {
 			if (Array.isArray(child)) {
 				for (let j = 0; j < child.length; j++) {
 					if (isNode(child[j])) {
-						_visit(child[j], node, key, level + 1, j)
+						_visit(child[j], node, key, level + 1, j);
 					}
 				}
 			}
@@ -151,7 +151,7 @@ function reduce(tree) {
 			// res = node;
 		}
 	}
-	_visit(tree, tree, null, 0, null)
+	_visit(tree, tree, null, 0, null);
 }
 //-----------------------------------------------------------------------------------
 // utility functions
@@ -222,8 +222,8 @@ class statement {
 		this.type = 'statement';
 		this.value = [];
 		this.add(...args);
-		this.optionalWhitespace = false
-		this.indent = 0
+		this.optionalWhitespace = false;
+		this.indent = 0;
 	}
 
 	get toString() {
@@ -268,18 +268,18 @@ class codeblock {
 		if (Array.isArray(this.value)) {
 			pass = this.value.length > 1 || this.value[0].includes(options.linebreak);
 		}
-		if (this.indent > 1) {this.indent--};
+		if (this.indent > 1) {this.indent--;}
 		if (this.wrapped) {
 			if (options.codeblock.newlineAtParens && pass) {
 				let res = [].concat('(', this.value).join(options.linebreak + options.indent.repeat(this.indent));
 				// res = res.padStart( res.length + this.indent, options.indent);
-				res = res.concat(options.linebreak , options.indent.repeat(this.indent > 0 ? this.indent - 1 : this.indent) , ')')
+				res = res.concat(options.linebreak , options.indent.repeat(this.indent > 0 ? this.indent - 1 : this.indent) , ')');
 				return res;
 				// return [].concat('(', this.value, ')').join(options.linebreak + options.indent.repeat(this.indent));
 			} else {
 				return options.codeblock.spaced
-				? `(${options.spacer}${this.value.join(options.linebreak)}${options.spacer})`
-				: `(${this.value.join(options.linebreak)})`;
+					? `(${options.spacer}${this.value.join(options.linebreak)}${options.spacer})`
+					: `(${this.value.join(options.linebreak)})`;
 			}
 		} else  if ( options.codeblock.newlineAllways/* pass */) {
 			/*
@@ -294,8 +294,8 @@ class codeblock {
 			return this.value.join(options.linebreak + options.indent.repeat(this.indent));
 		} else {			
 			return options.codeblock.spaced
-			? this.value.join(options.spacer)
-			: optionalWS(this.value);
+				? this.value.join(options.spacer)
+				: optionalWS(this.value);
 		}
 	}
 
@@ -309,11 +309,11 @@ class codeblock {
 // join elems with ',' list of items
 class elements {
 	constructor(...args) {
-		this.listed = false
+		this.listed = false;
 		this.type = 'elements';
 		this.value = [];
 		this.add(...args);
-		this.indent = 0
+		this.indent = 0;
 	}
 
 	get toString() {
@@ -445,7 +445,7 @@ let conversionRules = {
 	//-------------------------------------------------------------------------------------------
 	// DECLARATION
 	Declaration(node) {
-		return new statement(node.id);;
+		return new statement(node.id);
 	},
 	// Types
 	ObjectArray(node) {
@@ -503,21 +503,21 @@ let conversionRules = {
 			'[',
 			new elements(...node.elements),
 			']'
-		)
+		);
 	},
 	ObjectPoint3(node) {
 		return new expr(
 			'[',
 			new elements(...node.elements),
 			']'
-		)
+		);
 	},
 	ObjectPoint2(node) {
 		return new expr(
 			'[',
 			new elements(...node.elements),
 			']'
-		)
+		);
 	},
 	// Accesors
 	AccessorIndex(node) {
@@ -570,7 +570,7 @@ let conversionRules = {
 	// Functions
 	Function(node) {
 		let stat = new statement(
-			node.mapped || null,
+			node.modifier,
 			node.keyword,
 			node.id,
 			...toArray(node.args),
@@ -597,10 +597,10 @@ let conversionRules = {
 				decls = new elements(...node.decls);
 				decls.listed = true;
 			} else {
-				decls = node.decls
+				decls = node.decls;
 			}
 		} else {
-			decls = [node.decls]
+			decls = [node.decls];
 		}
 
 		let res = new statement(
@@ -763,7 +763,7 @@ let conversionRules = {
 				...toArray(node.body)
 			);
 		} else {
-			res.add(';')
+			res.add(';');
 		}
 		return res;
 	},
@@ -849,13 +849,13 @@ let conversionRules = {
 			node.superclass,
 			node.class,
 			...toArray(node.params)
-		)
+		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
 		let res = new codeblock(
 			stat,
 			body
-		)
+		);
 		return res;
 	},
 	EntityPlugin_params(node) {
