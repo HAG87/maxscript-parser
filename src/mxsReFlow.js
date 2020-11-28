@@ -155,7 +155,8 @@ function reduce(tree) {
 }
 //-----------------------------------------------------------------------------------
 // utility functions
-const isArrayUsed = val => Array.isArray(val) && val.length;
+const isArrayUsed = val => val && Array.isArray(val) && val.length > 0 ? true : false;
+const isNotEmpty = val => val && !Array.isArray(val) || Array.isArray(val) && val.length > 0 ? true : false;
 const toArray = val => Array.isArray(val) ? val : [val];
 /*
 var wrap = function (func) {
@@ -266,7 +267,10 @@ class codeblock {
 		// pass
 		let pass = true;
 		if (Array.isArray(this.value)) {
-			pass = this.value.length > 1 || this.value[0].includes(options.linebreak);
+			if(!this.value[0]) {
+				console.log(this);
+			}
+			pass = this.value.length > 1 || this.value[0]?.includes(options.linebreak);
 		}
 		if (this.indent > 1) {this.indent--;}
 		if (this.wrapped) {
@@ -445,11 +449,11 @@ let conversionRules = {
 	//-------------------------------------------------------------------------------------------
 	// DECLARATION
 	Declaration(node) {
-		return new statement(node.id);
+		return new statement(node.id, node.operator, node.value);
 	},
 	// Types
 	ObjectArray(node) {
-		let res = new statement('#(');
+		let res = new expr('#(');
 
 		if (isArrayUsed(node.elements)) {
 			// console.log('elems');
@@ -467,7 +471,7 @@ let conversionRules = {
 					}
 				});
 			res.add(elems);
-		} else {
+		} else if (isNotEmpty(node.elements)) {
 			res.add(node.elements);
 		}
 		res.add(')');
@@ -475,7 +479,7 @@ let conversionRules = {
 		return res;
 	},
 	ObjectBitArray(node) {
-		let res = new statement('#{');
+		let res = new expr('#{');
 
 		if (isArrayUsed(node.elements)) {
 			let elems = new elements();
@@ -486,12 +490,12 @@ let conversionRules = {
 						elems.add(
 							new codeblock(...e)
 						);
-					} else {
+					} else if (isNotEmpty(e)) {
 						elems.add(e);
 					}
 				});
 			res.add(elems);
-		} else {
+		} else if (isNotEmpty(node.elements)) {
 			res.add(node.elements);
 		}
 		res.add('}');
@@ -599,7 +603,7 @@ let conversionRules = {
 			} else {
 				decls = node.decls;
 			}
-		} else {
+		} else if (isNotEmpty(node.dacls)) {
 			decls = [node.decls];
 		}
 
@@ -745,14 +749,13 @@ let conversionRules = {
 		}
 		return res;
 	},
-	ForLoopSequence(node) {
-		let _to = node.to || isArrayUsed(node.to) ? ['to', ...toArray(node.to)] : null;
-		let _by = node.by || isArrayUsed(node.by) ? ['by', ...toArray(node.by)] : null;
-		let _while = node.while || isArrayUsed(node.while) ? ['while', ...toArray(node.while)] : null;
-		let _where = node.where || isArrayUsed(node.where) ? ['where', ...toArray(node.where)] : null;
+	ForLoopSequence(node) {		
+		let _to =    isNotEmpty(node.to) ? ['to', ...toArray(node.to)] :          null;
+		let _by =    isNotEmpty(node.by) ? ['by', ...toArray(node.by)] :          null;
+		let _while = isNotEmpty(node.while) ? ['while', ...toArray(node.while)] : null;
+		let _where = isNotEmpty(node.where) ? ['where', ...toArray(node.where)] : null;
 
 		let stats = [].concat(_to, _by, _while, _where).filter(e => e != null);
-
 		return new statement(...stats);
 	},
 	LoopExit(node) {
@@ -823,20 +826,25 @@ let conversionRules = {
 					body.add(e);
 					if (stack) {
 						body.add(stack);
-						stack = undefined;
+						stack = null;
 					}
 				} else {
 					if (!stack) {
 						stack = new elements(e);
-						stack.list = true;
+						stack.listed = true;
 					} else {
 						stack.add(e);
 					}
 				}
 			});
-		} else {
+			body.add(stack);
+			console.log(stack);
+			console.log('----');
+
+		} else if (isNotEmpty(node.body)) {
 			body.add(node.body);
 		}
+
 		return new codeblock(stat, body);
 	},
 	StructScope(node) { return node.value; },
