@@ -767,10 +767,11 @@ var grammar = {
     {"name": "decl_list", "symbols": ["decl_list", "decl_list$subexpression$1", "decl"], "postprocess": d => [].concat(d[0], d[2])},
     {"name": "decl_list", "symbols": ["decl"]},
     {"name": "decl", "symbols": ["var_name"], "postprocess":  d => ({
-            type:   'Declaration',
-            id:     d[0],
-            value:  null,
-            range:  getLoc(d[0])
+            type:     'Declaration',
+            id:       d[0],
+            operator: null,
+            value:    null,
+            range:    getLoc(d[0])
         }) },
     {"name": "decl", "symbols": ["assignment"], "postprocess":  d => {
             let res = {...d[0]};

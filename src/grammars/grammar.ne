@@ -847,10 +847,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     decl
         -> var_name
             {% d => ({
-                type:   'Declaration',
-                id:     d[0],
-                value:  null,
-                range:  getLoc(d[0])
+                type:     'Declaration',
+                id:       d[0],
+                operator: null,
+                value:    null,
+                range:    getLoc(d[0])
             }) %}
         | assignment
             {% d => {
