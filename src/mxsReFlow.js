@@ -135,15 +135,13 @@ function reduce(tree) {
 				}
 			}
 			else if (isNode(child)) {
-				_visit(child, node, key, level, null);
+				_visit(child, node, key, level + 1, null);
 			}
 		}
 		if (getNodeType(node) && parent) {
 			let res;
 			// TODO: options.indent...
-			if ('indent' in node) {
-				node.indent = level;
-			}
+			if ('indent' in node) { node.indent = level; }
 			res = node.toString;
 			// console.log(level,'|',res);
 			index != null ? parent[key][index] = res : parent[key] = res;
@@ -234,7 +232,7 @@ class statement {
 			let res = this.value.reduce((acc, curr) => {
 				if (curr.includes(options.linebreak)) {
 					// console.log(curr);
-					return acc + options.linebreak + options.indent.repeat(this.indent) + curr;
+					return acc + options.linebreak + options.indent.repeat(this.indent > 0 ? this.indent - 1 : this.indent) + curr;
 				} else {
 					return acc + options.spacer +  curr;
 				}
