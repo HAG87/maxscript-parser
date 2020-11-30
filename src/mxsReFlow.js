@@ -1,3 +1,4 @@
+'use strict';
 //-----------------------------------------------------------------------------------
 class reflowOptions {
 	constructor(spacer, linebreak, indent) {
@@ -5,9 +6,9 @@ class reflowOptions {
 		this.spacer = spacer || ' ';
 		this.linebreak = linebreak || '\n';
 		this.wrapIdentities = false,
-		this.elements = {
-			useLineBreaks: true
-		};
+			this.elements = {
+				useLineBreaks: true
+			};
 		this.statements = {
 			optionalWhitespace: false
 		};
@@ -16,15 +17,16 @@ class reflowOptions {
 			newlineAllways: true,
 			spaced: true
 		};
+		this.indentAt = new RegExp(`${this.linebreak}`, 'g');
 	}
 	reset() {
 		this.indent = '\t';
 		this.spacer = ' ';
 		this.linebreak = '\n';
 		this.wrapIdentities = false,
-		this.elements = {
-			useLineBreaks: true
-		};
+			this.elements = {
+				useLineBreaks: true
+			};
 		this.statements = {
 			optionalWhitespace: false
 		};
@@ -33,15 +35,8 @@ class reflowOptions {
 			newlineAllways: true,
 			spaced: true
 		};
+		this.indentAt = new RegExp(`${this.linebreak}`, 'g');
 	}
-	/*
-	get indent() {return this.indent}
-	get spacer() {return this.spacer}
-	get linebreak() {return this.linebreak}
-	set indent(value) {this.indent = value}
-	set spacer(value) {this.spacer = value}
-	set linebreak(value) {this.linebreak = value}
-	*/
 }
 let options = new reflowOptions();
 //-----------------------------------------------------------------------------------
@@ -64,7 +59,8 @@ function getNodeType(node) {
  */
 function editNode(callback, node, parent, key, level, index) {
 	let res = callback(node, parent, key, level, index);
-	// console.dir(res, {depth: null});
+	// apply indentation to hig-level rules
+	// if (isNode(res) && 'indent' in res) { res.indent = level; }
 	index != null ? parent[key][index] = res : parent[key] = res;
 }
 /*
@@ -77,11 +73,10 @@ function removeNode(node, parent, key, index) {
 //-----------------------------------------------------------------------------------
 /**
  * Visit and derive CST to a recoverable code map
- * @param {any} node CST node
+ * @param {any} tree CST node
  * @param {any} callbackMap Patterns function
  */
-function derive(node, callbackMap) {
-
+function derive(tree, callbackMap) {
 	function _visit(node, parent, key, level, index) {
 		const nodeType = getNodeType(node);
 		// get the node keys
@@ -112,16 +107,14 @@ function derive(node, callbackMap) {
 			}
 		}
 	}
-	_visit(node, null, null, 0, null);
+	_visit(tree, tree, null, 0, null);
 }
-
 /**
  * Visit and derive Code from a recoverable code map
  * @param {any} tree CodeMap node
  */
 function reduce(tree) {
 	function _visit(node, parent, key, level, index) {
-		// if (key === 'value') {level++;}
 		const keys = Object.keys(node);
 		for (let i = 0; i < keys.length; i++) {
 			let key = keys[i];
@@ -138,16 +131,14 @@ function reduce(tree) {
 				_visit(child, node, key, level + 1, null);
 			}
 		}
+		let res;
 		if (getNodeType(node) && parent) {
-			let res;
-			// TODO: options.indent...
-			if ('indent' in node) { node.indent = level; }
+			// if ('indent' in node) { node.indent = level; }
 			res = node.toString;
-			// console.log(level,'|',res);
-			index != null ? parent[key][index] = res : parent[key] = res;
 		} else {
-			// res = node;
+			res = node;
 		}
+		index != null ? parent[key][index] = res : parent[key] = res;
 	}
 	_visit(tree, tree, null, 0, null);
 }
@@ -222,24 +213,18 @@ class statement {
 		this.value = [];
 		this.add(...args);
 		this.optionalWhitespace = false;
-		this.indent = 0;
 	}
 
 	get toString() {
-
 		if (!options.statements.optionalWhitespace && !this.optionalWhitespace) {
-			// /*
 			let res = this.value.reduce((acc, curr) => {
 				if (curr.includes(options.linebreak)) {
-					// console.log(curr);
-					return acc + options.linebreak + options.indent.repeat(this.indent > 0 ? this.indent - 1 : this.indent) + curr;
+					return acc + options.linebreak + curr;
 				} else {
-					return acc + options.spacer +  curr;
+					return acc + options.spacer + curr;
 				}
 			});
-			// */
 			return res;
-			// return this.value.join(options.spacer);
 		} else {
 			return optionalWS(this.value);
 		}
@@ -256,8 +241,9 @@ class codeblock {
 		this.type = 'codeblock';
 		this.value = [];
 		this.add(...args);
-		this.indent = 0;
+		this.indent = false;
 		this.wrapped = false;
+		// this.indentPattern
 	}
 
 	get toString() {
@@ -267,31 +253,26 @@ class codeblock {
 		if (Array.isArray(this.value)) {
 			pass = this.value.length > 1 || this.value[0]?.includes(options.linebreak);
 		}
-		if (this.indent > 1) {this.indent--;}
 		if (this.wrapped) {
 			if (options.codeblock.newlineAtParens && pass) {
-				let res = [].concat('(', this.value).join(options.linebreak + options.indent.repeat(this.indent));
-				// res = res.padStart( res.length + this.indent, options.indent);
-				res = res.concat(options.linebreak , options.indent.repeat(this.indent > 0 ? this.indent - 1 : this.indent) , ')');
+				let res = [].concat('(', this.value).join(options.linebreak);
+				if (this.indent) {
+					res = res.replace(options.indentAt, `${options.linebreak}${options.indent}`);
+				}
+				res = res.concat(options.linebreak, ')');
 				return res;
-				// return [].concat('(', this.value, ')').join(options.linebreak + options.indent.repeat(this.indent));
 			} else {
 				return options.codeblock.spaced
 					? `(${options.spacer}${this.value.join(options.linebreak)}${options.spacer})`
 					: `(${this.value.join(options.linebreak)})`;
 			}
-		} else  if ( options.codeblock.newlineAllways/* pass */) {
-			/*
-			let res = this.value.reduce((acc, curr, index) => {
-				if (/^[ \t-]*\(/m.test(curr)) {
-					return acc + options.linebreak + curr;
-				} else {
-					return acc + options.linebreak + options.indent.repeat(this.indent) + curr;
-				}
-			});
-			*/
-			return this.value.join(options.linebreak + options.indent.repeat(this.indent));
-		} else {			
+		} else if (options.codeblock.newlineAllways/* pass */) {
+			let res =  this.value.join(options.linebreak);
+			if (this.indent) {
+				res = res.replace(options.indentAt, `${options.linebreak}${options.indent}`);
+			}
+			return res;
+		} else {
 			return options.codeblock.spaced
 				? this.value.join(options.spacer)
 				: optionalWS(this.value);
@@ -312,13 +293,19 @@ class elements {
 		this.type = 'elements';
 		this.value = [];
 		this.add(...args);
-		this.indent = 0;
+		this.indent = false;
 	}
 
 	get toString() {
-		return this.listed && options.elements.useLineBreaks
-			? this.value.join(',' + options.linebreak + options.indent.repeat(this.indent))
-			: this.value.join(',' + options.spacer);
+		if (this.listed && options.elements.useLineBreaks) {
+			let res = this.value.join(',' + options.linebreak);
+			if (this.indent) {
+				res = res.replace(options.indentAt, `${options.linebreak}${options.indent}`);
+			}
+			return res;
+		} else {
+			return this.value.join(',' + options.spacer);
+		}
 	}
 
 	add(...value) {
@@ -431,16 +418,10 @@ let conversionRules = {
 	...tokensValue,
 	// LITERALS
 	Literal(node) { return node.value; },
-	Identifier(node) {
-		return options.wrapIdentities ? `'${node.value}'` : node.value;
-	},
-	EmptyParens(node) { return '()'; },
-	Parameter(node) {
-		return new expr(node.value, ':');
-	},
-	BitRange(node) {
-		return new expr(node.start, '..', node.end);
-	},
+	Identifier(node) { return options.wrapIdentities ? `'${node.value}'` : node.value; },
+	EmptyParens() { return '()'; },
+	Parameter(node) { return new expr(node.value, ':'); },
+	BitRange(node) { return new expr(node.start, '..', node.end); },
 	//-------------------------------------------------------------------------------------------
 	// DECLARATION
 	Declaration(node) {
@@ -449,18 +430,15 @@ let conversionRules = {
 	// Types
 	ObjectArray(node) {
 		let res = new expr('#(');
-
 		if (isArrayUsed(node.elements)) {
-			// console.log('elems');
-
 			let elems = new elements();
 			node.elements.forEach(
 				e => {
 					// just to be safe, it should be reduced by now...
 					if (isArrayUsed(e)) {
-						elems.add(
-							new codeblock(...e)
-						);
+						let body =	new codeblock(...e);
+						body.indent = true;
+						elems.add(body);
 					} else {
 						elems.add(e);
 					}
@@ -482,9 +460,9 @@ let conversionRules = {
 				e => {
 					// just to be safe, it should be reduced by now...
 					if (isArrayUsed(e)) {
-						elems.add(
-							new codeblock(...e)
-						);
+						let body = new codeblock(...e);
+						body.indent = true;
+						elems.add( body);
 					} else if (isNotEmpty(e)) {
 						elems.add(e);
 					}
@@ -540,11 +518,7 @@ let conversionRules = {
 			node.calle,
 			...toArray(node.args)
 		);
-
-		// let args = new statement(...toArray(node.args));
-
 		if (node.args.includes('()')) {
-			// console.log(node.args);
 			res.optionalWhitespace = true;
 		}
 		return res;
@@ -577,6 +551,7 @@ let conversionRules = {
 			stat,
 			...toArray(node.body)
 		);
+		res.indent = false;
 		return res;
 	},
 	FunctionReturn(node) {
@@ -634,6 +609,7 @@ let conversionRules = {
 		// /*
 		let res = new codeblock(...toArray(node.body));
 		res.wrapped = true;
+		res.indent = true;
 		return res;
 		// */
 		/*
@@ -667,7 +643,6 @@ let conversionRules = {
 			}
 		} else {
 			stat.add(node.consequent);
-
 			if (node.alternate) {
 				if (node.alternate.type === 'codeblock') {
 					stat.add('else');
@@ -679,7 +654,6 @@ let conversionRules = {
 			} else {
 				res = stat;
 			}
-
 		}
 		return res;
 	},
@@ -741,9 +715,9 @@ let conversionRules = {
 		}
 		return res;
 	},
-	ForLoopSequence(node) {		
-		let _to =    isNotEmpty(node.to) ? ['to', ...toArray(node.to)] :          null;
-		let _by =    isNotEmpty(node.by) ? ['by', ...toArray(node.by)] :          null;
+	ForLoopSequence(node) {
+		let _to = isNotEmpty(node.to) ? ['to', ...toArray(node.to)] : null;
+		let _by = isNotEmpty(node.by) ? ['by', ...toArray(node.by)] : null;
 		let _while = isNotEmpty(node.while) ? ['while', ...toArray(node.while)] : null;
 		let _where = isNotEmpty(node.where) ? ['where', ...toArray(node.where)] : null;
 
@@ -770,20 +744,19 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.cases));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			stat,
 			body
 		);
 	},
 	CaseClause(node) {
-		//let spacer = /\d$/mi.test(node.case) ? options.spacer : '';
-		//let short = /\n/mi.test(node.body) ? options.linebreak : ' ';
-		// let res = `${node.case}${spacer}:${short}${node.body}`;
 		let res = new statement(
 			node.case,
 			':',
 			...toArray(node.body)
 		);
+		res.optionalWhitespace = true;
 		return res;
 	},
 	// context expressions
@@ -808,11 +781,7 @@ let conversionRules = {
 		);
 		let body = new codeblock();
 		body.wrapped = true;
-		// console.log(node.body);
-		// console.log(node);
-		// console.log('-----------------------------');
-
-		// /*
+		body.indent = true;
 		if (isArrayUsed(node.body)) {
 			// handle struct members...
 			let stack;
@@ -820,7 +789,7 @@ let conversionRules = {
 				// test for structScope
 				if (typeof e === 'string' && /(?:private|public)$/mi.test(e)) {
 					if (stack) {
-						//hack to overcome las missing comma
+						//hack to overcome las missing comma, but adds an extra newline
 						stack.add('');
 						body.add(stack);
 						stack = null;
@@ -840,7 +809,8 @@ let conversionRules = {
 		} else if (isNotEmpty(node.body)) {
 			body.add(node.body);
 		}
-		return new codeblock(stat, body);
+		let res = new codeblock(stat, body); 
+		return res;
 	},
 	StructScope(node) { return node.value; },
 	// StructScope: wrap(nodeValue);
@@ -855,6 +825,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		let res = new codeblock(
 			stat,
 			body
@@ -869,6 +840,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			stat,
 			body
@@ -889,6 +861,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			decl,
 			body
@@ -903,6 +876,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			decl,
 			...toArray(node.params),
@@ -919,6 +893,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			decl,
 			body
@@ -933,6 +908,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			decl,
 			body
@@ -941,10 +917,12 @@ let conversionRules = {
 	EntityRolloutGroup(node) {
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
-		return new codeblock(
+		body.indent = true;
+		let res = new codeblock(
 			new statement('group', node.id),
 			body
 		);
+		return res;
 	},
 	EntityRolloutControl(node) {
 		return new statement(
@@ -958,6 +936,7 @@ let conversionRules = {
 	EntityRcmenu(node) {
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			new statement('rcmenu', node.id),
 			body
@@ -971,6 +950,7 @@ let conversionRules = {
 		);
 		let body = new codeblock(...toArray(node.body));
 		body.wrapped = true;
+		body.indent = true;
 		return new codeblock(
 			stat,
 			body
@@ -1025,9 +1005,12 @@ let conversionRules = {
 	},
 };
 //-----------------------------------------------------------------------------------
+const { JsonFileWrite } = require('./utils.js');
+
 function mxsReflow(cst) {
 	// derive code tree
 	derive(cst, conversionRules);
+	JsonFileWrite('./test/deriv.json', cst)
 	// reduce the tree. use options
 	reduce(cst);
 	return cst.join(options.linebreak);
