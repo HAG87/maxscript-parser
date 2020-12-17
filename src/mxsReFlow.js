@@ -213,12 +213,13 @@ class statement {
 		this.value = [];
 		this.add(...args);
 		this.optionalWhitespace = false;
+		this.addLinebreaks = true;
 	}
 
 	get toString() {
 		if (!options.statements.optionalWhitespace && !this.optionalWhitespace) {
 			let res = this.value.reduce((acc, curr) => {
-				if (curr.includes(options.linebreak)) {
+				if (curr.includes(options.linebreak) && this.addLinebreaks) {
 					return acc + options.linebreak + curr;
 				} else {
 					return acc + options.spacer + curr;
@@ -518,6 +519,8 @@ let conversionRules = {
 			node.calle,
 			...toArray(node.args)
 		);
+		res.addLinebreaks = false;
+
 		if (node.args.includes('()')) {
 			res.optionalWhitespace = true;
 		}
@@ -525,10 +528,12 @@ let conversionRules = {
 	},
 	// Assign
 	ParameterAssignment(node) {
-		return new statement(
+		let res = new statement(
 			node.param,
 			node.value,
 		);
+		res.addLinebreaks = false;
+		return res;
 	},
 	AssignmentExpression(node) {
 		return new statement(

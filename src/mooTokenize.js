@@ -120,8 +120,7 @@ var mxLexer = moo.compile({
 	
 	// path_name $mounstrosity*/_?
 	path: [
-		/[$](?:[A-Za-z0-9_*?/\\]|\.\.\.)+/,
-		'$'
+		/\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/,
 	],
 
 	// ::global variable
@@ -163,8 +162,8 @@ var mxLexer = moo.compile({
 	// BRACKETS, BRACES...
 	lbracket: '[',
 	rbracket: ']',
-	lbrace: '{',
-	rbrace: '}',
+	lbrace:  /{/,
+	rbrace: /}/,
 
 	// Operators.
 	comparison: ['==', '!=', '>', '<', '>=', '<='],

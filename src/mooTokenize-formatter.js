@@ -10,11 +10,13 @@ const caseInsensitiveKeywords = map => {
 };
 //-----------------------------------------------------------------------------------
 // KEYWORDS
-const { keywords, compile } = require('moo');
+const { keywords, compile, error } = require('moo');
+const IndentationLexer = require('moo-indentation-lexer')
 const { keywordsDB } = require('./keywordsDB');
+const mxsAPI = require('./mxsAPI');
 //-----------------------------------------------------------------------------------
 // Moo Lexer
-var mxLexer2 = compile({
+var mooLexer = compile({
 	// Comments
 	comment_SL: /--.*$/,
 	comment_BLK: { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks: true, },
@@ -23,15 +25,15 @@ var mxLexer2 = compile({
 		{ match: /"(?:\\["\\rntsx]|[^"])*?"/, lineBreaks: true },
 	],
 	// whitespace -  also matches line continuations
-	ws: { match: /(?:[ \t]+|(?:[\\][ \t\r\n]+))/, lineBreaks: true },
-	newline: { match: /(?:[\r\n]+)/, lineBreaks: true },
-	
+	WS: { match: /(?:[ \t]+|(?:[\\][ \t\r\n]+))/, lineBreaks: true },
+	NL: { match: /(?:[\r\n]+)/, lineBreaks: true },
+
 	// Identities
 	param: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*:/,
 
 	identity: [
-		/[$](?:[A-Za-z0-9_*?/\\]|\.\.\.)+/,
-		'$',
+		/\$'(?:[^'\n\r])*'/,
+		/\$(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)*/,
 		/'(?:\\['\\rn]|[^'\\\n])*?'/,
 		/#[A-Za-z0-9_]+\b/,
 		/#'[A-Za-z0-9_]+'/,
@@ -42,7 +44,7 @@ var mxLexer2 = compile({
 			type: caseInsensitiveKeywords(keywordsDB)
 		}
 	],
-	
+
 	time: [
 		/(?:[-]?(?:[0-9]+\.)?[0-9]+[msft])+/,
 		/(?:[-]?(?:[0-9]+\.)[0-9]*[msft])+/,
@@ -91,4 +93,58 @@ var mxLexer2 = compile({
 	// fatalError: moo.error
 });
 //-----------------------------------------------------------------------------------
-module.exports = mxLexer2;
+// /*
+const mxLexer2 = new IndentationLexer({
+	lexer: mooLexer,
+	indentationType: 'WS',
+	newlineType: 'NL',
+	commentType: ['comment_SL', 'comment_BLK'],
+	indentName: 'indent',
+	dedentName: 'dedent',
+	// enclosingPunctuations: { '[': ']', '<': '>' },   // defaults {}, () and []
+	enclosingPunctuations: { '(': ')', '[': ']' }
+	// separators: [',']  // defaults to , : ;
+})
+// */
+const simpleLexer = compile({
+	commentSL: { match: /--.*$/, lineBreaks: false, },
+	commentBLK: { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks: true },
+	string: [
+		{ match: /"(?:\\["\\rntsx]|[^"])*?"/, lineBreaks: true },
+		{ match: /@"(?:\\"|[^"])*?(?:"|\\")/, lineBreaks: true },
+	],
+	// path: /\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/,
+	// parameter: { match: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*(?=[ \t]*[:])/ },
+	// parameter: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]+:/,
+	// property: { match: /\.[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
+	// locale: { match: /~[A-Za-z0-9_]+~/ },
+	name: [
+		{ match: /#[A-Za-z0-9_]+\b/ },
+		{ match: /#'[A-Za-z0-9_]+'/ }
+	],
+	identity: [
+		{ match: /\$'(?:[^'\n\r])*'/ },
+		{ match: /\$(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)*/ },
+		{ match: /'(?:\\['\\rn]|[^'\\\n])*'/ },
+		{ match: /~[A-Za-z0-9_]+~/ },
+		{ match: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
+		{
+			match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+			type: caseInsensitiveKeywords(mxsAPI)
+		}
+	],
+	unindexed: [
+		{
+			match: /(?:[^\"A-Za-z_\u00C0-\u00FF\s\t\r\n])+/,
+			lineBreaks: true
+		}
+	],
+	ws: {
+		match: /[\s\t\r\n]+/,
+		lineBreaks: true
+	},
+	fatalError: error
+
+});
+module.exports = simpleLexer;
+// module.exports = mooLexer;

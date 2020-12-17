@@ -9,7 +9,9 @@
     "chalk": "^4.1.0",
     "execution-time": "^1.4.1",
     "moo": "^0.5.1",
+    "moo-indentation-lexer": "^6.0.0",
     "nearley": "^2.19.7",
+    "nearley-moo": "^1.0.2",
     "object-path": "^0.11.5",
     "vscode-languageserver": "^6.1.1",
     "vscode-languageserver-textdocument": "^1.0.1"
