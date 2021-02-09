@@ -887,69 +887,102 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | path_name {% id %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  OK
-    math_expr -> rest {% id %}
+math_expr 
+    -> unary _ OP _ math_expr
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+        })%}
+    | as {% id %}
 
-        rest -> rest minus_ws sum
-                {% d => ({
-                    type:     'MathExpression',
-                    operator: d[1],
-                    left:     d[0],
-                    right:    d[2],
-                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
-                })%}
-        | sum {% id %}
-        
-        minus_ws
-            -> "-" {% id %}
-            | "-" __ {% d => d[0] %}
-            | __ "-" __ {% d => d[1] %}
-        
-        sum -> sum _S "+" _ prod
-                {% d => ({
-                    type:     'MathExpression',
-                    operator: d[2],
-                    left:     d[0],
-                    right:    d[4],
-                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-                })%}
-            | prod {% id %}
-        prod -> prod _S ("*"|"/") _ exp
-                {% d => ({
-                    type:     'MathExpression',
-                    operator: d[2][0],
-                    left:     d[0],
-                    right:    d[4],
-                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-                })%}
-            | exp {% id %}
-        exp -> as _S "^" _ exp
-                {% d => ({
-                    type:     'MathExpression',
-                    operator: d[2],
-                    left:     d[0],
-                    right:    d[4],
-                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
-                })%}
-            | as {% id %}
-        as -> math_operand _S %kw_as _ var_name
-                {% d => ({
-                    type:     'MathExpression',
-                    operator: d[2],
-                    left:     d[0],
-                    right:    d[4],
-                    range: getLoc(d[0], d[4])
-                })%}
-            | uny {% id %}
-            # | math_operand {% id %}
+as -> unary _S %kw_as __ var_name
+        {% d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc(d[0], d[4])
+        })%}
+    | unary {% id %}
 
-         uny -> "-" _  math_operand
-                 {% d => ({
-                     type: 'UnaryExpression',
-                     operator: d[0],
-                     right:    d[2],
-                     range: getLoc(d[0], d[2])
-                 }) %}
-            | math_operand {% id %}
+unary
+    -> "-" _ unary
+        {% d => ({
+            type: 'UnaryExpression--',
+            operator: d[0],
+            right:    d[2],
+            range: getLoc(d[0], d[2])
+        }) %}
+        | math_operand {% id %}
+
+OP -> "+" | "-" | "*" | "/" | "^"
+
+    # math_expr -> rest {% id %}
+
+    #     rest -> rest minus_ws sum
+    #             {% d => ({
+    #                 type:     'MathExpression',
+    #                 operator: d[1],
+    #                 left:     d[0],
+    #                 right:    d[2],
+    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
+    #             })%}
+    #     | sum {% id %}
+        
+    #     minus_ws
+    #         -> "-" {% id %}
+    #         | "-" __ {% d => d[0] %}
+    #         | __ "-" __ {% d => d[1] %}
+        
+    #     sum -> sum _S "+" _ prod
+    #             {% d => ({
+    #                 type:     'MathExpression',
+    #                 operator: d[2],
+    #                 left:     d[0],
+    #                 right:    d[4],
+    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+    #             })%}
+    #         | prod {% id %}
+    #     prod -> prod _S ("*"|"/") _ exp
+    #             {% d => ({
+    #                 type:     'MathExpression',
+    #                 operator: d[2][0],
+    #                 left:     d[0],
+    #                 right:    d[4],
+    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+    #             })%}
+    #         | exp {% id %}
+    #     exp -> as _S "^" _ exp
+    #             {% d => ({
+    #                 type:     'MathExpression',
+    #                 operator: d[2],
+    #                 left:     d[0],
+    #                 right:    d[4],
+    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
+    #             })%}
+    #         | as {% id %}
+    #     as -> math_operand _S %kw_as _ var_name
+    #             {% d => ({
+    #                 type:     'MathExpression',
+    #                 operator: d[2],
+    #                 left:     d[0],
+    #                 right:    d[4],
+    #                 range: getLoc(d[0], d[4])
+    #             })%}
+    #         | uny {% id %}
+    #         # | math_operand {% id %}
+
+    #      uny -> "-" _  uny
+    #              {% d => ({
+    #                  type: 'UnaryExpression',
+    #                  operator: d[0],
+    #                  right:    d[2],
+    #                  range: getLoc(d[0], d[2])
+    #              }) %}
+    #         | math_operand {% id %}
 
     # fn_call | operand | u_operand | passthrough math expression
     # FIXME: fn_call should be passed to operand? I've done it this way to avoid operator ambiguity...
@@ -1001,31 +1034,31 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             range: getLoc(d[0], d[4])
         }) %}
 
-    compare_operand
-        -> math_expr {% id %}
+    compare_operand -> math_expr {% id %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     fn_call
         -> call_caller _S call_args (_S call_params):?
-        {% d => {
-            let res = {
+            {% d => ({
                 type:  'CallExpression',
                 calle: d[0],
                 args:  merge(d[2], d[3]),
                 range: getLoc(d[0], d[3] != null ? d[3][1] : d[2])
-            };
-            return res;
-        }%}
+            }) %}
         | call_caller _S call_params
-            {% d => {
-                let res = {
-                    type:  'CallExpression',
-                    calle: d[0],
-                    args:  d[2],
-                    range: getLoc(d[0], d[2])
-                    };
-                return res;
-            }%}
+            {% d => ({
+                type:  'CallExpression',
+                calle: d[0],
+                args:  d[2],
+                range: getLoc(d[0], d[2])
+            })%}
+        # | call_caller _S "(" ")"
+        #     {% d => ({
+        #         type:  'CallExpression',
+        #         calle: d[0],
+        #         args:  null,
+        #         range: getLoc(d[0], d[3])
+        #     })%}
 
     call_params
         -> call_params _S parameter {% d => [].concat(d[0], d[2]) %}
@@ -1040,7 +1073,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         ->  u_operand {% id %}
         | operand {% id %}
 
-    call_caller -> operand {% id %}
+    call_caller
+        -> var_name {% id %}
+        | property  {% id %}
+        | index     {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter_seq
@@ -1102,9 +1138,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 range: getLoc(d[0], d[2])
             }) %}
     operand
-        -> factor     {% id %} # RANGE OK
-        | property    {% id %} # RANGE OK
-        | index       {% id %} # RANGE OK
+        -> factor     {% id %}
+        | property    {% id %}
+        | index       {% id %}
 #---------------------------------------------------------------
 # FACTORS --- OK
    factor
