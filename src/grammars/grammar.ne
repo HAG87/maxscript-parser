@@ -456,19 +456,15 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
     # this ensures that no scope modifier is followed by a comma!
 
-    struct_members -> _struct_member (_ sep _ _struct_member):* {% d => merge(...d) %}
+    struct_members -> struct_member ( LIST_SEP struct_member ):* {% d => merge(...d) %}
     
-    sep -> %sep {% d => null %}
-
-    # struct_members
-    #     -> struct_members (_ "," _) _struct_member {% d => [].concat(d[0], d[2])%}
-    #     | _struct_member
-
-    _struct_member
-        -> str_scope EOL struct_member {% d => [].concat(d[0], d[2]) %}
-        | struct_member {% id %}
-        | str_scope     {% id %}
-
+    struct_member
+        -> decl          {% id %}
+        | function_def   {% id %}
+        | event_handler  {% id %}
+        # this ensures that no scope modifier is followed by a comma!
+        | str_scope __ struct_member {% d => [].concat(d[0], d[2]) %}
+    #---------------------------------------------------------------
     str_scope -> %kw_scope
         {% d => ({
             type:'StructScope',
@@ -619,7 +615,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     # set_context -> %kw_set _ context
     #---------------------------------------------------------------
     context_expr ->
-        context ( (_S "," _) context ):* _ expr
+        context ( LIST_SEP context ):* _ expr
             {% d => ({
                 type: 'ContextStatement',
                 context: merge(d[0], collectSub(d[1], 1)),
@@ -706,9 +702,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     case_item
         -> factor (_ ":" _) expr
             {% d => ({
-                type:'CaseClause',
-                case: d[0],
-                body: d[2],
+                type:  'CaseClause',
+                case:  d[0],
+                body:  d[2],
                 range: getLoc(d[0][0], d[2])
             })%}
 #---------------------------------------------------------------
@@ -720,34 +716,34 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 variable:  d[1],
                 iteration: d[3],
                 value:     d[5],
-                sequence: filterNull(d[6]),
+                sequence:  filterNull(d[6]),
                 action:    d[8],
                 body:      d[10],
-                range: getLoc(d[0][0], d[10])
+                range:     getLoc(d[0][0], d[10])
             })%}
 
     for_sequence
         -> for_to (_ for_by):? (_ for_while):? (_ for_where):?
             {% d => ({
-                type: 'ForLoopSequence',
-                to: d[0],
-                by: d[1],
+                type:  'ForLoopSequence',
+                to:    d[0],
+                by:    d[1],
                 while: d[2],
                 where: d[3]
             })%}
         | (for_while _):? for_where
             {% d => ({
-            type: 'ForLoopSequence',
-            to: null,
-            by: null,
+                type:  'ForLoopSequence',
+                to:    null,
+                by:    null,
             while: filterNull(d[0]),
             where: d[1]
             })%}
         | for_while
             {% d => ({
-                type: 'ForLoopSequence',
-                to: null,
-                by: null,
+                type:  'ForLoopSequence',
+                to:    null,
+                by:    null,
                 while: d[0],
                 where: null
             })%}
@@ -779,18 +775,18 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # DO LOOP --- OK
     do_loop -> (%kw_do _) expr (_ %kw_while _) expr
         {% d => ({
-            type: 'DoWhileStatement',
-            body: d[1],
-            test: d[3],
+            type:  'DoWhileStatement',
+            body:  d[1],
+            test:  d[3],
             range: getLoc(d[0][0], d[3])
         })%}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
     while_loop -> (%kw_while _S) expr (_S %kw_do _) expr
         {% d => ({
-            type: 'WhileStatement',
-            test: d[1],
-            body: d[3],
+            type:  'WhileStatement',
+            test:  d[1],
+            body:  d[3],
             range: getLoc(d[0][0], d[3])
         })%}
 #---------------------------------------------------------------
@@ -802,7 +798,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 test:       d[1],
                 operator:   d[3],
                 consequent: d[5],
-                range: getLoc(d[0][0], d[5])
+                range:      getLoc(d[0][0], d[5])
             })%}
         | (%kw_if _) expr (_ %kw_then _) expr (_ %kw_else _) expr
             {% d => ({
@@ -811,7 +807,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 operator:   d[2][1],
                 consequent: d[3],
                 alternate:  d[5],
-                range: getLoc(d[0][0], d[5])
+                range:      getLoc(d[0][0], d[5])
             })%}
     if_action
         -> %kw_do  {% id %}
@@ -821,9 +817,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     try_expr -> (%kw_try _) expr (_ %kw_catch _) expr
     {% d => ({
         type:      'TryStatement',
-        body:     d[1],
+        body:      d[1],
         finalizer: d[3],
-        range: getLoc(d[0][0], d[3])
+        range:     getLoc(d[0][0], d[3])
     })%}
 #---------------------------------------------------------------
 # VARIABLE DECLARATION --- OK
@@ -1184,7 +1180,7 @@ math_expr -> rest {% id %}
 #===============================================================
 # POINTS --- OK
     point4
-        -> P_START expr (_S "," _) expr (_S "," _) expr (_S "," _) expr P_END
+        -> P_START expr LIST_SEP expr LIST_SEP expr LIST_SEP expr P_END
         {% d => ({
             type: 'ObjectPoint4',
             elements: [].concat(d[1], d[3], d[5], d[7]),
@@ -1192,7 +1188,7 @@ math_expr -> rest {% id %}
         }) %}
 
     point3
-        -> P_START expr (_S "," _) expr (_S "," _) expr P_END
+        -> P_START expr LIST_SEP expr LIST_SEP expr P_END
         {% d => ({
             type: 'ObjectPoint3',
             elements: [].concat(d[1], d[3], d[5]),
@@ -1200,7 +1196,7 @@ math_expr -> rest {% id %}
         }) %}
  
     point2
-        -> P_START expr (_S "," _) expr P_END
+        -> P_START expr LIST_SEP expr P_END
         {% d => ({
             type: 'ObjectPoint2',
             elements: [].concat(d[1], d[3]),
@@ -1226,7 +1222,7 @@ math_expr -> rest {% id %}
             }) %}
 
         array_expr
-            -> expr (_ "," _) array_expr {% d => [].concat(d[0], d[2]) %}
+            -> expr LIST_SEP array_expr {% d => [].concat(d[0], d[2]) %}
             | expr
 #---------------------------------------------------------------
 # BITARRAY --- OK
@@ -1245,13 +1241,16 @@ math_expr -> rest {% id %}
         }) %}
 
     bitarray_expr
-        -> bitarray_expr (_ "," _) bitarray_item {% d => [].concat(d[0], d[2]) %}
+        -> bitarray_expr LIST_SEP bitarray_item {% d => [].concat(d[0], d[2]) %}
         | bitarray_item
 
     # TODO: Fix groups
     bitarray_item
         -> expr (_S %bitrange _) expr {% d => ({type: 'BitRange', start: d[0], end: d[2]}) %}
         | expr {% id %}
+#===============================================================
+# UTILITIES
+LIST_SEP -> _S %sep _ {% d => null %}
 #===============================================================
 # VARNAME --- IDENTIFIERS --- OK
     # some keywords can be var_name too...
