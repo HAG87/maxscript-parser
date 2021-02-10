@@ -1,6 +1,6 @@
 # @preprocessor typescript
 @{%
-	const mxLexer = require('./mooTokenize.js');
+    const mxLexer = require('./mooTokenize.js');
     // Utilities
     function getNested(obj, ...args) {
         return args.reduce((obj, level) => obj && obj[level], obj)
@@ -131,34 +131,36 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # ---------------------------------------------------------------
 # EXPRESSIONS LIST --- OK
     expr
-        -> simple_expr    {% id %} # RANGE OK
-        | variable_decl   {% id %} # RANGE OK
-        | assignment      {% id %} # RANGE OK
-        | if_expr         {% id %} # RANGE OK
-        | while_loop      {% id %} # RANGE OK
-        | do_loop         {% id %} # RANGE OK
-        | for_loop        {% id %} # RANGE OK
-        | loop_exit       {% id %} # RANGE OK
-        | case_expr       {% id %} # RANGE OK
-        | struct_def      {% id %} # RANGE OK
-        | try_expr        {% id %} # RANGE OK
-        | function_def    {% id %} # RANGE OK
-        | fn_return       {% id %} # RANGE OK
-        | context_expr    {% id %} # RANGE OK
-        | rollout_def     {% id %} # RANGE OK
-        | tool_def        {% id %} # RANGE OK
-        | rcmenu_def      {% id %} # RANGE OK
-        | macroscript_def {% id %} # RANGE OK
-        | plugin_def      {% id %} # RANGE OK
+        -> simple_expr    {% id %}
+        | variable_decl   {% id %}
+        | assignment      {% id %}
+        | if_expr         {% id %}
+        | while_loop      {% id %}
+        | do_loop         {% id %}
+        | for_loop        {% id %}
+        | loop_exit       {% id %}
+        | case_expr       {% id %}
+        | struct_def      {% id %}
+        | try_expr        {% id %}
+        | function_def    {% id %}
+        | fn_return       {% id %}
+        | context_expr    {% id %}
+        | rollout_def     {% id %}
+        | tool_def        {% id %}
+        | rcmenu_def      {% id %}
+        | macroscript_def {% id %}
+        | plugin_def      {% id %}
         | change_handler  {% id %}
         # | set_context     {% id %}
 #---------------------------------------------------------------
+    # fn_call | operand | unary_operand | passthrough math expression
     simple_expr
-        -> math_expr   {% id %} # RANGE OK
-        | compare_expr {% id %} # RANGE OK
-        | logical_expr {% id %} # RANGE OK
-        # | operand      {% id %}
-        # fn_call | operand | u_operand | passthrough math expression
+        -> math_expr    {% id %}
+        # -> unary_operand  {% id %}
+        # | math_expr    {% id %}
+        # | fn_call      {% id %}
+        | compare_expr {% id %}
+        | logical_expr {% id %}
 #---------------------------------------------------------------
 # EXPRESSIONS - RECURSION!
     expr_seq
@@ -340,7 +342,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #---------------------------------------------------------------
 # ROLLOUT / UTILITY DEFINITION --- OK
     rollout_def
-        -> (uistatement_def  __) var_name _ operand (_ parameter_seq):? _
+        -> (uistatement_def  __) var_name _ unary_operand (_ parameter_seq):? _
             LPAREN
                 rollout_clauses
             RPAREN
@@ -392,7 +394,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         # | null
     #---------------------------------------------------------------
     rollout_item
-        -> %kw_uicontrols __ var_name ( _ operand):? ( _ parameter_seq):?
+        -> %kw_uicontrols __ var_name ( _ unary_operand):? ( _ parameter_seq):?
             {% d => {
              let res = {
                     type:   'EntityRolloutControl',
@@ -422,7 +424,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 
     macro_script_param
-        -> param_name _ ( operand | resource )
+        -> param_name _ ( unary_operand | resource )
             {% d => ({
                 type: 'ParameterAssignment',
                 param: d[0],
@@ -515,7 +517,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #---------------------------------------------------------------
 # CHANGE HANDLER -- WHEN CONSTRUCTOR -- OK
     change_handler
-        -> %kw_when __ var_name __ operand __ var_name __
+        -> %kw_when __ var_name __ unary_operand __ var_name __
           (when_param _ | when_param _ when_param _):? (var_name __):?
           %kw_do _ expr
             {% d=> ({
@@ -524,7 +526,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 body:  d[12],
                 range: getLoc(d[0], d[12])
             })%}
-        | %kw_when __ operand __ var_name __
+        | %kw_when __ unary_operand __ var_name __
           (when_param _ | when_param _ when_param _):? (var_name _):?
           %kw_do _ expr
             {% d=> ({
@@ -626,7 +628,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 
     context
-        -> %kw_at __ (%kw_level | %kw_time) _ operand
+        -> %kw_at __ (%kw_level | %kw_time) _ unary_operand
             {% d => ({
                 type: 'ContextExpression',
                 prefix : null,
@@ -634,7 +636,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 args: [].concat(d[2][0], d[4]),
                 range: getLoc(d[0], d[4])
             })%}
-        | %kw_in _ operand
+        | %kw_in _ unary_operand
             {% d => ({
                 type: 'ContextExpression',
                 prefix : null,
@@ -642,7 +644,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 args: [d[2]],
                 range: getLoc(d[0], d[2])
             })%}
-        | (%kw_in __):? %kw_coordsys _ (%kw_local | operand)
+        | (%kw_in __):? %kw_coordsys _ (%kw_local | unary_operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
@@ -650,7 +652,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 args: d[3],
                 range: getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
-        | %kw_about _ (%kw_coordsys | operand)
+        | %kw_about _ (%kw_coordsys | unary_operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : null,
@@ -841,12 +843,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> %kw_local {% d => ({modifier:null, scope: d[0], range:getLoc(d[0])}) %}
         | %kw_global {% d => ({modifier:null, scope: d[0], range:getLoc(d[0])}) %}
         | %kw_persistent __ %kw_global {% d => ({modifier: d[0], scope: d[2], range:getLoc(d[0], d[2])}) %}
-    # Direct assignment on declaration
-    # TODO: LOCATION
 
     decl_list
-    -> decl_list (_S "," _) decl  {% d => [].concat(d[0], d[2]) %}
-    | decl
+        -> decl_list (_S "," _) decl  {% d => [].concat(d[0], d[2]) %}
+        | decl
 
     decl
         -> var_name
@@ -863,8 +863,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 res.type = 'Declaration';
                 res.id = res.operand;
                 delete res.operand;
-                // console.log(res);
-                return res
+                return res;
             } %}
 #---------------------------------------------------------------
 #ASSIGNEMENT --- OK
@@ -885,109 +884,102 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | path_name {% id %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  OK
-math_expr 
-    -> unary _ OP _ math_expr
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4],
-            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-        })%}
-    | as {% id %}
-
-as -> unary _S %kw_as __ var_name
-        {% d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4],
-            range: getLoc(d[0], d[4])
-        })%}
-    | unary {% id %}
-
-unary
-    -> "-" _ unary
-        {% d => ({
-            type: 'UnaryExpression--',
-            operator: d[0],
-            right:    d[2],
-            range: getLoc(d[0], d[2])
-        }) %}
-        | math_operand {% id %}
-
-OP -> "+" | "-" | "*" | "/" | "^"
-
-    # math_expr -> rest {% id %}
-
-    #     rest -> rest minus_ws sum
-    #             {% d => ({
-    #                 type:     'MathExpression',
-    #                 operator: d[1],
-    #                 left:     d[0],
-    #                 right:    d[2],
-    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
-    #             })%}
-    #     | sum {% id %}
-        
-    #     minus_ws
-    #         -> "-" {% id %}
-    #         | "-" __ {% d => d[0] %}
-    #         | __ "-" __ {% d => d[1] %}
-        
-    #     sum -> sum _S "+" _ prod
-    #             {% d => ({
-    #                 type:     'MathExpression',
-    #                 operator: d[2],
-    #                 left:     d[0],
-    #                 right:    d[4],
-    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-    #             })%}
-    #         | prod {% id %}
-    #     prod -> prod _S ("*"|"/") _ exp
+    # math_expr
+    #     -> math_expr _ ("^"|"*"|"/"|"+"|"-") _ (uny | as)
     #             {% d => ({
     #                 type:     'MathExpression',
     #                 operator: d[2][0],
     #                 left:     d[0],
-    #                 right:    d[4],
-    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+    #                 right:    d[4][0],
+    #                 range: getLoc(
+    #                     Array.isArray(d[0]) ? d[0][0] : d[0],
+    #                     Array.isArray(d[4]) ? d[4][0] : d[4])
     #             })%}
-    #         | exp {% id %}
-    #     exp -> as _S "^" _ exp
+    #     | (uny | as) _  ("^"|"*"|"/"|"+"|"-") _ (uny | as)
     #             {% d => ({
     #                 type:     'MathExpression',
-    #                 operator: d[2],
-    #                 left:     d[0],
-    #                 right:    d[4],
-    #                 range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
+    #                 operator: d[2][0],
+    #                 left:     d[0][0],
+    #                 right:    d[4][0],
+    #                 range: getLoc(
+    #                     Array.isArray(d[0]) ? d[0][0] : d[0],
+    #                     Array.isArray(d[4]) ? d[4][0] : d[4])
     #             })%}
-    #         | as {% id %}
-    #     as -> math_operand _S %kw_as _ var_name
-    #             {% d => ({
-    #                 type:     'MathExpression',
-    #                 operator: d[2],
-    #                 left:     d[0],
-    #                 right:    d[4],
-    #                 range: getLoc(d[0], d[4])
-    #             })%}
-    #         | uny {% id %}
-    #         # | math_operand {% id %}
+    #     | as {% id %}
+    #     | math_operand {% id %}
 
-    uny -> "-" _ uny
+    #     uny 
+    #         -> _S "-" _ uny
+    #             {% d => ({
+    #                 type: '--UnaryExpression',
+    #                 operator: d[0],
+    #                 right:    d[2],
+    #                 range: getLoc(d[0], d[2])
+    #             }) %}
+    #         | math_operand {% id %}
+
+math_expr -> rest {% id %}
+
+    rest -> rest minus_opt sum
             {% d => ({
-                type: 'UnaryExpression',
-                operator: d[0],
+                type:     'MathExpression',
+                operator: d[1],
+                left:     d[0],
                 right:    d[2],
-                range: getLoc(d[0], d[2])
-            }) %}
+                range: getLoc(Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
+            })%}
+        | sum {% id %}    
+ 
+    minus_opt 
+    -> _S_ "-" __ {% d => d[1] %}
+    | "-" __      {% d => d[0] %}
+    | "-"         {% id %}
+  
+    sum -> sum _S "+" _ prod
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4],
+                range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+            })%}
+        | prod {% id %}
+        
+    prod -> prod _S ("*"|"/") _ exp
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2][0],
+                left:     d[0],
+                right:    d[4],
+                range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+            })%}
+        | exp {% id %}
+
+    exp -> as _S "^" _ exp
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4],
+                range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
+            })%}
+        | as {% id %}
+
+    as -> math_operand _S %kw_as __ var_name
+            {% d => ({
+                type:     'MathExpression',
+                operator: d[2],
+                left:     d[0],
+                right:    d[4],
+                range: getLoc(d[0], d[4])
+            })%}
+        # | uny {% id %}
         | math_operand {% id %}
 
-    # fn_call | operand | u_operand | passthrough math expression
-    # FIXME: fn_call should be passed to operand? I've done it this way to avoid operator ambiguity...
+    # fn_call | operand | unary_operand | passthrough math expression
     math_operand
-        -> operand   {% id %}
-        # | u_operand  {% id %}
-        | fn_call    {% id %}
+        -> unary_operand   {% id %}
+        | fn_call          {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     logical_expr
@@ -1018,12 +1010,21 @@ OP -> "+" | "-" | "*" | "/" | "^"
         }) %}
 
     logical_operand
-        -> math_expr   {% id %}
+        -> unary_operand {% id %}
         | compare_expr {% id %}
+        | fn_call   {% id %}
 #---------------------------------------------------------------
 # COMPARE EXPRESSION --- OK
     compare_expr
-        -> compare_operand _S %comparison _ compare_operand
+        -> compare_expr _S %comparison _ compare_operand
+        {% d => ({
+            type:     'LogicalExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc(d[0], d[4])
+        }) %}
+        | compare_operand _S %comparison _ compare_operand
         {% d => ({
             type:     'LogicalExpression',
             operator: d[2],
@@ -1032,24 +1033,34 @@ OP -> "+" | "-" | "*" | "/" | "^"
             range: getLoc(d[0], d[4])
         }) %}
 
-    compare_operand -> math_expr {% id %}
+    compare_operand
+        -> math_expr {% id %}
+        # -> unary_operand {% id %}
+        # | math_expr {% id %}
+        # | fn_call {% id %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     fn_call
-        -> call_caller _S call_args (_S call_params):?
+        -> call_caller call_args call_params:?
+            {% d => {
+                let args = merge(d[1], d[2]);
+                let res = {
+                    type:  'CallExpression',
+                    calle: d[0],
+                    args:  args,
+                    range: null
+                };
+                res.range = getLoc(d[0], args);
+                return res;
+            } %}
+        | call_caller call_params
             {% d => ({
                 type:  'CallExpression',
                 calle: d[0],
-                args:  merge(d[2], d[3]),
-                range: getLoc(d[0], d[3] != null ? d[3][1] : d[2])
-            }) %}
-        | call_caller _S call_params
-            {% d => ({
-                type:  'CallExpression',
-                calle: d[0],
-                args:  d[2],
-                range: getLoc(d[0], d[2])
+                args:  d[1],
+                range: getLoc(d[0], d[1])
             })%}
+        # | call_caller {% id %}
         # | call_caller _S "(" ")"
         #     {% d => ({
         #         type:  'CallExpression',
@@ -1059,22 +1070,22 @@ OP -> "+" | "-" | "*" | "/" | "^"
         #     })%}
 
     call_params
-        -> call_params _S parameter {% d => [].concat(d[0], d[2]) %}
-        | parameter
+        -> (_S parameter):+ {% d => merge(d[0]) %}
 
     call_args
-        -> call_args _S call_arg {% d => [].concat(d[0], d[2]) %}
-        | call_arg
+        -> (call_arg):+ {% d => merge(d) %}
+        # -> call_arg call_args {% d => merge(d) %}
+        # | call_arg {% id %}
 
     call_arg
-        # ->  __ u_operand {% d => d[1] %}
-        ->  u_operand {% id %}
-        | operand {% id %}
+        ->  _S_ unary_only_operand {% d => d[1] %}
+        | _S operand {% d => d[1] %}
 
     call_caller
-        -> var_name {% id %}
-        | property  {% id %}
-        | index     {% id %}
+        -> unary_operand {% id %}
+        # -> var_name {% id %}
+        # | property  {% id %}
+        # | index     {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter_seq
@@ -1082,16 +1093,13 @@ OP -> "+" | "-" | "*" | "/" | "^"
         | parameter 
 
     parameter
-        -> param_name _ (operand | u_operand)
-            {% d => {
-                    let res = {
-                    type: 'ParameterAssignment',
-                    param: d[0],
-                    value: d[2][0],
-                    range: getLoc (d[0], d[2][0])
-                };            
-                return res;
-            }%}
+        -> param_name _ unary_operand
+            {% d => ({
+                type: 'ParameterAssignment',
+                param: d[0],
+                value: d[2],
+                range: getLoc (d[0], d[2])
+            }) %}
 
     param_name
         -> var_name ":"
@@ -1127,20 +1135,26 @@ OP -> "+" | "-" | "*" | "/" | "^"
         })%}
 #---------------------------------------------------------------
 # OPERANDS --- OK
-u_operand -> "-" operand
+    unary_only_operand 
+        -> "-" operand
             {% d => ({
                 type: 'UnaryExpression',
                 operator: d[0],
                 right:    d[1],
                 range: getLoc(d[0], d[1])
             }) %}
-        -> "-" operand
+
+    unary_operand 
+        # -> "-" _ expr
+        -> "-" _ unary_operand
             {% d => ({
                 type: 'UnaryExpression',
                 operator: d[0],
-                right:    d[1],
+                right:    d[2],
                 range: getLoc(d[0], d[2])
             }) %}
+        | operand {% id %}
+
     operand
         -> factor     {% id %}
         | property    {% id %}
@@ -1148,23 +1162,23 @@ u_operand -> "-" operand
 #---------------------------------------------------------------
 # FACTORS --- OK
    factor
-        -> string    {% id %} # RANGE OK
-        | number     {% id %} # RANGE OK
-        | path_name  {% id %} # RANGE OK
-        | name_value {% id %} # RANGE OK
-        | var_name   {% id %} # RANGE OK
-        | bool       {% id %} # RANGE OK
-        | void       {% id %} # RANGE OK
-        | time       {% id %} # RANGE OK
-        | array      {% id %} # RANGE OK
-        | bitarray   {% id %} # RANGE OK
-        | point4     {% id %} # RANGE OK
-        | point3     {% id %} # RANGE OK
-        | point2     {% id %} # RANGE OK
-        | "?" {% d => ({type: 'Keyword', value: d[0], range: getLoc(d[0]) })%} # RANGE OK
+        -> string    {% id %}
+        | number     {% id %}
+        | path_name  {% id %}
+        | name_value {% id %}
+        | var_name   {% id %}
+        | bool       {% id %}
+        | void       {% id %}
+        | time       {% id %}
+        | array      {% id %}
+        | bitarray   {% id %}
+        | point4     {% id %}
+        | point3     {% id %}
+        | point2     {% id %}
+        | "?" {% d => ({type: 'Keyword', value: d[0], range: getLoc(d[0]) })%}
         | %error     {% id %}
-        # HERE IS WHERE THE ITERATION HAPPENS
-        | expr_seq   {% id %} # RANGE OK
+        # BLOCKSTATEMENT
+        | expr_seq   {% id %}
 #===============================================================
 # VALUES
 #===============================================================
@@ -1260,7 +1274,7 @@ u_operand -> "-" operand
         | %kw_time         {% id %}
         | %kw_set          {% id %}
 
-kw_override
+    kw_override
         -> %kw_uicontrols  {% id %}
         | %kw_group        {% id %}
         | %kw_level        {% id %}
@@ -1312,7 +1326,6 @@ kw_override
     LPAREN ->  %lparen _    {% d => d[0] %}
     RPAREN ->  _ %rparen  {% d => d[1] %}
 #===============================================================
-
 # WHITESPACE AND NEW LINES
     # comments are skipped in the parse tree!   
 
