@@ -545,12 +545,11 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     function_def
         -> function_decl __ var_name (_ var_name):+ (_ fn_params):+ (_ "=" _) expr
             {% d => {
-                let params = d[4].map(x => x[1]);
                 let res = {
                     ...d[0],
                     id:     d[2],
                     args:   d[3].map(x => x[1]),
-                    params: params,
+                    params: d[4].map(x => x[1]),
                     body:   d[6],
                 };
                 addLoc(res, d[6]);
@@ -558,11 +557,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             }%}
          | function_decl __ var_name (_ var_name):+ (_ "=" _) expr
             {% d => {
-                let args = d[3].map(x => x[1]);
                 let res = {
                     ...d[0],
                     id:     d[2],
-                    args:   args,
+                    args:   d[3].map(x => x[1]),
                     params: [],
                     body:   d[5],
                 };
@@ -698,7 +696,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 type:  'CaseStatement',
                 test:  d[1],
                 cases: merge(d[5], flatten(d[6])),
-                range: getLoc(d[0][0], d[8])
+                range: getLoc(d[0][0], d[7])
             })%}
 
     case_src -> expr _  {% d => d[0] %} | __ {% id %}
@@ -975,14 +973,14 @@ OP -> "+" | "-" | "*" | "/" | "^"
     #         | uny {% id %}
     #         # | math_operand {% id %}
 
-    #      uny -> "-" _  uny
-    #              {% d => ({
-    #                  type: 'UnaryExpression',
-    #                  operator: d[0],
-    #                  right:    d[2],
-    #                  range: getLoc(d[0], d[2])
-    #              }) %}
-    #         | math_operand {% id %}
+    uny -> "-" _ uny
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[0],
+                right:    d[2],
+                range: getLoc(d[0], d[2])
+            }) %}
+        | math_operand {% id %}
 
     # fn_call | operand | u_operand | passthrough math expression
     # FIXME: fn_call should be passed to operand? I've done it this way to avoid operator ambiguity...
@@ -1129,7 +1127,13 @@ OP -> "+" | "-" | "*" | "/" | "^"
         })%}
 #---------------------------------------------------------------
 # OPERANDS --- OK
-    u_operand
+u_operand -> "-" operand
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[0],
+                right:    d[1],
+                range: getLoc(d[0], d[1])
+            }) %}
         -> "-" operand
             {% d => ({
                 type: 'UnaryExpression',
