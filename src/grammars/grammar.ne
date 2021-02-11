@@ -131,36 +131,36 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # ---------------------------------------------------------------
 # EXPRESSIONS LIST --- OK
     expr
-        -> simple_expr    {% id %}
-        | variable_decl   {% id %}
-        | assignment      {% id %}
-        | if_expr         {% id %}
-        | while_loop      {% id %}
-        | do_loop         {% id %}
-        | for_loop        {% id %}
-        | loop_exit       {% id %}
-        | case_expr       {% id %}
-        | struct_def      {% id %}
-        | try_expr        {% id %}
-        | function_def    {% id %}
-        | fn_return       {% id %}
-        | context_expr    {% id %}
-        | rollout_def     {% id %}
-        | tool_def        {% id %}
-        | rcmenu_def      {% id %}
-        | macroscript_def {% id %}
-        | plugin_def      {% id %}
-        | change_handler  {% id %}
+        -> SIMPLE_EXPR    {% id %}
+        | VARIABLE_DECL   {% id %}
+        | ASSIGNMENT      {% id %}
+        | IF_EXPR         {% id %}
+        | WHILE_LOOP      {% id %}
+        | DO_LOOP         {% id %}
+        | FOR_LOOP        {% id %}
+        | LOOP_EXIT       {% id %}
+        | CASE_EXPR       {% id %}
+        | STRUCT_DEF      {% id %}
+        | TRY_EXPR        {% id %}
+        | FUNCTION_DEF    {% id %}
+        | FN_RETURN       {% id %}
+        | CONTEXT_EXPR    {% id %}
+        | ROLLOUT_DEF     {% id %}
+        | TOOL_DEF        {% id %}
+        | RCMENU_DEF      {% id %}
+        | MACROSCRIPT_DEF {% id %}
+        | PLUGIN_DEF      {% id %}
+        | CHANGE_HANDLER  {% id %}
         # | set_context     {% id %}
 #---------------------------------------------------------------
-    # fn_call | operand | unary_operand | passthrough math expression
-    simple_expr
-        -> math_expr    {% id %}
+    # FN_CALL | operand | unary_operand | passthrough math expression
+    SIMPLE_EXPR
+        -> MATH_EXPR    {% id %}
         # -> unary_operand  {% id %}
-        # | math_expr    {% id %}
-        # | fn_call      {% id %}
-        | compare_expr {% id %}
-        | logical_expr {% id %}
+        # | MATH_EXPR    {% id %}
+        # | FN_CALL      {% id %}
+        | COMPARE_EXPR {% id %}
+        | LOGICAL_EXPR {% id %}
 #---------------------------------------------------------------
 # EXPRESSIONS - RECURSION!
     expr_seq
@@ -185,8 +185,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # DEFINITIONS
 #===============================================================
 # RC MENU DEFINITION -- OK
-    rcmenu_def
-        -> (%kw_rcmenu __) var_name _
+    RCMENU_DEF
+        -> (%kw_rcmenu __) VAR_NAME _
             LPAREN
                 rcmenu_clauses:?
             RPAREN
@@ -204,10 +204,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #     | rcmenu_clause
 
     rcmenu_clause
-        -> variable_decl {% id %}
-        | function_def   {% id %}
-        | struct_def     {% id %}
-        | event_handler  {% id %}
+        -> VARIABLE_DECL {% id %}
+        | FUNCTION_DEF   {% id %}
+        | STRUCT_DEF     {% id %}
+        | EVENT_HANDLER  {% id %}
         | rcmenu_submenu {% id %}
         | rcmenu_sep     {% id %}
         | rcmenu_item    {% id %}
@@ -226,7 +226,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
             
     rcmenu_sep
-        -> (%kw_separator __) var_name _ parameter_seq:?
+        -> (%kw_separator __) VAR_NAME _ parameter_seq:?
         {% d => {
             let res = {
                 type:   'EntityRcmenu_separator',
@@ -239,7 +239,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         }%}
     
     rcmenu_item
-        -> (%kw_menuitem __) var_name _ string _ parameter_seq:?
+        -> (%kw_menuitem __) VAR_NAME _ string _ parameter_seq:?
         {% d => {
             let res = {
                 type:   'EntityRcmenu_menuitem',
@@ -253,8 +253,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         }%}
 #---------------------------------------------------------------
 # PLUGIN DEFINITION --- OK
-    plugin_def
-        -> (%kw_plugin __) var_name __ var_name  (_ parameter_seq):? _
+    PLUGIN_DEF
+        -> (%kw_plugin __) VAR_NAME __ VAR_NAME  (_ parameter_seq):? _
             LPAREN
                 plugin_clauses
             RPAREN
@@ -270,21 +270,17 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 
     plugin_clauses -> plugin_clause (EOL plugin_clause):* {% d => merge(...d) %}
 
-    # plugin_clauses
-    #     -> plugin_clauses EOL plugin_clause {% d => [].concat(d[0], d[2]) %}
-    #     | plugin_clause
-
     plugin_clause
-        -> variable_decl    {% id %}
-        | function_def      {% id %}
-        | struct_def        {% id %}
-        | tool_def          {% id %}
-        | rollout_def       {% id %}
-        | event_handler     {% id %}
+        -> VARIABLE_DECL    {% id %}
+        | FUNCTION_DEF      {% id %}
+        | STRUCT_DEF        {% id %}
+        | TOOL_DEF          {% id %}
+        | ROLLOUT_DEF       {% id %}
+        | EVENT_HANDLER     {% id %}
         | plugin_parameter  {% id %}
     #---------------------------------------------------------------
     plugin_parameter
-        -> (%kw_parameters __) var_name (_ parameter_seq):? _
+        -> (%kw_parameters __) VAR_NAME (_ parameter_seq):? _
             LPAREN
                 param_clauses:?
             RPAREN
@@ -304,9 +300,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 
     param_clause
         -> param_defs   {% id %}
-        | event_handler {% id %}
+        | EVENT_HANDLER {% id %}
 
-    param_defs -> var_name _ parameter_seq:?
+    param_defs -> VAR_NAME _ parameter_seq:?
     {% d => {
         let res = {
             type:   'PluginParam',
@@ -319,8 +315,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     }%}
 #---------------------------------------------------------------
 # TOOL - MOUSE TOOL DEFINITION --- OK
-    tool_def
-        -> (%kw_tool __) var_name (_ parameter_seq):? _
+    TOOL_DEF
+        -> (%kw_tool __) VAR_NAME (_ parameter_seq):? _
             LPAREN
                 tool_clauses
             RPAREN
@@ -335,14 +331,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     tool_clauses -> tool_clause (EOL tool_clause):* {% d => merge(...d) %}
     
     tool_clause
-        -> variable_decl {% id %}
-        | function_def   {% id %}
-        | struct_def     {% id %}
-        | event_handler  {% id %}
+        -> VARIABLE_DECL {% id %}
+        | FUNCTION_DEF   {% id %}
+        | STRUCT_DEF     {% id %}
+        | EVENT_HANDLER  {% id %}
 #---------------------------------------------------------------
 # ROLLOUT / UTILITY DEFINITION --- OK
-    rollout_def
-        -> (uistatement_def  __) var_name _ unary_operand (_ parameter_seq):? _
+    ROLLOUT_DEF
+        -> (uistatement_def  __) VAR_NAME _ unary_operand (_ parameter_seq):? _
             LPAREN
                 rollout_clauses
             RPAREN
@@ -367,14 +363,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #     | rollout_clause
     
     rollout_clause
-        -> variable_decl {% id %}
-        | function_def   {% id %}
-        | struct_def     {% id %}
+        -> VARIABLE_DECL {% id %}
+        | FUNCTION_DEF   {% id %}
+        | STRUCT_DEF     {% id %}
         | item_group     {% id %}
         | rollout_item   {% id %}
-        | event_handler  {% id %}
-        | tool_def       {% id %}
-        | rollout_def    {% id %}
+        | EVENT_HANDLER  {% id %}
+        | TOOL_DEF       {% id %}
+        | ROLLOUT_DEF    {% id %}
     #---------------------------------------------------------------
     item_group
         -> (%kw_group _) string _
@@ -394,7 +390,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         # | null
     #---------------------------------------------------------------
     rollout_item
-        -> %kw_uicontrols __ var_name ( _ unary_operand):? ( _ parameter_seq):?
+        -> %kw_uicontrols __ VAR_NAME ( _ unary_operand):? ( _ parameter_seq):?
             {% d => {
              let res = {
                     type:   'EntityRolloutControl',
@@ -410,8 +406,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             }%}
 #---------------------------------------------------------------
 # MACROSCRIPT --- SHOULD AVOID LEFT RECURSION ?
-    macroscript_def
-        -> (%kw_macroscript __) var_name ( _ macro_script_param):* _
+    MACROSCRIPT_DEF
+        -> (%kw_macroscript __) VAR_NAME ( _ macro_script_param):* _
             LPAREN
                 macro_script_body:?
             RPAREN
@@ -439,12 +435,12 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 
     macro_script_clause
         -> expr         {% id %}
-        | event_handler {% id %}
+        | EVENT_HANDLER {% id %}
 #---------------------------------------------------------------
 # STRUCT DEFINITION --- OK
     # TODO: FINISH LOCATION
-    struct_def
-        -> (%kw_struct __ ) var_name _
+    STRUCT_DEF
+        -> (%kw_struct __ ) VAR_NAME _
             LPAREN
                 struct_members
             RPAREN
@@ -460,8 +456,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     
     struct_member
         -> decl          {% id %}
-        | function_def   {% id %}
-        | event_handler  {% id %}
+        | FUNCTION_DEF   {% id %}
+        | EVENT_HANDLER  {% id %}
         # this ensures that no scope modifier is followed by a comma!
         | str_scope __ struct_member {% d => [].concat(d[0], d[2]) %}
     #---------------------------------------------------------------
@@ -478,7 +474,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #===============================================================
 # EVENT HANDLER --- OK
     # TODO: FINISH LOCATION
-    event_handler
+    EVENT_HANDLER
         -> (%kw_on __) event_args __ event_action _ expr
             {% d => ({
                 type:     'Event',
@@ -492,18 +488,18 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     event_action -> %kw_do {% id %} | %kw_return {% id %}
 
     event_args
-        -> var_name
+        -> VAR_NAME
             {% d => ({
                 type: 'EventArgs',
                 event: d[0]
             }) %}
-        | var_name __ var_name
+        | VAR_NAME __ VAR_NAME
             {% d => ({
                 type: 'EventArgs',
                 target: d[0],
                 event: d[2]
             }) %}
-        | var_name __ var_name ( __ var_name):+
+        | VAR_NAME __ VAR_NAME ( __ VAR_NAME):+
             {% d => ({
                 type:   'EventArgs',
                 target: d[0],
@@ -512,9 +508,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             }) %}
 #---------------------------------------------------------------
 # CHANGE HANDLER -- WHEN CONSTRUCTOR -- OK
-    change_handler
-        -> %kw_when __ var_name __ unary_operand __ var_name __
-          (when_param _ | when_param _ when_param _):? (var_name __):?
+    CHANGE_HANDLER
+        -> %kw_when __ VAR_NAME __ unary_operand __ VAR_NAME __
+          (when_param _ | when_param _ when_param _):? (VAR_NAME __):?
           %kw_do _ expr
             {% d=> ({
                 type:  'WhenStatement',
@@ -522,8 +518,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 body:  d[12],
                 range: getLoc(d[0], d[12])
             })%}
-        | %kw_when __ unary_operand __ var_name __
-          (when_param _ | when_param _ when_param _):? (var_name _):?
+        | %kw_when __ unary_operand __ VAR_NAME __
+          (when_param _ | when_param _ when_param _):? (VAR_NAME _):?
           %kw_do _ expr
             {% d=> ({
                 type:  'WhenStatement',
@@ -540,8 +536,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # FUNCTION DEFINITION --- OK
-    function_def
-        -> function_decl __ var_name (_ var_name):+ (_ fn_params):+ (_ "=" _) expr
+    FUNCTION_DEF
+        -> function_decl __ VAR_NAME (_ VAR_NAME):+ (_ fn_params):+ (_ "=" _) expr
             {% d => {
                 let res = {
                     ...d[0],
@@ -553,7 +549,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 addLoc(res, d[6]);
                 return res;
             }%}
-         | function_decl __ var_name (_ var_name):+ (_ "=" _) expr
+         | function_decl __ VAR_NAME (_ VAR_NAME):+ (_ "=" _) expr
             {% d => {
                 let res = {
                     ...d[0],
@@ -565,7 +561,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 addLoc(res, d[5]);
                 return res;
             }%}
-         | function_decl __ var_name (_ fn_params):+ (_ "=" _) expr
+         | function_decl __ VAR_NAME (_ fn_params):+ (_ "=" _) expr
             {% d => {
                 let res = {
                     ...d[0],
@@ -577,7 +573,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 addLoc(res, d[5])
                 return res;
             }%}
-         | function_decl __ var_name (_ "=" _) expr
+         | function_decl __ VAR_NAME (_ "=" _) expr
             {% d => {
                 let res = {
                     ...d[0],
@@ -604,7 +600,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | param_name  {% id %}
 #---------------------------------------------------------------
 # FUNCTION RETURN --- OK
-    fn_return -> %kw_return _ expr
+    FN_RETURN -> %kw_return _ expr
         {% d => ({
             type: 'FunctionReturn',
             body: d[2],
@@ -614,7 +610,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # CONTEXT EXPRESSION --- OK
     # set_context -> %kw_set _ context
     #---------------------------------------------------------------
-    context_expr ->
+    CONTEXT_EXPR ->
         context ( LIST_SEP context ):* _ expr
             {% d => ({
                 type: 'ContextStatement',
@@ -656,7 +652,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 args: d[2],
                 range: getLoc(d[0], d[0][0])
             })%}
-        | (%kw_with __):? %kw_context _ (logical_expr | bool)
+        | (%kw_with __):? %kw_context _ (LOGICAL_EXPR | bool)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
@@ -671,7 +667,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 args: d[4],
                 range: getLoc(d[0], d[4][0])
             })%}
-        | (%kw_with __):? %kw_undo _ ( undo_label _ ):? (logical_expr | bool)
+        | (%kw_with __):? %kw_undo _ ( undo_label _ ):? (LOGICAL_EXPR | bool)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
@@ -680,10 +676,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 range: getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
             })%}
 
-        undo_label -> string {% id %} | parameter {% id %} | var_name {% id %}
+        undo_label -> string {% id %} | parameter {% id %} | VAR_NAME {% id %}
 #---------------------------------------------------------------
 # CASE EXPRESSION --- OK
-    case_expr
+    CASE_EXPR
         -> (%kw_case _)  case_src %kw_of _
             LPAREN
                 case_item
@@ -709,8 +705,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK # TODO: FINISH LOCATION
-    for_loop
-        -> (%kw_for __) var_name _S for_iterator _S expr ( _ for_sequence ):? _ for_action _ expr
+    FOR_LOOP
+        -> (%kw_for __) VAR_NAME _S for_iterator _S expr ( _ for_sequence ):? _ for_action _ expr
             {% d => ({
                 type:     'ForStatement',
                 variable:  d[1],
@@ -758,7 +754,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     for_action -> %kw_do {% id %} | %kw_collect {% id %}
 #---------------------------------------------------------------
 # LOOP EXIT EXPRESSION --- OK
-    loop_exit
+    LOOP_EXIT
         -> %kw_exit
             {% d => ({
                 type : 'LoopExit',
@@ -773,7 +769,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 #---------------------------------------------------------------
 # DO LOOP --- OK
-    do_loop -> (%kw_do _) expr (_ %kw_while _) expr
+    DO_LOOP -> (%kw_do _) expr (_ %kw_while _) expr
         {% d => ({
             type:  'DoWhileStatement',
             body:  d[1],
@@ -782,7 +778,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
-    while_loop -> (%kw_while _S) expr (_S %kw_do _) expr
+    WHILE_LOOP -> (%kw_while _S) expr (_S %kw_do _) expr
         {% d => ({
             type:  'WhileStatement',
             test:  d[1],
@@ -791,7 +787,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         })%}
 #---------------------------------------------------------------
 # IF EXPRESSION --- OK
-    if_expr
+    IF_EXPR
         -> (%kw_if _) expr _ if_action _ expr
             {% d => ({
                 type:       'IfStatement',
@@ -814,7 +810,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | %kw_then {% id %}
 #---------------------------------------------------------------
 # TRY EXPRESSION -- OK
-    try_expr -> (%kw_try _) expr (_ %kw_catch _) expr
+    TRY_EXPR -> (%kw_try _) expr (_ %kw_catch _) expr
     {% d => ({
         type:      'TryStatement',
         body:      d[1],
@@ -823,7 +819,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     })%}
 #---------------------------------------------------------------
 # VARIABLE DECLARATION --- OK
-    variable_decl
+    VARIABLE_DECL
         -> kw_decl _ decl_list
             {% d => {
                 let res = {
@@ -845,7 +841,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | decl
 
     decl
-        -> var_name
+        -> VAR_NAME
             {% d => ({
                 type:     'Declaration',
                 id:       d[0],
@@ -853,7 +849,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 value:    null,
                 range:    getLoc(d[0])
             }) %}
-        | assignment
+        | ASSIGNMENT
             {% d => {
                 let res = {...d[0]};
                 res.type = 'Declaration';
@@ -863,7 +859,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             } %}
 #---------------------------------------------------------------
 #ASSIGNEMENT --- OK
-    assignment
+    ASSIGNMENT
     -> destination (_S %assign _) expr
         {% d => ({
             type:     'AssignmentExpression',
@@ -874,14 +870,14 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         })%}
 
     destination
-        -> var_name {% id %}
+        -> VAR_NAME {% id %}
         | property  {% id %}
         | index     {% id %}
         | path_name {% id %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  OK
-    # math_expr
-    #     -> math_expr _ ("^"|"*"|"/"|"+"|"-") _ (uny | as)
+    # MATH_EXPR
+    #     -> MATH_EXPR _ ("^"|"*"|"/"|"+"|"-") _ (uny | as)
     #             {% d => ({
     #                 type:     'MathExpression',
     #                 operator: d[2][0],
@@ -914,7 +910,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #             }) %}
     #         | math_operand {% id %}
 
-math_expr -> rest {% id %}
+MATH_EXPR -> rest {% id %}
 
     rest -> rest minus_opt sum
             {% d => ({
@@ -961,7 +957,7 @@ math_expr -> rest {% id %}
             })%}
         | as {% id %}
 
-    as -> math_operand _S %kw_as __ var_name
+    as -> math_operand _S %kw_as __ VAR_NAME
             {% d => ({
                 type:     'MathExpression',
                 operator: d[2],
@@ -972,14 +968,14 @@ math_expr -> rest {% id %}
         # | uny {% id %}
         | math_operand {% id %}
 
-    # fn_call | operand | unary_operand | passthrough math expression
+    # FN_CALL | operand | unary_operand | passthrough math expression
     math_operand
         -> unary_operand   {% id %}
-        | fn_call          {% id %}
+        | FN_CALL          {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
-    logical_expr
-        -> logical_expr _S %kw_compare _  (logical_operand | not_operand)
+    LOGICAL_EXPR
+        -> LOGICAL_EXPR _S %kw_compare _  (logical_operand | not_operand)
         {% d => ({
             type :    'LogicalExpression',
             operator: d[2],
@@ -1007,12 +1003,12 @@ math_expr -> rest {% id %}
 
     logical_operand
         -> unary_operand {% id %}
-        | compare_expr {% id %}
-        | fn_call   {% id %}
+        | COMPARE_EXPR {% id %}
+        | FN_CALL   {% id %}
 #---------------------------------------------------------------
 # COMPARE EXPRESSION --- OK
-    compare_expr
-        -> compare_expr _S %comparison _ compare_operand
+    COMPARE_EXPR
+        -> COMPARE_EXPR _S %comparison _ compare_operand
         {% d => ({
             type:     'LogicalExpression',
             operator: d[2],
@@ -1030,13 +1026,13 @@ math_expr -> rest {% id %}
         }) %}
 
     compare_operand
-        -> math_expr {% id %}
+        -> MATH_EXPR {% id %}
         # -> unary_operand {% id %}
-        # | math_expr {% id %}
-        # | fn_call {% id %}
+        # | MATH_EXPR {% id %}
+        # | FN_CALL {% id %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
-    fn_call
+    FN_CALL
         -> call_caller call_args call_params:?
             {% d => {
                 let args = merge(d[1], d[2]);
@@ -1079,7 +1075,7 @@ math_expr -> rest {% id %}
 
     call_caller
         -> unary_operand {% id %}
-        # -> var_name {% id %}
+        # -> VAR_NAME {% id %}
         # | property  {% id %}
         # | index     {% id %}
 #---------------------------------------------------------------
@@ -1098,7 +1094,7 @@ math_expr -> rest {% id %}
             }) %}
 
     param_name
-        -> var_name ":"
+        -> VAR_NAME ":"
             {% d => ({
                 type:'Parameter',
                 value: d[0],
@@ -1113,7 +1109,7 @@ math_expr -> rest {% id %}
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
     property
-        -> operand %delimiter (var_name | void | kw_override)
+        -> operand %delimiter (VAR_NAME | void | kw_override)
             {% d => ({
                 type:     'AccessorProperty',
                 operand:  d[0],
@@ -1162,7 +1158,7 @@ math_expr -> rest {% id %}
         | number     {% id %}
         | path_name  {% id %}
         | name_value {% id %}
-        | var_name   {% id %}
+        | VAR_NAME   {% id %}
         | bool       {% id %}
         | void       {% id %}
         | time       {% id %}
@@ -1253,8 +1249,8 @@ math_expr -> rest {% id %}
 LIST_SEP -> _S %sep _ {% d => null %}
 #===============================================================
 # VARNAME --- IDENTIFIERS --- OK
-    # some keywords can be var_name too...
-    var_name -> var_type {% Identifier %}
+    # some keywords can be VAR_NAME too...
+    VAR_NAME -> var_type {% Identifier %}
     var_type
         -> %identity      {% id %}
          | %global_typed  {% id %}
