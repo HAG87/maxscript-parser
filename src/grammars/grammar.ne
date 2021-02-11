@@ -452,7 +452,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             })%}
 
     struct_members -> struct_member ( LIST_SEP struct_member ):* {% d => merge(...d) %}
-    
+
     struct_member
         -> decl          {% id %}
         | FUNCTION_DEF   {% id %}
@@ -464,7 +464,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         {% d => ({
             type:'StructScope',
             value: d[0]
-        }) %}
+        }) %}        
 #===============================================================
 # EVENT HANDLER --- OK
     # TODO: FINISH LOCATION
@@ -726,8 +726,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 type:  'ForLoopSequence',
                 to:    null,
                 by:    null,
-            while: filterNull(d[0]),
-            where: d[1]
+                while: filterNull(d[0]),
+                where: d[1]
             })%}
         | for_while
             {% d => ({
@@ -806,12 +806,12 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 # TRY EXPRESSION -- OK
     TRY_EXPR 
         -> (%kw_try _) expr (_ %kw_catch _) expr
-    {% d => ({
-        type:      'TryStatement',
-        body:      d[1],
-        finalizer: d[3],
-        range:     getLoc(d[0][0], d[3])
-    })%}
+            {% d => ({
+                type:      'TryStatement',
+                body:      d[1],
+                finalizer: d[3],
+                range:     getLoc(d[0][0], d[3])
+            })%}
 #---------------------------------------------------------------
 # VARIABLE DECLARATION --- OK
     VARIABLE_DECL
@@ -831,10 +831,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | %kw_global {% d => ({modifier:null, scope: d[0], range:getLoc(d[0])}) %}
         | %kw_persistent __ %kw_global {% d => ({modifier: d[0], scope: d[2], range:getLoc(d[0], d[2])}) %}
 
-    decl_list
-        -> decl_list (_S "," _) decl  {% d => [].concat(d[0], d[2]) %}
-        | decl
-
+    decl_list -> decl (LIST_SEP decl):*  {% d => merge(...d) %}
+    
     decl
         -> VAR_NAME
             {% d => ({
@@ -905,68 +903,68 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     #             }) %}
     #         | math_operand {% id %}
 
-MATH_EXPR -> rest {% id %}
+    MATH_EXPR -> rest {% id %}
 
-    rest -> rest minus_opt sum
-            {% d => ({
-                type:     'MathExpression',
-                operator: d[1],
-                left:     d[0],
-                right:    d[2],
-                range: getLoc(Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
-            })%}
-        | sum {% id %}    
- 
-    minus_opt 
-    -> _S_ "-" __ {% d => d[1] %}
-    | "-" __      {% d => d[0] %}
-    | "-"         {% id %}
-  
-    sum -> sum _S "+" _ prod
-            {% d => ({
-                type:     'MathExpression',
-                operator: d[2],
-                left:     d[0],
-                right:    d[4],
-                range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-            })%}
-        | prod {% id %}
-        
-    prod -> prod _S ("*"|"/") _ exp
-            {% d => ({
-                type:     'MathExpression',
-                operator: d[2][0],
-                left:     d[0],
-                right:    d[4],
-                range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-            })%}
-        | exp {% id %}
+        rest -> rest minus_opt sum
+                {% d => ({
+                    type:     'MathExpression',
+                    operator: d[1],
+                    left:     d[0],
+                    right:    d[2],
+                    range: getLoc(Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
+                })%}
+            | sum {% id %}    
+    
+        minus_opt 
+        -> _S_ "-" __ {% d => d[1] %}
+        | "-" __      {% d => d[0] %}
+        | "-"         {% id %}
+    
+        sum -> sum _S "+" _ prod
+                {% d => ({
+                    type:     'MathExpression',
+                    operator: d[2],
+                    left:     d[0],
+                    right:    d[4],
+                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+                })%}
+            | prod {% id %}
+            
+        prod -> prod _S ("*"|"/") _ exp
+                {% d => ({
+                    type:     'MathExpression',
+                    operator: d[2][0],
+                    left:     d[0],
+                    right:    d[4],
+                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+                })%}
+            | exp {% id %}
 
-    exp -> as _S "^" _ exp
-            {% d => ({
-                type:     'MathExpression',
-                operator: d[2],
-                left:     d[0],
-                right:    d[4],
-                range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
-            })%}
-        | as {% id %}
+        exp -> as _S "^" _ exp
+                {% d => ({
+                    type:     'MathExpression',
+                    operator: d[2],
+                    left:     d[0],
+                    right:    d[4],
+                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
+                })%}
+            | as {% id %}
 
-    as -> math_operand _S %kw_as __ VAR_NAME
-            {% d => ({
-                type:     'MathExpression',
-                operator: d[2],
-                left:     d[0],
-                right:    d[4],
-                range: getLoc(d[0], d[4])
-            })%}
-        # | uny {% id %}
-        | math_operand {% id %}
+        as -> math_operand _S %kw_as __ VAR_NAME
+                {% d => ({
+                    type:     'MathExpression',
+                    operator: d[2],
+                    left:     d[0],
+                    right:    d[4],
+                    range: getLoc(d[0], d[4])
+                })%}
+            # | uny {% id %}
+            | math_operand {% id %}
 
-    # FN_CALL | operand | unary_operand | passthrough math expression
-    math_operand
-        -> unary_operand   {% id %}
-        | FN_CALL          {% id %}
+        # FN_CALL | operand | unary_operand | passthrough math expression
+        math_operand
+            -> unary_operand   {% id %}
+            | FN_CALL          {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     LOGICAL_EXPR
@@ -1057,16 +1055,10 @@ MATH_EXPR -> rest {% id %}
         #     })%}
 
     call_params
-        -> (_S parameter):+ {% d => merge(d[0]) %}
+        -> (_S parameter):+ {% d => merge(d) %}
 
     call_args
-        -> (call_arg):+ {% d => merge(d) %}
-        # -> call_arg call_args {% d => merge(d) %}
-        # | call_arg {% id %}
-
-    call_arg
-        ->  _S_ unary_only_operand {% d => d[1] %}
-        | _S operand {% d => d[1] %}
+        -> ( _S_ unary_only_operand | _S operand):+ {% d => merge(d) %}
 
     call_caller
         -> unary_operand {% id %}
@@ -1076,8 +1068,7 @@ MATH_EXPR -> rest {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter_seq
-        -> parameter_seq _ parameter {% d => [].concat(d[0], d[2]) %}
-        | parameter 
+        -> parameter (_ parameter):* {% d => merge(...d) %}
 
     parameter
         -> param_name _ unary_operand
@@ -1172,27 +1163,27 @@ MATH_EXPR -> rest {% id %}
 # POINTS --- OK
     point4
         -> LBRACKET expr LIST_SEP expr LIST_SEP expr LIST_SEP expr RBRACKET
-        {% d => ({
-            type: 'ObjectPoint4',
-            elements: [].concat(d[1], d[3], d[5], d[7]),
-            range: getLoc(d[0], d[8])
-        }) %}
+            {% d => ({
+                type: 'ObjectPoint4',
+                elements: [].concat(d[1], d[3], d[5], d[7]),
+                range: getLoc(d[0], d[8])
+            }) %}
 
     point3
         -> LBRACKET expr LIST_SEP expr LIST_SEP expr RBRACKET
-        {% d => ({
-            type: 'ObjectPoint3',
-            elements: [].concat(d[1], d[3], d[5]),
-            range: getLoc(d[0], d[6])
-        }) %}
+            {% d => ({
+                type: 'ObjectPoint3',
+                elements: [].concat(d[1], d[3], d[5]),
+                range: getLoc(d[0], d[6])
+            }) %}
  
     point2
         -> LBRACKET expr LIST_SEP expr RBRACKET
-        {% d => ({
-            type: 'ObjectPoint2',
-            elements: [].concat(d[1], d[3]),
-            range: getLoc(d[0], d[4])
-        }) %}
+            {% d => ({
+                type: 'ObjectPoint2',
+                elements: [].concat(d[1], d[3]),
+                range: getLoc(d[0], d[4])
+            }) %}
 #===============================================================
 # ARRAY --- OK
     array
@@ -1209,9 +1200,7 @@ MATH_EXPR -> rest {% id %}
                 range:      getLoc(d[0][0], d[2][1])
             }) %}
 
-        array_expr
-            -> expr LIST_SEP array_expr {% d => [].concat(d[0], d[2]) %}
-            | expr
+        array_expr -> expr ( LIST_SEP expr ):*  {% d => merge(...d) %}
 #---------------------------------------------------------------
 # BITARRAY --- OK
     bitarray
@@ -1228,9 +1217,7 @@ MATH_EXPR -> rest {% id %}
             range:    getLoc(d[0][0], d[2][1])
         }) %}
 
-    bitarray_expr
-        -> bitarray_expr LIST_SEP bitarray_item {% d => [].concat(d[0], d[2]) %}
-        | bitarray_item
+    bitarray_expr -> bitarray_item ( LIST_SEP bitarray_item ):*  {% d => merge(...d) %}
 
     # TODO: Fix groups
     bitarray_item
@@ -1238,7 +1225,7 @@ MATH_EXPR -> rest {% id %}
         | expr {% id %}
 #===============================================================
 # UTILITIES
-LIST_SEP -> _S %sep _ {% d => null %}
+    LIST_SEP -> _S %sep _ {% d => null %}
     #PARENS
     LPAREN ->  %lparen _    {% d => d[0] %}
     RPAREN ->  _ %rparen    {% d => d[1] %}
