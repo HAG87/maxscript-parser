@@ -717,9 +717,9 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             {% d => ({
                 type:  'ForLoopSequence',
                 to:    d[0],
-                by:    d[1],
-                while: d[2],
-                where: d[3]
+                by:    filterNull(d[1]),
+                while: filterNull(d[2]),
+                where: filterNull(d[3])
             })%}
         | (for_while _):? for_where
             {% d => ({
@@ -1055,10 +1055,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         #     })%}
 
     call_params
-        -> (_S parameter):+ {% d => merge(d) %}
+        -> (_S parameter):+ {% d => merge(...d) %}
 
     call_args
-        -> ( _S_ unary_only_operand | _S operand):+ {% d => merge(d) %}
+        -> ( _S_ unary_only_operand | _S operand):+ {% d => merge(...d) %}
 
     call_caller
         -> unary_operand {% id %}
