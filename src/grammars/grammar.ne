@@ -450,7 +450,6 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 body: flatten(d[4]),
                 range: getLoc(d[0][0], d[5])
             })%}
-    # this ensures that no scope modifier is followed by a comma!
 
     struct_members -> struct_member ( LIST_SEP struct_member ):* {% d => merge(...d) %}
     
@@ -466,11 +465,6 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             type:'StructScope',
             value: d[0]
         }) %}
-    #---------------------------------------------------------------
-    struct_member
-        -> decl          {% id %}
-        | function_def   {% id %}
-        | event_handler  {% id %}
 #===============================================================
 # EVENT HANDLER --- OK
     # TODO: FINISH LOCATION
@@ -613,67 +607,67 @@ Main -> _ _expr_seq _ {% d => d[1] %}
     CONTEXT_EXPR ->
         context ( LIST_SEP context ):* _ expr
             {% d => ({
-                type: 'ContextStatement',
-                context: merge(d[0], collectSub(d[1], 1)),
-                body: d[3],
-                range : getLoc(d[0], d[3])
+                type:    'ContextStatement',
+                context: merge(d[0], flatten(d[1])),
+                body:    d[3],
+                range:   getLoc(d[0], d[3])
             })%}
 
     context
         -> %kw_at __ (%kw_level | %kw_time) _ unary_operand
             {% d => ({
-                type: 'ContextExpression',
-                prefix : null,
+                type:    'ContextExpression',
+                prefix :  null,
                 context: d[0],
-                args: [].concat(d[2][0], d[4]),
-                range: getLoc(d[0], d[4])
+                args:    [].concat(d[2][0], d[4]),
+                range:   getLoc(d[0], d[4])
             })%}
         | %kw_in _ unary_operand
             {% d => ({
-                type: 'ContextExpression',
+                type:    'ContextExpression',
                 prefix : null,
                 context: d[0],
-                args: [d[2]],
-                range: getLoc(d[0], d[2])
+                args:    [d[2]],
+                range:   getLoc(d[0], d[2])
             })%}
         | (%kw_in __):? %kw_coordsys _ (%kw_local | unary_operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args: d[3],
-                range: getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
+                args:    d[3],
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
         | %kw_about _ (%kw_coordsys | unary_operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : null,
                 context: d[0],
-                args: d[2],
-                range: getLoc(d[0], d[0][0])
+                args:    d[2],
+                range:   getLoc(d[0], d[0][0])
             })%}
         | (%kw_with __):? %kw_context _ (LOGICAL_EXPR | bool)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args: d[3]
+                args:    d[3]
             })%}
         | %kw_with __ %kw_defaultAction _ ("#logmsg"|"#logtofile"|"#abort")
             {% d => ({
                 type: 'ContextExpression',
                 prefix : d[0],
                 context: d[2],
-                args: d[4],
-                range: getLoc(d[0], d[4][0])
+                args:    d[4],
+                range:   getLoc(d[0], d[4][0])
             })%}
         | (%kw_with __):? %kw_undo _ ( undo_label _ ):? (LOGICAL_EXPR | bool)
             {% d => ({
-                type: 'ContextExpression',
+                type:    'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args: (filterNull(d[3])).concat(d[4]),
-                range: getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
+                args:    (filterNull(d[3])).concat(d[4]),
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
             })%}
 
         undo_label -> string {% id %} | parameter {% id %} | VAR_NAME {% id %}
@@ -810,7 +804,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | %kw_then {% id %}
 #---------------------------------------------------------------
 # TRY EXPRESSION -- OK
-    TRY_EXPR -> (%kw_try _) expr (_ %kw_catch _) expr
+    TRY_EXPR 
+        -> (%kw_try _) expr (_ %kw_catch _) expr
     {% d => ({
         type:      'TryStatement',
         body:      d[1],
@@ -1118,7 +1113,7 @@ MATH_EXPR -> rest {% id %}
             })%}
 #---------------------------------------------------------------
 # ACCESSOR - INDEX --- OK
-    index -> operand _ P_START expr P_END
+    index -> operand _ LBRACKET expr RBRACKET
         {% d => ({
             type:    'AccessorIndex',
             operand: d[0],
@@ -1176,7 +1171,7 @@ MATH_EXPR -> rest {% id %}
 #===============================================================
 # POINTS --- OK
     point4
-        -> P_START expr LIST_SEP expr LIST_SEP expr LIST_SEP expr P_END
+        -> LBRACKET expr LIST_SEP expr LIST_SEP expr LIST_SEP expr RBRACKET
         {% d => ({
             type: 'ObjectPoint4',
             elements: [].concat(d[1], d[3], d[5], d[7]),
@@ -1184,7 +1179,7 @@ MATH_EXPR -> rest {% id %}
         }) %}
 
     point3
-        -> P_START expr LIST_SEP expr LIST_SEP expr P_END
+        -> LBRACKET expr LIST_SEP expr LIST_SEP expr RBRACKET
         {% d => ({
             type: 'ObjectPoint3',
             elements: [].concat(d[1], d[3], d[5]),
@@ -1192,15 +1187,12 @@ MATH_EXPR -> rest {% id %}
         }) %}
  
     point2
-        -> P_START expr LIST_SEP expr P_END
+        -> LBRACKET expr LIST_SEP expr RBRACKET
         {% d => ({
             type: 'ObjectPoint2',
             elements: [].concat(d[1], d[3]),
             range: getLoc(d[0], d[4])
         }) %}
-
-    P_START -> "[" _  {% d => d[0] %}
-    P_END   -> _ "]"  {% d => d[1] %}
 #===============================================================
 # ARRAY --- OK
     array
@@ -1247,6 +1239,15 @@ MATH_EXPR -> rest {% id %}
 #===============================================================
 # UTILITIES
 LIST_SEP -> _S %sep _ {% d => null %}
+    #PARENS
+    LPAREN ->  %lparen _    {% d => d[0] %}
+    RPAREN ->  _ %rparen    {% d => d[1] %}
+
+    LBRACKET -> %lbracket _  {% d => d[0] %}
+    RBRACKET -> _ %rbracket  {% d => d[1] %}
+
+    # LBRACE -> _ %lbrace  {% d => d[0] %}
+    # RBRACE -> _ %rbrace  {% d => d[1] %}
 #===============================================================
 # VARNAME --- IDENTIFIERS --- OK
     # some keywords can be VAR_NAME too...
@@ -1316,10 +1317,6 @@ LIST_SEP -> _S %sep _ {% d => null %}
     name_value -> %name    {% Literal %}
     #Resources
     resource -> %locale    {% Literal %}
-#===============================================================
-#PARENS
-    LPAREN ->  %lparen _    {% d => d[0] %}
-    RPAREN ->  _ %rparen  {% d => d[1] %}
 #===============================================================
 # WHITESPACE AND NEW LINES
     # comments are skipped in the parse tree!   
