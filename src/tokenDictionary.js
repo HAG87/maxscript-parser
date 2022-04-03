@@ -27,6 +27,7 @@ const keywordsDB = {
 	'kw_about': 'about',
 	'kw_as': 'as',
 	'kw_at': 'at',
+	'kw_attributes'   : 'attributes',
 	'kw_bool': ['true', 'false', 'off'],
 	'kw_by': 'by',
 	'kw_case': 'case',

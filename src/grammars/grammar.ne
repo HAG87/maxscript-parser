@@ -23,8 +23,6 @@
         let res = [];
         args.forEach( elem => {
             if (Array.isArray(elem)) {
-                // console.log(elem);
-                // res.push(...elem);
                 res = res.concat.apply(res, elem);
             } else {
                 res.push(elem);
@@ -35,11 +33,6 @@
         return res.length ? res.filter(e => e != null) : null;
     };
 
-    const convertToken = (token, newtype) => {
-        let node = {...token};
-            node.type = newtype;
-        return node;
-    };
     // Offset is not reilable, changed to line - character
     const getLoc = (start, end) => {
         if (!start) {return null;}
@@ -120,7 +113,7 @@
 @lexer mxLexer
 #===============================================================
 # ENTRY POINT
-Main -> _ _expr_seq _ {% d => d[1] %}
+Main -> _ _expr_seq:? _ {% d => d[1] %}
 #---------------------------------------------------------------
 # Expressions main recursion
     # _EXPR -> expr (EOL expr):*    {% d => merge(...d) %}
@@ -134,6 +127,7 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         -> SIMPLE_EXPR    {% id %}
         | VARIABLE_DECL   {% id %}
         | ASSIGNMENT      {% id %}
+        | ATTRIBUTES_DEF  {% id %}
         | IF_EXPR         {% id %}
         | WHILE_LOOP      {% id %}
         | DO_LOOP         {% id %}
@@ -252,9 +246,32 @@ Main -> _ _expr_seq _ {% d => d[1] %}
             return res;
         }%}
 #---------------------------------------------------------------
+# ATTRIBUTES DEFINITION
+# attributes <name> [version:n] [silentErrors:t/f] [initialRollupState:0xnnnnn] [remap:#(<old_param_names_array>, <new_param_names_array>)]
+    ATTRIBUTES_DEF
+        -> (%kw_attributes __) VAR_NAME (_ parameter_seq):? _
+        LPAREN
+            attributes_clauses
+        RPAREN
+        {% d => ({
+            type:  'EntityAttributes',
+            id:   d[1],
+            params: d[2] != null ? d[4][1] : null,
+            body:   d[5],
+            range:    getLoc(d[0][0], d[6])
+        })%}
+
+    attributes_clauses -> attributes_clause (EOL attributes_clause):* {% d => merge(...d) %}
+
+    attributes_clause
+        -> VARIABLE_DECL    {% id %}
+        | EVENT_HANDLER     {% id %}
+        | plugin_parameter  {% id %}
+        | ROLLOUT_DEF       {% id %}
+#---------------------------------------------------------------
 # PLUGIN DEFINITION --- OK
     PLUGIN_DEF
-        -> (%kw_plugin __) VAR_NAME __ VAR_NAME  (_ parameter_seq):? _
+        -> (%kw_plugin __) VAR_NAME __ VAR_NAME (_ parameter_seq):? _
             LPAREN
                 plugin_clauses
             RPAREN
@@ -700,10 +717,10 @@ Main -> _ _expr_seq _ {% d => d[1] %}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK # TODO: FINISH LOCATION
     FOR_LOOP
-        -> (%kw_for __) VAR_NAME _S for_iterator _S expr ( _ for_sequence ):? _ for_action _ expr
+        -> (%kw_for __) for_index _S for_iterator _S expr ( _ for_sequence ):? _ for_action _ expr
             {% d => ({
                 type:     'ForStatement',
-                variable:  d[1],
+                index:     d[1],
                 iteration: d[3],
                 value:     d[5],
                 sequence:  filterNull(d[6]),
@@ -737,7 +754,31 @@ Main -> _ _expr_seq _ {% d => d[1] %}
                 while: d[0],
                 where: null
             })%}
-
+            
+    # for <var_name> [, <index_name>[, <filtered_index_name>]] ( in | = )<sequence> ( do | collect ) <expr>
+    for_index ->
+        VAR_NAME _S LIST_SEP _ VAR_NAME _S LIST_SEP _ VAR_NAME
+            {% d=> ({
+                type: 'ForLoopIndex',
+                variable: d[0],
+                index_name: d[4],
+                filtered_index_name: d[8]
+            })%}
+        | VAR_NAME _S LIST_SEP _ VAR_NAME
+            {% d=> ({
+                type: 'ForLoopIndex',
+                variable: d[0],
+                index_name: d[4],
+                filtered_index_name: null
+            })%}
+        | VAR_NAME
+            {% d=> ({
+                type: 'ForLoopIndex',
+                variable: d[0],
+                index_name: null,
+                filtered_index_name: null
+            })%}
+    
     for_iterator -> "=" {% id %} | %kw_in {% id %}
 
     for_to    -> %kw_to    _S expr {% d => d[2] %}
@@ -1258,7 +1299,8 @@ Main -> _ _expr_seq _ {% d => d[1] %}
         | %kw_set          {% id %}
 
     kw_override
-        -> %kw_uicontrols  {% id %}
+        -> %kw_attributes  {% id %}
+        | %kw_uicontrols   {% id %}
         | %kw_group        {% id %}
         | %kw_level        {% id %}
         | %kw_menuitem     {% id %}
