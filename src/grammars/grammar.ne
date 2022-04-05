@@ -12,7 +12,8 @@
         return checkNested(obj[level], ...rest)
     }
 
-    const flatten = arr => arr != null ? arr.flat().filter(e => e != null) : [];
+    //function flatten(x) { return x != null ? x.flat().filter(e => e != null) : []; }
+   const flatten = arr => arr != null ? arr.flat(2).filter(e => e != null) : [];
 
     const collectSub = (arr, index) => arr != null ? arr.map(e => e[index]) : [];
 
@@ -29,24 +30,22 @@
             }
         });
         return res.length ? res.filter(e => e != null) : null;
-        */
-        return [].concat(...args).filter(e => e != null);
-        // return args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
+        //*/
+        // return [].concat(...args).filter(e => e != null);
+         return args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
     }
 
     // Offset is not reilable, changed to line - character
     const getLoc = (start, end) => {
         if (!start) {return null;}
-
-        let startOffset;
-        let endOffset;
         
         // start could be an array...TODO: how to deal with nested arrays?
         let first = Array.isArray(start) ? start[0] : start;
 
         if (!first) {return null;}
 
-        startOffset = first.range ? first.range.start : {line: first.line, character: first.col};
+        let startOffset = first.range ? first.range.start : {line: first.line, character: first.col};
+        let endOffset;
 
         if (!end) {
             if (first.range) {
@@ -60,7 +59,7 @@
         } else {
             // end could be an array...
             let last = Array.isArray(end) ? end[end.length-1] : end;
-           // console.log(last);
+
             if (last) {
                 if (last.range) {
                     endOffset = last.range.end;
@@ -104,8 +103,8 @@
     //----------------------------------------------------------
     // RULES
     //----------------------------------------------------------
-    const Literal = d => ({ type: 'Literal', value: d[0], range:getLoc(d[0]) });
-    const Identifier = d => ({ type: 'Identifier', value: d[0], range:getLoc(d[0]) });
+    const Literal = x => ({ type: 'Literal', value: x[0], range:getLoc(x[0]) });
+    const Identifier = x => ({ type: 'Identifier', value: x[0], range:getLoc(x[0]) });
 %}
 # USING MOO LEXER
 @lexer mxLexer
@@ -114,7 +113,7 @@
 Main -> _ _expr_seq:? _ {% d => d[1] %}
 #---------------------------------------------------------------
 # Expressions main recursion
-    # _EXPR -> expr (EOL expr):*    {% d => flatten(d) %}
+    # _EXPR -> expr (EOL expr):*    {% flatten %}
     
     # _EXPR
     #     -> _EXPR EOL expr {% d => [].concat(d[0], d[2])%}
@@ -139,12 +138,15 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         | FUNCTION_DEF    {% id %}
         | FN_RETURN       {% id %}
         | CONTEXT_EXPR    {% id %}
-        | ROLLOUT_DEF     {% id %}
+        | rollout_def     {% id %}
         | TOOL_DEF        {% id %}
         | RCMENU_DEF      {% id %}
         | MACROSCRIPT_DEF {% id %}
         | PLUGIN_DEF      {% id %}
         | CHANGE_HANDLER  {% id %}
+        # | event_handler  {% id %}
+        # | item_group     {% id %}
+        # | rollout_item   {% id %}
 #---------------------------------------------------------------
 # EXPRESSIONS - RECURSION! IN FACCTOR
     expr_seq
@@ -162,7 +164,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
             })%}
    
     _expr_seq
-        -> expr (EOL expr):* {% d => flatten(d) %}
+        -> expr (EOL expr):* {% flatten %}
         # -> _expr_seq EOL expr {% d => [].concat(d[0], d[2]) %}
         # | expr #{% id %}
 #===============================================================
@@ -181,7 +183,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
             range: getLoc(d[0][0], d[5])
         })%}
     
-    rcmenu_clauses -> rcmenu_clause (EOL rcmenu_clause):* {% d => flatten(d) %}
+    rcmenu_clauses -> rcmenu_clause (EOL rcmenu_clause):* {% flatten %}
 
     # rcmenu_clauses
     #     -> rcmenu_clauses EOL rcmenu_clause {% d => [].concat(d[0], d[2]) %}
@@ -191,13 +193,13 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         -> VARIABLE_DECL {% id %}
         | FUNCTION_DEF   {% id %}
         | STRUCT_DEF     {% id %}
-        | EVENT_HANDLER  {% id %}
+        | event_handler  {% id %}
         | rcmenu_submenu {% id %}
         | rcmenu_sep     {% id %}
         | rcmenu_item    {% id %}
     
     rcmenu_submenu
-        -> (%kw_submenu _) string ( _ parameter):* _
+        -> (%kw_submenu _) STRING ( _ parameter):* _
             LPAREN
                 rcmenu_clauses:?
             RPAREN
@@ -223,7 +225,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         }%}
     
     rcmenu_item
-        -> (%kw_menuitem __ ) VAR_NAME _ string ( _ parameter):*
+        -> (%kw_menuitem __ ) VAR_NAME _ STRING ( _ parameter):*
         {% d => {
             let res = {
                 type:   'EntityRcmenu_menuitem',
@@ -244,20 +246,20 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
             attributes_clauses
         RPAREN
         {% d => ({
-            type:  'EntityAttributes',
-            id:   d[1],
+            type:   'EntityAttributes',
+            id:     d[1],
             params: flatten(d[2]),
             body:   d[5],
-            range:    getLoc(d[0][0], d[6])
+            range:  getLoc(d[0][0], d[6])
         })%}
 
-    attributes_clauses -> attributes_clause (EOL attributes_clause):* {% d => flatten(d) %}
+    attributes_clauses -> attributes_clause (EOL attributes_clause):* {% flatten %}
 
     attributes_clause
-        -> VARIABLE_DECL    {% id %}
-        | EVENT_HANDLER     {% id %}
-        | plugin_parameter  {% id %}
-        | ROLLOUT_DEF       {% id %}
+        -> VARIABLE_DECL {% id %}
+        | event_handler  {% id %}
+        | PARAM_DEF      {% id %}
+        | rollout_def    {% id %}
 #---------------------------------------------------------------
 # PLUGIN DEFINITION --- OK
     PLUGIN_DEF
@@ -275,18 +277,18 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range:    getLoc(d[0][0], d[8])
             })%}
 
-    plugin_clauses -> plugin_clause (EOL plugin_clause):* {% d => flatten(d) %}
+    plugin_clauses -> plugin_clause (EOL plugin_clause):* {% flatten %}
 
     plugin_clause
-        -> VARIABLE_DECL    {% id %}
-        | FUNCTION_DEF      {% id %}
-        | STRUCT_DEF        {% id %}
-        | TOOL_DEF          {% id %}
-        | ROLLOUT_DEF       {% id %}
-        | EVENT_HANDLER     {% id %}
-        | plugin_parameter  {% id %}
+        -> VARIABLE_DECL  {% id %}
+        | FUNCTION_DEF    {% id %}
+        | STRUCT_DEF      {% id %}
+        | TOOL_DEF        {% id %}
+        | rollout_def     {% id %}
+        | event_handler   {% id %}
+        | PARAM_DEF       {% id %}
     #---------------------------------------------------------------
-    plugin_parameter
+    PARAM_DEF
         -> (%kw_parameters __ ) VAR_NAME ( _ parameter):* _
             LPAREN
                 param_clauses:?
@@ -299,7 +301,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range: getLoc(d[0][0], d[6])
             })%}
 
-    param_clauses -> param_clause (EOL param_clause):* {% d => flatten(d) %}
+    param_clauses -> param_clause (EOL param_clause):* {% flatten %}
 
     # param_clauses
     #     -> param_clauses EOL param_clause {% d => [].concat(d[0], d[2]) %}
@@ -307,7 +309,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 
     param_clause
         -> param_defs   {% id %}
-        | EVENT_HANDLER {% id %}
+        | event_handler {% id %}
 
     param_defs -> VAR_NAME ( _ parameter):*
     {% d => {
@@ -335,17 +337,18 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range:  getLoc(d[0], d[7])
             })%}
     
-    tool_clauses -> tool_clause (EOL tool_clause):* {% d => flatten(d) %}
+    tool_clauses -> tool_clause (EOL tool_clause):* {% flatten %}
     
     tool_clause
         -> VARIABLE_DECL {% id %}
         | FUNCTION_DEF   {% id %}
         | STRUCT_DEF     {% id %}
-        | EVENT_HANDLER  {% id %}
+        | event_handler  {% id %}
 #---------------------------------------------------------------
 # ROLLOUT / UTILITY DEFINITION --- OK
-    ROLLOUT_DEF
-        -> (uistatement_def __ ) VAR_NAME _ unary_operand ( _ parameter):* _
+       # -> (uistatement_def __ ) VAR_NAME _ unary_operand ( _ parameter):* _ expr_seq
+        rollout_def
+        -> (uistatement_def __ ) VAR_NAME _ operand ( _ parameter):* _
             LPAREN
                 rollout_clauses
             RPAREN
@@ -363,7 +366,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
     #    -> LPAREN _rollout_clause RPAREN {% d => d[1] %}
     #     | "(" _ ")" {% d => null %}
 
-    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% d => flatten(d) %}
+    rollout_clauses -> rollout_clause (EOL rollout_clause):* {% flatten %}
 
     # rollout_clauses
     #     -> rollout_clauses EOL rollout_clause {% d => [].concat(d[0], d[2]) %}
@@ -375,12 +378,12 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         | STRUCT_DEF     {% id %}
         | item_group     {% id %}
         | rollout_item   {% id %}
-        | EVENT_HANDLER  {% id %}
+        | event_handler  {% id %}
         | TOOL_DEF       {% id %}
-        | ROLLOUT_DEF    {% id %}
+        | rollout_def    {% id %}
     #---------------------------------------------------------------
     item_group
-        -> %kw_group _ string _
+        -> %kw_group _ STRING _
             LPAREN
                 group_clauses
             RPAREN
@@ -397,7 +400,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         # | null
     #---------------------------------------------------------------
     rollout_item
-        -> %kw_uicontrols __ VAR_NAME ( _ unary_operand):? ( _ parameter):*
+        -> %kw_uicontrols __ VAR_NAME ( _ operand):? ( _ parameter):*
             {% d => {
              let res = {
                     type:   'EntityRolloutControl',
@@ -407,8 +410,8 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                     params: flatten(d[4]),
                     range:  getLoc(d[0])
                 };
-                if (d[4] != null) { addLoc(res, d[4][1]); }
-                else if (d[3] != null) { addLoc(res, d[3][1]); }
+                if (res.params != null) { addLoc(res, res.params); }
+                else if (res.text != null) { addLoc(res, res.text); }
                 return res;
             }%}
 #---------------------------------------------------------------
@@ -427,14 +430,14 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
             })%}
 
     macro_script_param
-        -> param_name _ ( unary_operand | resource )
+        -> param_name _ ( unary_operand | RESOURCE )
             {% d => ({
                 type: 'ParameterAssignment',
                 param: d[0],
                 value: d[2][0]
             })%}
 
-    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% d => flatten(d) %}
+    macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% flatten %}
 
     # macro_script_body
     #    -> macro_script_body EOL macro_script_clause {% d => [].concat(d[0], d[2]) %}
@@ -442,7 +445,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 
     macro_script_clause
         -> expr         {% id %}
-        | EVENT_HANDLER {% id %}
+        | event_handler {% id %}
 #---------------------------------------------------------------
 # STRUCT DEFINITION --- OK
     # TODO: FINISH LOCATION
@@ -458,12 +461,12 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range: getLoc(d[0][0], d[5])
             })%}
 
-    struct_members -> struct_member ( LIST_SEP struct_member ):* {% d => flatten(d) %}
+    struct_members -> struct_member ( LIST_SEP struct_member ):* {% flatten %}
 
     struct_member
         -> decl          {% id %}
         | FUNCTION_DEF   {% id %}
-        | EVENT_HANDLER  {% id %}
+        | event_handler  {% id %}
         # this ensures that no scope modifier is followed by a comma!
         | str_scope __ struct_member {% d => [].concat(d[0], d[2]) %}
     #---------------------------------------------------------------
@@ -475,18 +478,16 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 #===============================================================
 # EVENT HANDLER --- OK
     # TODO: FINISH LOCATION
-    EVENT_HANDLER
-        -> (%kw_on __ ) event_args __ event_action _ expr
+    event_handler
+        -> (%kw_on __ ) event_args __ (%kw_do | %kw_return) _ expr
             {% d => ({
                 type:     'Event',
                 id:       d[1].target || d[1].event,
                 args:     d[1],
-                modifier: d[3],
+                modifier: d[3][0],
                 body:     d[5],
                 range:    getLoc(d[0][0], d[5])
             }) %}
-
-    event_action -> %kw_do {% id %} | %kw_return {% id %}
 
     event_args
         -> VAR_NAME
@@ -529,7 +530,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range: getLoc(d[0], d[10])
             })%}
 
-    when_param -> param_name _ name_value
+    when_param -> param_name _ NAME_VALUE
         {% d => ({
             type: 'ParameterAssignment',
             param: d[0],
@@ -620,13 +621,33 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range:   getLoc(d[0], d[3])
             })%}
 
+
+# at level <node> || at time <time>
+# in <node>
+
+# [ in ] coordsys <coordsys>
+# about <center_spec>
+
+# [ with ] animate <boolean> 
+# [ with ] redraw <boolean>
+# [ with ] quiet <boolean>
+# [ with ] redraw <boolean>
+# [ with ] printAllElements <boolean>
+
+# [ with ] MXSCallstackCaptureEnabled <boolean>
+# [ with ] dontRepeatMessages <boolean>
+# [ with ] macroRecorderEmitterEnabled <boolean>
+
+# [ with ] defaultAction <action>
+# [ with ] undo <boolean>
+
     context
         -> %kw_at __ (%kw_level | %kw_time) _ unary_operand
             {% d => ({
                 type:    'ContextExpression',
-                prefix :  null,
-                context: d[0],
-                args:    [].concat(d[2][0], d[4]),
+                prefix :  d[0],
+                context: d[2][0],
+                args:    d[4],
                 range:   getLoc(d[0], d[4])
             })%}
         | %kw_in _ unary_operand
@@ -634,7 +655,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 type:    'ContextExpression',
                 prefix : null,
                 context: d[0],
-                args:    [d[2]],
+                args:    d[2],
                 range:   getLoc(d[0], d[2])
             })%}
         | (%kw_in __ ):? %kw_coordsys _ (%kw_local | unary_operand)
@@ -642,33 +663,42 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args:    d[3],
+                args:    d[3][0],
                 range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
         | %kw_about _ (%kw_coordsys | unary_operand)
             {% d => ({
                 type: 'ContextExpression',
+                prefix : d[0],
+                context: d[2][0],
+                args:    null,
+                range:   getLoc(d[0], d[2][0])
+            })%}
+        | %kw_context _ (LOGICAL_EXPR | BOOL)
+            {% d => ({
+                type: 'ContextExpression',
                 prefix : null,
                 context: d[0],
-                args:    d[2],
-                range:   getLoc(d[0], d[0][0])
+                args:    d[2][0],
+                range: getLoc(d[0],d[2][0])
             })%}
-        | (%kw_with __ ):? %kw_context _ (LOGICAL_EXPR | bool)
+        | (%kw_with __):? %kw_context _ (LOGICAL_EXPR | BOOL)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : (d[0] != null ? d[0][0] : null),
+                prefix :(d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args:    d[3]
+                args:    d[3][0],
+                range: getLoc(d[0] != null ? d[0][0] : d[1],d[3][0])
             })%}
-        | %kw_with __ %kw_defaultAction _ ("#logmsg"|"#logtofile"|"#abort")
+        | (%kw_with __):? %kw_defaultAction _ ("#logmsg"|"#logtofile"|"#abort")
             {% d => ({
                 type: 'ContextExpression',
-                prefix : d[0],
-                context: d[2],
-                args:    d[4],
-                range:   getLoc(d[0], d[4][0])
+                prefix :  (d[0] != null ? d[0][0] : null),
+                context: d[1],
+                args:    d[3][0],
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
-        | (%kw_with __ ):? %kw_undo _ ( undo_label _ ):? (LOGICAL_EXPR | bool)
+        | (%kw_with __ ):? %kw_undo _ ( undo_label _ ):? (LOGICAL_EXPR | BOOL)
             {% d => ({
                 type:    'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
@@ -677,7 +707,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range:   getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
             })%}
 
-        undo_label -> string {% id %} | parameter {% id %} | VAR_NAME {% id %}
+        undo_label -> STRING {% id %} | parameter {% id %} | VAR_NAME {% id %}
 #---------------------------------------------------------------
 # CASE EXPRESSION --- OK
     CASE_EXPR
@@ -693,7 +723,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range: getLoc(d[0][0], d[7])
             })%}
 
-    case_src -> expr _  {% d => d[0] %} | __ {% id %}
+    case_src -> expr _  {% id %} | __ {% id %}
 
     case_item
         -> factor (_ ":" _) expr
@@ -701,7 +731,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 type:  'CaseClause',
                 case:  d[0],
                 body:  d[2],
-                range: getLoc(d[0][0], d[2])
+                range: getLoc(d[0], d[2])
             })%}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK # TODO: FINISH LOCATION
@@ -861,7 +891,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         | %kw_global {% d => ({modifier:null, scope: d[0], range:getLoc(d[0])}) %}
         | %kw_persistent __ %kw_global {% d => ({modifier: d[0], scope: d[2], range:getLoc(d[0], d[2])}) %}
 
-    decl_list -> decl (LIST_SEP decl):*  {% d => flatten(d) %}
+    decl_list -> decl (LIST_SEP decl):*  {% flatten %}
     
     decl
         -> VAR_NAME
@@ -896,7 +926,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         -> VAR_NAME {% id %}
         | property  {% id %}
         | index     {% id %}
-        | path_name {% id %}
+        | PATH_NAME {% id %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  OK
     # MATH_EXPR
@@ -947,7 +977,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
     
         minus_opt 
         -> _S_ "-" __ {% d => d[1] %}
-        | "-" __      {% d => d[0] %}
+        | "-" __      {% id %}
         | "-"         {% id %}
     
         sum -> sum _S "+" _ prod
@@ -1065,7 +1095,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                     args:  args,
                     range: null
                 };
-                res.range = getLoc(d[0], args);
+                res.range = getLoc(d[0], res.args);
                 return res;
             } %}
         | call_caller call_params
@@ -1085,10 +1115,10 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         #     })%}
 
     call_params
-        -> (_S parameter):+ {% d => flatten(d) %}
+        -> (_S parameter):+ {% flatten %}
 
     call_args
-        -> ( _S_ unary_only_operand | _S operand):+ {% d => flatten(d) %}
+        -> ( _S_ unary_only_operand | _S operand):+ {% flatten %}
 
     call_caller
         -> unary_operand {% id %}
@@ -1122,7 +1152,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
     property
-        -> operand %delimiter (VAR_NAME | void | kw_override)
+        -> operand %delimiter (VAR_NAME | VOID | kw_override)
             {% d => ({
                 type:     'AccessorProperty',
                 operand:  d[0],
@@ -1167,14 +1197,14 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 #---------------------------------------------------------------
 # FACTORS --- OK
    factor
-        -> string    {% id %}
-        | number     {% id %}
-        | path_name  {% id %}
-        | name_value {% id %}
+        -> STRING    {% id %}
+        | NUMBER     {% id %}
+        | PATH_NAME  {% id %}
+        | NAME_VALUE {% id %}
         | VAR_NAME   {% id %}
-        | bool       {% id %}
-        | void       {% id %}
-        | time       {% id %}
+        | BOOL       {% id %}
+        | VOID       {% id %}
+        | TIME       {% id %}
         | array      {% id %}
         | bitarray   {% id %}
         | point4     {% id %}
@@ -1227,24 +1257,24 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range:      getLoc(d[0][0], d[2][1])
             }) %}
 
-        array_expr -> expr ( LIST_SEP expr ):*  {% d => flatten(d) %}
+        array_expr -> expr ( LIST_SEP expr ):*  {% flatten %}
 #---------------------------------------------------------------
 # BITARRAY --- OK
     bitarray
-    -> %bitarraydef _ %rbrace
+    -> %bitarraydef RBRACE
         {% d => ({
             type:     'ObjectBitArray',
             elements: [],
-            range:    getLoc(d[0], d[2])
+            range:    getLoc(d[0], d[1])
         }) %}
-    | ( %bitarraydef _) bitarray_expr (_ %rbrace)
+    | ( %bitarraydef _) bitarray_expr RBRACE
         {% d => ({
             type:     'ObjectBitArray',
             elements: d[1],
-            range:    getLoc(d[0][0], d[2][1])
+            range:    getLoc(d[0][0], d[2])
         }) %}
 
-    bitarray_expr -> bitarray_item ( LIST_SEP bitarray_item ):*  {% d => flatten(d) %}
+    bitarray_expr -> bitarray_item ( LIST_SEP bitarray_item ):*  {% flatten %}
 
     # TODO: Fix groups
     bitarray_item
@@ -1254,24 +1284,23 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 # UTILITIES
     LIST_SEP -> _S %sep _ {% d => null %}
     #PARENS
-    LPAREN ->  %lparen _    {% d => d[0] %}
+    LPAREN ->  %lparen _    {% id %}
     RPAREN ->  _ %rparen    {% d => d[1] %}
 
-    LBRACKET -> %lbracket _  {% d => d[0] %}
+    LBRACKET -> %lbracket _  {% id %}
     RBRACKET -> _ %rbracket  {% d => d[1] %}
 
-    # LBRACE -> _ %lbrace  {% d => d[0] %}
-    # RBRACE -> _ %rbrace  {% d => d[1] %}
+    LBRACE -> %lbrace _  {% id %}
+    RBRACE -> _ %rbrace  {% d => d[1] %}
 #===============================================================
 # VARNAME --- IDENTIFIERS --- OK
     # some keywords can be VAR_NAME too...
-    VAR_NAME -> var_type {% Identifier %}
-    var_type
-        -> %identity      {% id %}
-         | %global_typed  {% id %}
-         | %typed_iden    {% id %}
-         | kw_reserved    {% id %}
-        #  | void           {% id %}
+    VAR_NAME
+        -> %identity      {% Identifier %}
+         | %global_typed  {% Identifier %}
+         | %typed_iden    {% Identifier %}
+         | kw_reserved    {% Identifier %}
+        #| VOID           {% Identifier %}
 # CONTEXTUAL KEYWORDS...can be used as identifiers outside the context...
     kw_reserved
         -> %kw_uicontrols  {% id %}
@@ -1309,36 +1338,34 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 #===============================================================
 # PATH NAME
     # THIS JUST CAPTURES ALL THE LEVEL PATH IN ONE TOKEN....
-    path_name -> %path {% Identifier %}
-    #---------------------------------------------------------------
+    PATH_NAME -> %path {% Identifier %}
+#---------------------------------------------------------------
 # TOKENS
-    # time
-    time -> %time          {% Literal %}
+    # Time
+    TIME -> %time          {% Literal %}
     # Bool
-    bool
+    BOOL
         -> %kw_bool        {% Literal %}
         | %kw_on           {% Literal %}
     # Void values
-    void -> %kw_null       {% Literal %}
+    VOID -> %kw_null       {% Literal %}
     #---------------------------------------------------------------
     # Numbers
-    number -> number_types {% Literal %}
-    number_types
-        -> %number  {% id %}
-         | %hex     {% id %}
-    # string
-    string -> %string      {% Literal %}
-    # names
-    name_value -> %name    {% Literal %}
-    #Resources
-    resource -> %locale    {% Literal %}
+    NUMBER
+        -> %number  {% Literal %}
+        | %hex      {% Literal %}
+    # String
+    STRING -> %string      {% Literal %}
+    # Names
+    NAME_VALUE -> %name    {% Literal %}
+    #Resource
+    RESOURCE -> %locale    {% Literal %}
 #===============================================================
 # WHITESPACE AND NEW LINES
     # comments are skipped in the parse tree!   
 
     # MANDATORY EOL
-    EOL -> junk:* ( %newline | %statement ) _S {% d => null %}
-    
+    EOL -> junk:* ( %newline | %statement ) _S {% d => null %}    
     # MANDATORY WHITESPACE | one or more whitespace
     _S_ -> ws:+ {% d => null %}
     # OPTIONAL WHITESPACE | zero or any whitespace
