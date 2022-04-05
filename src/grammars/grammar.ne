@@ -216,7 +216,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 type:   'EntityRcmenu_separator',
                 id:     d[1],
                 params: flatten(d[2]),
-                range: getLoc(d[0][0])
+                range: getLoc(d[0][0], d[1])
             };
             addLoc(res, res.params);
             return res;
@@ -230,7 +230,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 id:     d[1],
                 label:  d[3],
                 params: flatten(d[4]),
-                range: getLoc(d[0][0])
+                range: getLoc(d[0][0], d[3])
             };
             addLoc(res, res.params);
             return res;
