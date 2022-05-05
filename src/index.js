@@ -47,7 +47,7 @@ async function Main(src) {
 		let parser = new mxsParseSource(source(src));
 		// parser.parseWithErrors();
 		var cst = parser.parsedCST;
-		// JsonFileWrite('test/CST.json', cst);
+		JsonFileWrite('test/CST.json', cst);
 		// terminate the workers...
 		return cst;
 	} catch (err) {
@@ -57,11 +57,15 @@ async function Main(src) {
 		// ...
 	}
 }
+Main(examples[2]);
+// console.log(TokenizeSource(source(examples[1])));
 //-----------------------------------------------------------------------------------
 //	PRETTY PRINT - COMPRESS CODE
 //-----------------------------------------------------------------------------------
+/*
 let toks = TokenizeSourceFormat(source(examples[2]));
 JsonFileWrite('test/TOKENS.json', toks);
+*/
 // TEST
 /*
 Main(examples[14])

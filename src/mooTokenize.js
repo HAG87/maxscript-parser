@@ -33,8 +33,12 @@ const mxLexer = moo.compile({
 	locale: /~[A-Za-z0-9_]+~/,
 
 	// path_name $mounstrosity*/_?
-	path: /\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/,
-
+	//path: /\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/,
+	path: [
+		{ match: /\$(?:[A-Za-z0-9_*?/]|\.{3}|\\[\\/"'])+/ },
+		{ match: /\$'(?:[^'])+'/, lineBreaks: true },
+		{ match: /\$/ }
+	],
 	// ::global variable
 	global_typed: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]+/,
 	// property <object>.<property>
