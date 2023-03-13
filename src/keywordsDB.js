@@ -194,7 +194,7 @@ const keywordsTypeDB = {
 	'kw_menuitem'     : 'menuitem',
 	'kw_not'          : 'not',
 	'kw_null'         : ['undefined', 'unsupplied', 'ok', 'silentvalue'],
-	'kw_objectset'    : kwObjectSet,
+	//'kw_objectset'    : kwObjectSet,
 	'kw_of'           : 'of',
 	'kw_on'           : 'on',
 	'kw_parameters'   : 'parameters',

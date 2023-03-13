@@ -1309,7 +1309,6 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         | %kw_group        {% id %}
         | %kw_level        {% id %}
         | %kw_menuitem     {% id %}
-        | %kw_objectset    {% id %}
         | %kw_separator    {% id %}
         | %kw_submenu      {% id %}
         | %kw_time         {% id %}
@@ -1321,7 +1320,6 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         | %kw_group        {% id %}
         | %kw_level        {% id %}
         | %kw_menuitem     {% id %}
-        | %kw_objectset    {% id %}
         | %kw_separator    {% id %}
         | %kw_submenu      {% id %}
         | %kw_time         {% id %}
