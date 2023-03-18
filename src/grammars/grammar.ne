@@ -514,28 +514,16 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
             }) %}
 #---------------------------------------------------------------
 # CHANGE HANDLER -- WHEN CONSTRUCTOR -- OK
+# when <attribute> <objects> change[s] [ id:<name> ] [handleAt:#redrawViews|#timeChange] [ <object_parameter> ] do <expr>
+# when <objects> deleted               [ id:<name> ] [handleAt:#redrawViews|#timeChange] [ <object_parameter> ] do <expr> 
     CHANGE_HANDLER
-        -> %kw_when __ (VAR_NAME | kw_override) __ operand __ VAR_NAME __ (parameter _):* operand:? _ %kw_do _ expr
+        -> %kw_when __ (VAR_NAME | kw_override):? __ operand __ VAR_NAME __ (parameter _):* operand:? _ %kw_do _ expr
             {% d=> ({
                 type:  'WhenStatement',
                 args:  merge(...d.slice(2,9)),
                 body:  d[13],
                 range: getLoc(d[0], d[13])
             })%}
-        | %kw_when __ operand __ VAR_NAME __ (parameter _):* operand:? _ %kw_do _ expr
-            {% d=> ({
-                type:  'WhenStatement',
-                args:  merge(...d.slice(2,7)),
-                body:  d[11],
-                range: getLoc(d[0], d[11])
-            })%}
-
-    # when_param -> param_name _ NAME_VALUE
-    #     {% d => ({
-    #         type: 'ParameterAssignment',
-    #         param: d[0],
-    #         value: d[2],
-    #     })%}
 #---------------------------------------------------------------
 # FUNCTION DEFINITION --- OK
     FUNCTION_DEF
@@ -610,7 +598,6 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         })%}
 #===============================================================
 # CONTEXT EXPRESSION --- OK
-    # set_context -> %kw_set _ context
     #---------------------------------------------------------------
     CONTEXT_EXPR ->
         context ( LIST_SEP context ):* _ expr
@@ -621,43 +608,49 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 range:   getLoc(d[0], d[3])
             })%}
 
-    # at level <node> || at time <time>
-    # in <node>
+    # [ set | at ] level <node>
+    # [ set | at ] time <time>
+    # [ set ]      in <node>
 
-    # [ in ] coordsys <coordsys>
-    # about <center_spec>
+    # [ set | in ] coordsys <coordsys>
+    # [ set ]      about <center_spec>
 
-    # [ with ] animate <boolean> 
-    # [ with ] redraw <boolean>
-    # [ with ] quiet <boolean>
-    # [ with ] redraw <boolean>
-    # [ with ] printAllElements <boolean>
-
-    # [ with ] MXSCallstackCaptureEnabled <boolean>
-    # [ with ] dontRepeatMessages <boolean>
-    # [ with ] macroRecorderEmitterEnabled <boolean>
-
-    # [ with ] defaultAction <action>
-    # [ with ] undo <boolean>
+    # [ set | with ] animate                     <boolean>
+    # [ set | with ] redraw                      <boolean>
+    # [ set | with ] quiet                       <boolean>
+    # [ set | with ] printAllElements            <boolean>
+    # [ set | with ] MXSCallstackCaptureEnabled  <boolean>
+    # [ set | with ] dontRepeatMessages          <boolean>
+    # [ set | with ] macroRecorderEmitterEnabled <boolean>
+    # [ set | with ] undo <boolean>
+    # [ with ]       defaultAction <action>
 
     context
-        -> %kw_at __ (%kw_level | %kw_time) _ unary_operand
+        -> ((%kw_set | %kw_at) __):? (%kw_level | %kw_time) _ unary_operand
             {% d => ({
                 type:    'ContextExpression',
-                prefix :  d[0],
+                prefix :  (d[0] != null ? d[0][0][0] : null),
                 context: d[2][0],
                 args:    d[4],
-                range:   getLoc(d[0], d[4])
+                range:   getLoc(d[0] != null ? d[0][0][0] : d[1][0], d[3])
             })%}
-        | %kw_in _ unary_operand
+        | (%kw_set __ ):? %kw_in _ unary_operand
             {% d => ({
                 type:    'ContextExpression',
-                prefix : null,
-                context: d[0],
-                args:    d[2],
-                range:   getLoc(d[0], d[2])
+                prefix : (d[0] != null ? d[0][0] : null),
+                context: d[1],
+                args:    d[3],
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3])
             })%}
-        | (%kw_in __ ):? %kw_coordsys _ (%kw_local | unary_operand)
+        | ((%kw_set | %kw_in) __ ):? %kw_coordsys _ (%kw_local | unary_operand)
+            {% d => ({
+                type: 'ContextExpression',
+                prefix : (d[0] != null ? d[0][0][0] : null),
+                context: d[1],
+                args:    d[3][0],
+                range:   getLoc(d[0] != null ? d[0][0][0] : d[1], d[3][0])
+            })%}
+        | (%kw_set __ ):? %kw_about _ (%kw_coordsys | unary_operand)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
@@ -665,29 +658,13 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 args:    d[3][0],
                 range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
-        | %kw_about _ (%kw_coordsys | unary_operand)
+        | ((%kw_set | %kw_with) __):? %kw_context _ (LOGICAL_EXPR | BOOL)
             {% d => ({
                 type: 'ContextExpression',
-                prefix : d[0],
-                context: d[2][0],
-                args:    null,
-                range:   getLoc(d[0], d[2][0])
-            })%}
-        | %kw_context _ (LOGICAL_EXPR | BOOL)
-            {% d => ({
-                type: 'ContextExpression',
-                prefix : null,
-                context: d[0],
-                args:    d[2][0],
-                range: getLoc(d[0],d[2][0])
-            })%}
-        | (%kw_with __):? %kw_context _ (LOGICAL_EXPR | BOOL)
-            {% d => ({
-                type: 'ContextExpression',
-                prefix :(d[0] != null ? d[0][0] : null),
+                prefix :(d[0] != null ? d[0][0][0] : null),
                 context: d[1],
                 args:    d[3][0],
-                range: getLoc(d[0] != null ? d[0][0] : d[1],d[3][0])
+                range: getLoc(d[0] != null ? d[0][0][0] : d[1],d[3][0])
             })%}
         | (%kw_with __):? %kw_defaultAction _ ("#logmsg"|"#logtofile"|"#abort")
             {% d => ({
@@ -697,16 +674,16 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
                 args:    d[3][0],
                 range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
-        | (%kw_with __ ):? %kw_undo _ ( undo_label _ ):? (LOGICAL_EXPR | BOOL)
+        | ((%kw_set | %kw_with) __ ):? %kw_undo _ ( undo_label _ ):? (LOGICAL_EXPR | BOOL)
             {% d => ({
                 type:    'ContextExpression',
-                prefix : (d[0] != null ? d[0][0] : null),
+                prefix : (d[0] != null ? d[0][0][0] : null),
                 context: d[1],
                 args:    (filterNull(d[3])).concat(d[4]),
-                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
+                range:   getLoc(d[0] != null ? d[0][0][0] : d[1], d[4][0])
             })%}
 
-        undo_label -> STRING {% id %} | parameter {% id %} | VAR_NAME {% id %}
+    undo_label -> STRING {% id %} | parameter {% id %} | VAR_NAME {% id %}
 #---------------------------------------------------------------
 # CASE EXPRESSION --- OK
     CASE_EXPR
@@ -735,14 +712,14 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK # TODO: FINISH LOCATION
     FOR_LOOP
-        -> (%kw_for __ ) for_index _S for_iterator _S expr ( _ for_sequence ):? _ for_action _ expr
+        -> (%kw_for __ ) for_index _S for_iterator _S expr ( _ for_sequence ):? _ (%kw_do | %kw_collect) _ expr
             {% d => ({
                 type:     'ForStatement',
                 index:     d[1],
                 iteration: d[3],
                 value:     d[5],
                 sequence:  filterNull(d[6]),
-                action:    d[8],
+                action:    d[8][0],
                 body:      d[10],
                 range:     getLoc(d[0][0], d[10])
             })%}
@@ -803,8 +780,6 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
     for_by    -> %kw_by    _S expr {% d => d[2] %}
     for_where -> %kw_where _S expr {% d => d[2] %}
     for_while -> %kw_while _S expr {% d => d[2] %}
-
-    for_action -> %kw_do {% id %} | %kw_collect {% id %}
 #---------------------------------------------------------------
 # LOOP EXIT EXPRESSION --- OK
     LOOP_EXIT
@@ -1139,16 +1114,10 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
             }) %}
 
     param_name
-        -> VAR_NAME ":"
+        -> (VAR_NAME | kw_override) ":"
             {% d => ({
                 type:'Parameter',
-                value: d[0],
-                range: getLoc(d[0], d[1])
-            }) %}
-        | kw_override ":"
-            {% d => ({
-                type:'Parameter',
-                value: d[0],
+                value: d[0][0],
                 range: getLoc(d[0], d[1])
             }) %}
 #---------------------------------------------------------------
@@ -1316,17 +1285,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 
     kw_override
         -> %kw_attributes  {% id %}
-        | %kw_uicontrols   {% id %}
-        | %kw_group        {% id %}
-        | %kw_level        {% id %}
-        | %kw_menuitem     {% id %}
-        | %kw_separator    {% id %}
-        | %kw_submenu      {% id %}
-        | %kw_time         {% id %}
-        | %kw_set          {% id %}
         | %kw_parameters   {% id %}
-        | %kw_dontcollect  {% id %}
-        | %kw_continue     {% id %}
         | %kw_rollout      {% id %}
         | %kw_plugin       {% id %}
         | %kw_rcmenu       {% id %}
@@ -1334,7 +1293,6 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         | %kw_to           {% id %}
         | %kw_collect      {% id %}
         | %kw_return       {% id %}
-        | %kw_throw        {% id %}
 #===============================================================
 # PATH NAME
     # THIS JUST CAPTURES ALL THE LEVEL PATH IN ONE TOKEN....

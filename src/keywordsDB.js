@@ -80,7 +80,6 @@
 		'radiobuttons',
 		'rcmenu',
 		'redraw',
-		'redraw',
 		'return',
 		'rollout',
 		'selection',
@@ -152,17 +151,6 @@ const kwContext = [
 	'quiet',
 	'redraw'
 ];
-const kwObjectSet = [
-	'cameras',
-	'geometry',
-	'helpers',
-	'lights',
-	'objects',
-	'selection',
-	'shapes',
-	'spacewarps',
-	'systems'
-];
 const keywordsTypeDB = {
 	'kw_about'        : 'about',
 	'kw_as'           : 'as',
@@ -194,7 +182,6 @@ const keywordsTypeDB = {
 	'kw_menuitem'     : 'menuitem',
 	'kw_not'          : 'not',
 	'kw_null'         : ['undefined', 'unsupplied', 'ok', 'silentvalue'],
-	//'kw_objectset'    : kwObjectSet,
 	'kw_of'           : 'of',
 	'kw_on'           : 'on',
 	'kw_parameters'   : 'parameters',
@@ -220,11 +207,6 @@ const keywordsTypeDB = {
 	'kw_where'        : 'where',
 	'kw_while'        : 'while',
 	'kw_with'         : 'with',
-	// 'kw_continue':    'continue',
-	// 'kw_dontcollect': 'dontcollect',
-	// 'kw_max':         'max',
-	// 'kw_redraw':      'redraw',
-	// 'kw_throw':       'throw',
 };
 
 module.exports = { keywordsDB, keywordsTypeDB };
