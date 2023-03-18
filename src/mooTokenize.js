@@ -4,7 +4,8 @@ const moo = require('moo');
 const { keywordsTypeDB } = require('./keywordsDB');
 //-----------------------------------------------------------------------------------
 // CASE INSENSITIVE FOR KEYWORKDS
-const caseInsensitiveKeywords = map => {
+const caseInsensitiveKeywords = map =>
+{
 	const transform = moo.keywords(map);
 	return text => transform(text.toLowerCase());
 };
@@ -22,29 +23,29 @@ module.exports = {
 		// { match: /"""[^]*?"""/, lineBreaks: true, value: x => x.slice(3, -3)},
 	],
 
-	// Strings ~RESOURCE~
-	locale: /~[A-Za-z0-9_]+~/,
-
 	// whitespace -  also matches line continuations
 	ws: [
 		{ match: /\\(?:[ \t]*[;\r\n]+)/, lineBreaks: true },
-		/[ \t]+/
+		{ match: /[ \t]+}/}
 	],
 
 	// newline: { match: /(?:[\r\n]|[\\]\s*[\r\n])+/, lineBreaks: true },
 	newline: { match: /(?:[;\r\n]+)/, lineBreaks: true },
 
+	// Strings ~RESOURCE~
+	locale: /~[A-Za-z0-9_]+~/,
+
 	// path_name $mounstrosity*/_? /\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/
 	path: [
 		{ match: /[$]['](?:[^'])+[']/, lineBreaks: true },
-		/[$](?:[A-Za-z0-9_*?/]|\.{3}|\\[\\/"'])+/,
-		'$'
+		{ match: /[$](?:[A-Za-z0-9_*?/]|\.{3}|\\[\\/"'])+/ },
+		{ match: /\$/ }
 	],
 
 	// Identifiers
 	identity: [
-		/['](?:\\['\\rn]|[^'\\\n])*?[']/,
-		/::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+		{ match: /['](?:\\['\\rn]|[^'\\\n])*?[']/ },
+		{ match: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
 		{
 			match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
 			// match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*(?![:.])/,
@@ -54,21 +55,21 @@ module.exports = {
 
 	// #name literals
 	name: [
-		/#[A-Za-z0-9_]+/,
-		/#['][A-Za-z0-9_]+[']/
+		{ match: /#[A-Za-z0-9_]+/ },
+		{ match: /#['][A-Za-z0-9_]+[']/ }
 	],
 
 	// Symbols
-	amp:   '?',
+	amp: '?',
 	sharp: '#',
 
 	// Parens	
-	lparen:   '(',
-	rparen:   ')',
+	lparen: '(',
+	rparen: ')',
 	lbracket: '[',
 	rbracket: ']',
-	lbrace:   '{',
-	rbrace:   '}',
+	lbrace: '{',
+	rbrace: '}',
 
 	// Operators.
 	comparison: ['==', '!=', '>', '<', '>=', '<='],
@@ -77,24 +78,24 @@ module.exports = {
 
 	// Time format
 	time: [
-		/(?:(?:[0-9]+[.])?[0-9]+[mMsSfFtT])+/,
-		/(?:(?:[0-9]+[.])[0-9]*[mMsSfFtT])+/,
-		/[0-9]+[:][0-9]+[.][0-9]*/
+		{ match: /(?:(?:[0-9]+[.])?[0-9]+[mMsSfFtT])+/ },
+		{ match: /(?:(?:[0-9]+[.])[0-9]*[mMsSfFtT])+/ },
+		{ match: /[0-9]+[:][0-9]+[.][0-9]*/ }
 	],
 
 	// Delimiters
-	bitrange:  '..',
+	bitrange: '..',
 	delimiter: '.',
-	sep:       ',',
-	param:     ':',
+	sep: ',',
+	param: ':',
 
 	// Number formats
 	number: [
-		/0[xX][0-9a-fA-F]+/,
-		/(?:[0-9]*)[.](?:[0-9]+(?:[eEdD][+-]?[0-9]+)?)/, // 123.123d-6
-		/(?:[0-9]+\.(?!\.))/, // 123.
-		/[0-9]+(?:[lLpP]|[eEdD][+-]?[0-9]+)?/, // 456 | 123e-5 | integers
-		/(?:(?<!\.)\.[0-9]+(?:[eEdD][+-]?[0-9]+)?)/ // -.789e-9
+		{ match: /0[xX][0-9a-fA-F]+/},
+		{ match: /(?:[0-9]*)[.](?:[0-9]+(?:[eEdD][+-]?[0-9]+)?)/}, // 123.123d-6
+		{ match: /(?:[0-9]+\.(?!\.))/}, // 123.
+		{ match: /[0-9]+(?:[lLpP]|[eEdD][+-]?[0-9]+)?/}, // 456 | 123e-5 | integers
+		{ match: /(?:(?<!\.)\.[0-9]+(?:[eEdD][+-]?[0-9]+)?)/} // -.789e-9
 	],
 
 	// COMPLETE WITH UNWANTED CHARS HERE THAT CAN BREAK THE TOKENIZER
@@ -103,6 +104,6 @@ module.exports = {
 	error: [
 		{ match: /[¿¡!`´]/, error: true },
 		// { match: /[/?\\]{2,}/ },
-		{ match: /.+/}, //match any character left
+		{ match: /.+/ }, //match any character left
 	]
 };
