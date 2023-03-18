@@ -1,6 +1,17 @@
 # @preprocessor typescript
 @{%
-    const mxLexer = require('./mooTokenize.js');
+    //Tokens
+    const moo = require('moo');
+    const tokens = require('./mooTokenize.js');
+    let mxLexer = moo.compile(tokens);
+    /*
+    const tokens = require("./tokens");
+    const { makeLexer } = require("moo-ignore");
+    let mxLexer = makeLexer(tokens); // Build the lexer
+    mxLexer.ignore("ws"); // list of types of the tokens to ignore
+    */
+
+
     // Utilities
     function getNested(obj, ...args) {
         return args.reduce((obj, level) => obj && obj[level], obj)
@@ -19,21 +30,7 @@
 
     const filterNull = arr => arr != null ? arr.filter(e => e != null) : [];
 
-    const merge = (...args) => {
-        /*
-        let res = [];
-        args.forEach( elem => {
-            if (Array.isArray(elem)) {
-                res = res.concat.apply(res, elem);
-            } else {
-                res.push(elem);
-            }
-        });
-        return res.length ? res.filter(e => e != null) : null;
-        //*/
-        // return [].concat(...args).filter(e => e != null);
-         return args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
-    }
+    const merge = (...args) => args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
 
     // Offset is not reilable, changed to line - character
     const getLoc = (start, end) => {
@@ -72,7 +69,7 @@
             }
         }
         
-        let range = {
+        return {
             start: startOffset,
             end: endOffset
         };
@@ -90,16 +87,7 @@
 
         if (!last || !last.range || !last.range.end) {return;}
 
-        let temp = {
-            start: {...a.range.start},
-            end: {...last.range.end}
-        };
-
-        Object.assign(a.range, temp);
-    };
-    // parser configuration
-    //let capture_ws = false;
-    //let capture_comments = false;
+        Object.assign(
     //----------------------------------------------------------
     // RULES
     //----------------------------------------------------------
@@ -1268,9 +1256,8 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
     # some keywords can be VAR_NAME too...
     VAR_NAME
         -> %identity      {% Identifier %}
-         | %global_typed  {% Identifier %}
-         | %typed_iden    {% Identifier %}
          | kw_reserved    {% Identifier %}
+         | %amp           {% Identifier %}
 
 # CONTEXTUAL KEYWORDS...can be used as identifiers outside the context...
     kw_reserved
@@ -1300,24 +1287,22 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 #---------------------------------------------------------------
 # TOKENS
     # Time
-    TIME -> %time          {% Literal %} #{% d => Literal(d, 'time') %}
+    TIME -> %time   {% Literal %} #{% d => Literal(d, 'time') %}
     # Bool
     BOOL
-        -> %kw_bool        {% Literal %} #{% d => Literal(d, 'boolean') %}
-        | %kw_on           {% Literal %} #{% d => Literal(d, 'boolean') %}
+        -> %kw_bool  {% Literal %} #{% d => Literal(d, 'boolean') %}
+        | %kw_on     {% Literal %} #{% d => Literal(d, 'boolean') %}
     # Void values
-    VOID -> %kw_null       {% Literal %} #{% d => Literal(d, 'void') %}
+    VOID -> %kw_null {% Literal %} #{% d => Literal(d, 'void') %}
     #---------------------------------------------------------------
     # Numbers
-    NUMBER
-        -> %number  {% Literal %}
-        | %hex      {% Literal %}
+    NUMBER -> %number {% Literal %}
     # String
-    STRING -> %string      {% Literal %}
+    STRING -> %string {% Literal %}
     # Names
-    NAME_VALUE -> %name    {% Literal %}
+    NAME_VALUE -> %name {% Literal %}
     #Resource
-    RESOURCE -> %locale    {% Literal %}
+    RESOURCE -> %locale {% Literal %}
 #===============================================================
 # WHITESPACE AND NEW LINES
     # comments are skipped in the parse tree!   

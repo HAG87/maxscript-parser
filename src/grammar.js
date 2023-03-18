@@ -1,9 +1,20 @@
-// Generated automatically by nearley, version 2.19.7
+// Generated automatically by nearley, version 2.20.1
 // http://github.com/Hardmath123/nearley
 (function () {
 function id(x) { return x[0]; }
 
-    const mxLexer = require('./mooTokenize.js');
+    //Tokens
+    const moo = require('moo');
+    const tokens = require('./mooTokenize.js');
+    const mxLexer = moo.compile(tokens);
+    /*
+    const tokens = require("./tokens");
+    const { makeLexer } = require("moo-ignore");
+    let mxLexer = makeLexer(tokens); // Build the lexer
+    mxLexer.ignore("ws"); // list of types of the tokens to ignore
+    */
+
+
     // Utilities
     function getNested(obj, ...args) {
         return args.reduce((obj, level) => obj && obj[level], obj)
@@ -22,21 +33,7 @@ function id(x) { return x[0]; }
 
     const filterNull = arr => arr != null ? arr.filter(e => e != null) : [];
 
-    const merge = (...args) => {
-        /*
-        let res = [];
-        args.forEach( elem => {
-            if (Array.isArray(elem)) {
-                res = res.concat.apply(res, elem);
-            } else {
-                res.push(elem);
-            }
-        });
-        return res.length ? res.filter(e => e != null) : null;
-        //*/
-        // return [].concat(...args).filter(e => e != null);
-         return args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
-    }
+    const merge = (...args) => args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
 
     // Offset is not reilable, changed to line - character
     const getLoc = (start, end) => {
@@ -93,16 +90,14 @@ function id(x) { return x[0]; }
 
         if (!last || !last.range || !last.range.end) {return;}
 
-        let temp = {
-            start: {...a.range.start},
-            end: {...last.range.end}
-        };
-
-        Object.assign(a.range, temp);
+        Object.assign(
+            a.range,
+            {
+                start: {...a.range.start},
+                end: {...last.range.end}
+            });
+        return;
     };
-    // parser configuration
-    //let capture_ws = false;
-    //let capture_comments = false;
     //----------------------------------------------------------
     // RULES
     //----------------------------------------------------------
@@ -1052,9 +1047,8 @@ var grammar = {
     {"name": "LBRACE", "symbols": [(mxLexer.has("lbrace") ? {type: "lbrace"} : lbrace), "_"], "postprocess": id},
     {"name": "RBRACE", "symbols": ["_", (mxLexer.has("rbrace") ? {type: "rbrace"} : rbrace)], "postprocess": d => d[1]},
     {"name": "VAR_NAME", "symbols": [(mxLexer.has("identity") ? {type: "identity"} : identity)], "postprocess": Identifier},
-    {"name": "VAR_NAME", "symbols": [(mxLexer.has("global_typed") ? {type: "global_typed"} : global_typed)], "postprocess": Identifier},
-    {"name": "VAR_NAME", "symbols": [(mxLexer.has("typed_iden") ? {type: "typed_iden"} : typed_iden)], "postprocess": Identifier},
     {"name": "VAR_NAME", "symbols": ["kw_reserved"], "postprocess": Identifier},
+    {"name": "VAR_NAME", "symbols": [(mxLexer.has("amp") ? {type: "amp"} : amp)], "postprocess": Identifier},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_uicontrols") ? {type: "kw_uicontrols"} : kw_uicontrols)], "postprocess": id},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_group") ? {type: "kw_group"} : kw_group)], "postprocess": id},
     {"name": "kw_reserved", "symbols": [(mxLexer.has("kw_level") ? {type: "kw_level"} : kw_level)], "postprocess": id},
@@ -1078,7 +1072,6 @@ var grammar = {
     {"name": "BOOL", "symbols": [(mxLexer.has("kw_on") ? {type: "kw_on"} : kw_on)], "postprocess": Literal},
     {"name": "VOID", "symbols": [(mxLexer.has("kw_null") ? {type: "kw_null"} : kw_null)], "postprocess": Literal},
     {"name": "NUMBER", "symbols": [(mxLexer.has("number") ? {type: "number"} : number)], "postprocess": Literal},
-    {"name": "NUMBER", "symbols": [(mxLexer.has("hex") ? {type: "hex"} : hex)], "postprocess": Literal},
     {"name": "STRING", "symbols": [(mxLexer.has("string") ? {type: "string"} : string)], "postprocess": Literal},
     {"name": "NAME_VALUE", "symbols": [(mxLexer.has("name") ? {type: "name"} : name)], "postprocess": Literal},
     {"name": "RESOURCE", "symbols": [(mxLexer.has("locale") ? {type: "locale"} : locale)], "postprocess": Literal},
