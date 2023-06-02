@@ -812,7 +812,7 @@ var grammar = {
     {"name": "destination", "symbols": ["property"], "postprocess": id},
     {"name": "destination", "symbols": ["index"], "postprocess": id},
     {"name": "destination", "symbols": ["PATH_NAME"], "postprocess": id},
-    {"name": "MATH_EXPR", "symbols": ["rest"], "postprocess": id},
+    {"name": "MATH_EXPR", "symbols": ["sum"], "postprocess": id},
     {"name": "rest", "symbols": ["rest", "minus_opt", "sum"], "postprocess":  d => ({
             type:     'MathExpression',
             operator: d[1],
@@ -824,9 +824,11 @@ var grammar = {
     {"name": "minus_opt", "symbols": ["_S_", {"literal":"-"}, "__"], "postprocess": d => d[1]},
     {"name": "minus_opt", "symbols": [{"literal":"-"}, "__"], "postprocess": id},
     {"name": "minus_opt", "symbols": [{"literal":"-"}], "postprocess": id},
-    {"name": "sum", "symbols": ["sum", "_S", {"literal":"+"}, "_", "prod"], "postprocess":  d => ({
+    {"name": "sum$subexpression$1", "symbols": [{"literal":"+"}]},
+    {"name": "sum$subexpression$1", "symbols": [{"literal":"-"}]},
+    {"name": "sum", "symbols": ["sum", "_S", "sum$subexpression$1", "_", "prod"], "postprocess":  d => ({
             type:     'MathExpression',
-            operator: d[2],
+            operator: d[2][0],
             left:     d[0],
             right:    d[4],
             range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 

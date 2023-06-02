@@ -940,27 +940,12 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
     #             }) %}
     #         | math_operand {% id %}
 
-    MATH_EXPR -> rest {% id %}
-
-        rest -> rest minus_opt sum
+    MATH_EXPR -> sum {% id %}
+   
+        sum -> sum _S ("+" | "-") _ prod
                 {% d => ({
                     type:     'MathExpression',
-                    operator: d[1],
-                    left:     d[0],
-                    right:    d[2],
-                    range: getLoc(Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
-                })%}
-            | sum {% id %}    
-    
-        minus_opt 
-        -> _S_ "-" __ {% d => d[1] %}
-        | "-" __      {% id %}
-        | "-"         {% id %}
-    
-        sum -> sum _S "+" _ prod
-                {% d => ({
-                    type:     'MathExpression',
-                    operator: d[2],
+                    operator: d[2][0],
                     left:     d[0],
                     right:    d[4],
                     range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
