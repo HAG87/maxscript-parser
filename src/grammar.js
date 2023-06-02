@@ -22,21 +22,7 @@ function id(x) { return x[0]; }
 
     const filterNull = arr => arr != null ? arr.filter(e => e != null) : [];
 
-    const merge = (...args) => {
-        /*
-        let res = [];
-        args.forEach( elem => {
-            if (Array.isArray(elem)) {
-                res = res.concat.apply(res, elem);
-            } else {
-                res.push(elem);
-            }
-        });
-        return res.length ? res.filter(e => e != null) : null;
-        //*/
-        // return [].concat(...args).filter(e => e != null);
-         return args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
-    }
+    const merge = (...args) => args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
 
     // Offset is not reilable, changed to line - character
     const getLoc = (start, end) => {
@@ -75,11 +61,10 @@ function id(x) { return x[0]; }
             }
         }
         
-        let range = {
+        return {
             start: startOffset,
             end: endOffset
         };
-        return range;
     };
 
     const addLoc = (a, ...loc) => {
@@ -93,16 +78,14 @@ function id(x) { return x[0]; }
 
         if (!last || !last.range || !last.range.end) {return;}
 
-        let temp = {
-            start: {...a.range.start},
-            end: {...last.range.end}
-        };
-
-        Object.assign(a.range, temp);
+        Object.assign(
+            a.range,
+            {
+                start: {...a.range.start},
+                end: {...last.range.end}
+            });
+        return;
     };
-    // parser configuration
-    //let capture_ws = false;
-    //let capture_comments = false;
     //----------------------------------------------------------
     // RULES
     //----------------------------------------------------------
@@ -813,17 +796,6 @@ var grammar = {
     {"name": "destination", "symbols": ["index"], "postprocess": id},
     {"name": "destination", "symbols": ["PATH_NAME"], "postprocess": id},
     {"name": "MATH_EXPR", "symbols": ["sum"], "postprocess": id},
-    {"name": "rest", "symbols": ["rest", "minus_opt", "sum"], "postprocess":  d => ({
-            type:     'MathExpression',
-            operator: d[1],
-            left:     d[0],
-            right:    d[2],
-            range: getLoc(Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
-        })},
-    {"name": "rest", "symbols": ["sum"], "postprocess": id},
-    {"name": "minus_opt", "symbols": ["_S_", {"literal":"-"}, "__"], "postprocess": d => d[1]},
-    {"name": "minus_opt", "symbols": [{"literal":"-"}, "__"], "postprocess": id},
-    {"name": "minus_opt", "symbols": [{"literal":"-"}], "postprocess": id},
     {"name": "sum$subexpression$1", "symbols": [{"literal":"+"}]},
     {"name": "sum$subexpression$1", "symbols": [{"literal":"-"}]},
     {"name": "sum", "symbols": ["sum", "_S", "sum$subexpression$1", "_", "prod"], "postprocess":  d => ({
@@ -929,10 +901,8 @@ var grammar = {
     {"name": "call_params$ebnf$1$subexpression$2", "symbols": ["_S", "parameter"]},
     {"name": "call_params$ebnf$1", "symbols": ["call_params$ebnf$1", "call_params$ebnf$1$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "call_params", "symbols": ["call_params$ebnf$1"], "postprocess": flatten},
-    {"name": "call_args$ebnf$1$subexpression$1", "symbols": ["_S_", "unary_only_operand"]},
     {"name": "call_args$ebnf$1$subexpression$1", "symbols": ["_S", "operand"]},
     {"name": "call_args$ebnf$1", "symbols": ["call_args$ebnf$1$subexpression$1"]},
-    {"name": "call_args$ebnf$1$subexpression$2", "symbols": ["_S_", "unary_only_operand"]},
     {"name": "call_args$ebnf$1$subexpression$2", "symbols": ["_S", "operand"]},
     {"name": "call_args$ebnf$1", "symbols": ["call_args$ebnf$1", "call_args$ebnf$1$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "call_args", "symbols": ["call_args$ebnf$1"], "postprocess": flatten},
@@ -971,7 +941,7 @@ var grammar = {
             right:    d[1],
             range: getLoc(d[0], d[1])
         }) },
-    {"name": "unary_operand", "symbols": [{"literal":"-"}, "_", "unary_operand"], "postprocess":  d => ({
+    {"name": "unary_operand", "symbols": [{"literal":"-"}, "_", "operand"], "postprocess":  d => ({
             type: 'UnaryExpression',
             operator: d[0],
             right:    d[2],

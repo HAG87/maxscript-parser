@@ -19,21 +19,7 @@
 
     const filterNull = arr => arr != null ? arr.filter(e => e != null) : [];
 
-    const merge = (...args) => {
-        /*
-        let res = [];
-        args.forEach( elem => {
-            if (Array.isArray(elem)) {
-                res = res.concat.apply(res, elem);
-            } else {
-                res.push(elem);
-            }
-        });
-        return res.length ? res.filter(e => e != null) : null;
-        //*/
-        // return [].concat(...args).filter(e => e != null);
-         return args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
-    }
+    const merge = (...args) => args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
 
     // Offset is not reilable, changed to line - character
     const getLoc = (start, end) => {
@@ -72,11 +58,10 @@
             }
         }
         
-        let range = {
+        return {
             start: startOffset,
             end: endOffset
         };
-        return range;
     };
 
     const addLoc = (a, ...loc) => {
@@ -90,16 +75,14 @@
 
         if (!last || !last.range || !last.range.end) {return;}
 
-        let temp = {
-            start: {...a.range.start},
-            end: {...last.range.end}
-        };
-
-        Object.assign(a.range, temp);
+        Object.assign(
+            a.range,
+            {
+                start: {...a.range.start},
+                end: {...last.range.end}
+            });
+        return;
     };
-    // parser configuration
-    //let capture_ws = false;
-    //let capture_comments = false;
     //----------------------------------------------------------
     // RULES
     //----------------------------------------------------------
@@ -1080,7 +1063,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
         -> (_S parameter):+ {% flatten %}
 
     call_args
-        -> ( _S_ unary_only_operand | _S operand):+ {% flatten %}
+        -> (_S operand):+ {% flatten %}
 
     call_caller
         -> unary_operand {% id %}
@@ -1137,7 +1120,7 @@ Main -> _ _expr_seq:? _ {% d => d[1] %}
 
     unary_operand 
         # -> "-" _ expr
-        -> "-" _ unary_operand
+        -> "-" _ operand
             {% d => ({
                 type: 'UnaryExpression',
                 operator: d[0],
