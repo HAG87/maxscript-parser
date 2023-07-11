@@ -1,20 +1,13 @@
 // moo tokenizer
-// const moo = require('moo-ignore');
 const moo = require('moo');
+const { caseInsensitiveKeywords } = require('./mooUtils');
 const { keywordsTypeDB } = require('./keywordsDB');
 //-----------------------------------------------------------------------------------
-// CASE INSENSITIVE FOR KEYWORKDS
-const caseInsensitiveKeywords = map =>
-{
-	const transform = moo.keywords(map);
-	return text => transform(text.toLowerCase());
-};
-//-----------------------------------------------------------------------------------
 // Moo Lexer
-module.exports = {
-	// Comments
+const mxLexer = moo.compile({
+	// the comments
 	comment_SL: /--.*$/,
-	comment_BLK: { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks: true, },
+	comment_BLK: { match: /\/\*(?:.|[\n\r])*?\*\//, lineBreaks: true },
 
 	// strings
 	string: [
@@ -26,44 +19,40 @@ module.exports = {
 	// whitespace -  also matches line continuations
 	ws: [
 		{ match: /\\(?:[ \t]*[;\r\n]+)/, lineBreaks: true },
-		{ match: /[ \t]+}/}
+		{ match: /[ \t]+/ }
 	],
 
 	// newline: { match: /(?:[\r\n]|[\\]\s*[\r\n])+/, lineBreaks: true },
 	newline: { match: /(?:[;\r\n]+)/, lineBreaks: true },
 
-	// Strings ~RESOURCE~
+	// strings ~RESOURCE~
 	locale: /~[A-Za-z0-9_]+~/,
 
-	// path_name $mounstrosity*/_? /\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/
 	path: [
-		{ match: /[$]['](?:[^'])+[']/, lineBreaks: true },
-		{ match: /[$](?:[A-Za-z0-9_*?/]|\.{3}|\\[\\/"'])+/ },
+		{ match: /\$(?:(?:[A-Za-z0-9_*\\?]+|[.]{3}|'[^']+')[\\/]?)+/, lineBreaks: true },
 		{ match: /\$/ }
-	],
-
-	// Identifiers
-	identity: [
-		{ match: /['](?:\\['\\rn]|[^'\\\n])*?[']/ },
-		{ match: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
-		{
-			match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
-			// match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*(?![:.])/,
-			type: caseInsensitiveKeywords(keywordsTypeDB)
-		},
 	],
 
 	// #name literals
 	name: [
 		{ match: /#[A-Za-z0-9_]+/ },
-		{ match: /#['][A-Za-z0-9_]+[']/ }
+		{ match: /#'[A-Za-z0-9_]+'/ }
 	],
 
-	// Symbols
-	amp: '?',
-	sharp: '#',
+	identity: [
+		{ match: /'(?:(?:[^']|[\r\n])+)'/, lineBreaks: true },
+		{ match: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
+		{ match: /[&][A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
+		{
+			match: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+			type: caseInsensitiveKeywords(keywordsTypeDB)
+		},
+	],
 
-	// Parens	
+	sharp: '#',
+	questionmark: '?',
+
+	// PARENS, BRACKETS, BRACES
 	lparen: '(',
 	rparen: ')',
 	lbracket: '[',
@@ -76,34 +65,37 @@ module.exports = {
 	assign: ['=', '+=', '-=', '*=', '/='],
 	math: ['+', '-', '*', '/', '^'],
 
-	// Time format
+	// time format
 	time: [
-		{ match: /(?:(?:[0-9]+[.])?[0-9]+[mMsSfFtT])+/ },
-		{ match: /(?:(?:[0-9]+[.])[0-9]*[mMsSfFtT])+/ },
+		{ match: /(?:(?:[0-9]+[.])?[0-9]+[msftMSFT])+/ },
+		{ match: /(?:(?:[0-9]+[.])[0-9]*[msftMSFT])+/ },
 		{ match: /[0-9]+[:][0-9]+[.][0-9]*/ }
 	],
 
-	// Delimiters
-	bitrange: '..',
-	delimiter: '.',
-	sep: ',',
-	param: ':',
-
-	// Number formats
+	// number formats
 	number: [
-		{ match: /0[xX][0-9a-fA-F]+/},
-		{ match: /(?:[0-9]*)[.](?:[0-9]+(?:[eEdD][+-]?[0-9]+)?)/}, // 123.123d-6
-		{ match: /(?:[0-9]+\.(?!\.))/}, // 123.
-		{ match: /[0-9]+(?:[lLpP]|[eEdD][+-]?[0-9]+)?/}, // 456 | 123e-5 | integers
-		{ match: /(?:(?<!\.)\.[0-9]+(?:[eEdD][+-]?[0-9]+)?)/} // -.789e-9
+		/0[xX][0-9a-fA-F]+/,
+		/(?:[0-9]*)[.](?:[0-9]+(?:[eEdD][+-]?[0-9]+)?)/, // 123.123d-6
+		/(?:[0-9]+\.(?!\.))/, // 123.
+		/[0-9]+(?:[lLpP]|[eEdD][+-]?[0-9]+)?/, // 456 | 123e-5 | integers
+		/(?:(?<!\.)\.[0-9]+(?:[eEdD][+-]?[0-9]+)?)/ // -.789e-9
 	],
 
-	// COMPLETE WITH UNWANTED CHARS HERE THAT CAN BREAK THE TOKENIZER
-	// This contains the rest of the stack in case of error.
-	// fatalError: moo.error
+	// DELIMITERS
+	bitrange: '..',
+	dot: '.',
+	comma: ',',
+	// statement: ';',
+	colon: ':',
+
+	// [\$?`] COMPLETE WITH UNWANTED CHARS HERE THAT CAN BREAK THE TOKENIZER
 	error: [
 		{ match: /[¿¡!`´]/, error: true },
-		// { match: /[/?\\]{2,}/ },
-		{ match: /.+/ }, //match any character left
-	]
-};
+		{ match: /[/?\\]{2,}/ },
+		// { match: /.+/ } //match any character left
+	],
+	// This contains the rest of the stack in case of error.
+	// fatalError: moo.error
+});
+//-----------------------------------------------------------------------------------
+module.exports = mxLexer;
