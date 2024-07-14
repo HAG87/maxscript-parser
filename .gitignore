@@ -5,3 +5,4 @@ test
 examples
 lib
 debug.log
+src/grammar.js
