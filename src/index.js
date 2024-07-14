@@ -7,6 +7,8 @@ const {mxsParseSource} = require('./mxsParser.js');
 const {TokenizeSource, TokenizeSourceFormat} = require('./mxsTokenize');
 
 const { FileWrite, JsonFileWrite, readDirR, prefixPath } = require('./utils.js');
+
+const { derive } = require('./deriveAST.js');
 //-----------------------------------------------------------------------------------
 // const traverse2 = require('ast-monkey-traverse');
 //-----------------------------------------------------------------------------------
@@ -39,6 +41,8 @@ let examples = {
 	17: './examples/example-17.ms',
 	18: './examples/example-18.ms',
 	19: './examples/example-19.ms',
+	20: './examples/example-20.ms',
+	21: './examples/example-21.ms',
 }
 //-----------------------------------------------------------------------------------
 const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
@@ -48,7 +52,8 @@ async function Main(src) {
 		let parser = new mxsParseSource(source(src));
 		// parser.parseWithErrors();
 		var cst = parser.parsedCST;
-		JsonFileWrite('test/CST.json', cst);
+		// derive(cst);
+		// JsonFileWrite('test/CST.json', cst);
 		// terminate the workers...
 		return cst;
 	} catch (err) {
@@ -58,15 +63,15 @@ async function Main(src) {
 		// ...
 	}
 }
-Main(examples[19]);
-// console.log(TokenizeSource(source(examples[1])));
+Main(examples[21]);
+// console.log(TokenizeSource(source(examples[21])));
 //-----------------------------------------------------------------------------------
 //	PRETTY PRINT - COMPRESS CODE
 //-----------------------------------------------------------------------------------
 /*
-let toks = TokenizeSourceFormat(source(examples[2]));
+let toks = TokenizeSource(source(examples[21]));
 JsonFileWrite('test/TOKENS.json', toks);
-*/
+// */
 // TEST
 /*
 Main(examples[14])
