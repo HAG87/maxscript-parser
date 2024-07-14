@@ -865,23 +865,6 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     decl
         -> VAR_NAME  {% id %}
         | ASSIGNMENT {% id %}
-    # decl
-    #     -> VAR_NAME
-    #         {% d => ({
-    #             type:     'Declaration',
-    #             id:       d[0],
-    #             operator: null,
-    #             value:    null,
-    #             range:    getLoc(d[0])
-    #         }) %}
-    #     | ASSIGNMENT
-    #         {% d => {
-    #             let res = {...d[0]};
-    #             res.type = 'Declaration';
-    #             res.id = res.operand;
-    #             delete res.operand;
-    #             return res;
-    #         } %}
 #---------------------------------------------------------------
 #ASSIGNMENT --- OK
     ASSIGNMENT
@@ -901,39 +884,6 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         | PATH_NAME {% id %}
 #---------------------------------------------------------------
 # MATH EXPRESSION ---  OK
-    # MATH_EXPR
-    #     -> MATH_EXPR __:? ("^"|"*"|"/"|"+"|"-") __:? (uny | as)
-    #             {% d => ({
-    #                 type:     'MathExpression',
-    #                 operator: d[2][0],
-    #                 left:     d[0],
-    #                 right:    d[4][0],
-    #                 range: getLoc(
-    #                     Array.isArray(d[0]) ? d[0][0] : d[0],
-    #                     Array.isArray(d[4]) ? d[4][0] : d[4])
-    #             })%}
-    #     | (uny | as) __:?  ("^"|"*"|"/"|"+"|"-") __:? (uny | as)
-    #             {% d => ({
-    #                 type:     'MathExpression',
-    #                 operator: d[2][0],
-    #                 left:     d[0][0],
-    #                 right:    d[4][0],
-    #                 range: getLoc(
-    #                     Array.isArray(d[0]) ? d[0][0] : d[0],
-    #                     Array.isArray(d[4]) ? d[4][0] : d[4])
-    #             })%}
-    #     | as {% id %}
-    #     | math_operand {% id %}
-    #     uny 
-    #         -> _:? "-" __:? uny
-    #             {% d => ({
-    #                 type: '--UnaryExpression',
-    #                 operator: d[0],
-    #                 right:    d[2],
-    #                 range: getLoc(d[0], d[2])
-    #             }) %}
-    #         | math_operand {% id %}
-
     MATH_EXPR -> rest {% id %}
 
         rest -> rest minus_opt sum
@@ -994,8 +944,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
 
         # FN_CALL | operand | OP | passthrough math expression
         math_operand
-            -> OP   {% id %}
-            | FN_CALL          {% id %}
+            -> OP     {% id %}
+            | FN_CALL {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     LOGICAL_EXPR
@@ -1089,17 +1039,28 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         -> (_:? parameter):+ {% flatten %}
 
     call_args
-        -> ( _ UN_OP | _:? _OP):+ {% flatten %}
-        # -> ( _:? OP):+ {% flatten %}
+        -> (_:? UN_OP):+ {% flatten %}
+        
     call_caller
-        -> OP {% id %}
-        # -> VAR_NAME {% id %}
-        # | property  {% id %}
-        # | index     {% id %}
+        # -> OP {% id %}
+        -> VAR_NAME {% id %}
+        | property  {% id %}
+        | index     {% id %}
+        | expr_seq  {% id %}
+
+    UN_OP 
+        -> "-" _OP
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[0],
+                right:    d[1],
+                range: getLoc(d[0], d[1])
+            }) %}
+        | _OP {% id %}
 #---------------------------------------------------------------
 # PARAMETER CALL --- OK
     parameter
-        -> param_name __:? OP
+        -> param_name __:? UN_OP
             {% d => ({
                 type: 'ParameterAssignment',
                 param: d[0],
@@ -1114,6 +1075,24 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 value: d[0][0],
                 range: getLoc(d[0], d[1])
             }) %}
+
+#---------------------------------------------------------------
+# OPERANDS --- OK
+
+    OP -> "-" __:? OP
+            {% d => ({
+                type: 'UnaryExpression',
+                operator: d[0],
+                right:    d[2],
+                range: getLoc(d[0], d[2])
+            }) %}
+        | _OP {% id %}
+
+    _OP
+        -> factor     {% id %}
+        | property    {% id %}
+        | index       {% id %}
+
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
     property
@@ -1133,30 +1112,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             index:   d[3],
             range:   getLoc(d[2], d[4])
         })%}
-#---------------------------------------------------------------
-# OPERANDS --- OK
-    UN_OP 
-        -> "-" _OP
-            {% d => ({
-                type: 'UnaryExpression',
-                operator: d[0],
-                right:    d[1],
-                range: getLoc(d[0], d[1])
-            }) %}
 
-    OP -> "-" __:? OP
-            {% d => ({
-                type: 'UnaryExpression',
-                operator: d[0],
-                right:    d[2],
-                range: getLoc(d[0], d[2])
-            }) %}
-        | _OP {% id %}
-
-    _OP
-        -> factor     {% id %}
-        | property    {% id %}
-        | index       {% id %}
 #---------------------------------------------------------------
 # FACTORS --- OK
    factor
