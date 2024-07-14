@@ -29,7 +29,7 @@ var mooLexer = compile({
 	NL: { match: /(?:[\r\n]+)/, lineBreaks: true },
 
 	// Identities
-	param: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*:/,
+	param: /[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*:/,
 
 	identity: [
 		/\$'(?:[^'\n\r])*'/,
@@ -38,9 +38,9 @@ var mooLexer = compile({
 		/#[A-Za-z0-9_]+\b/,
 		/#'[A-Za-z0-9_]+'/,
 		/~[A-Za-z0-9_]+~/,
-		/::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+		/::[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*/,
 		{
-			match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*(?![:])/,
+			match: /[&]?[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*(?![:])/,
 			type: caseInsensitiveKeywords(keywordsDB)
 		}
 	],
@@ -114,9 +114,9 @@ const simpleLexer = compile({
 		{ match: /@"(?:\\"|[^"])*?(?:"|\\")/, lineBreaks: true },
 	],
 	// path: /\$(?:(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)+|'(?:[^'\n\r])+')?/,
-	// parameter: { match: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*(?=[ \t]*[:])/ },
-	// parameter: /[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]+:/,
-	// property: { match: /\.[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
+	// parameter: { match: /[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*(?=[ \t]*[:])/ },
+	// parameter: /[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]+:/,
+	// property: { match: /\.[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*/ },
 	// locale: { match: /~[A-Za-z0-9_]+~/ },
 	name: [
 		{ match: /#[A-Za-z0-9_]+\b/ },
@@ -127,15 +127,15 @@ const simpleLexer = compile({
 		{ match: /\$(?:[A-Za-z0-9_*?\/]|\.{3}|\\\\)*/ },
 		{ match: /'(?:\\['\\rn]|[^'\\\n])*'/ },
 		{ match: /~[A-Za-z0-9_]+~/ },
-		{ match: /::[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/ },
+		{ match: /::[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*/ },
 		{
-			match: /[&]?[A-Za-z_\u00C0-\u00FF][A-Za-z0-9_\u00C0-\u00FF]*/,
+			match: /[&]?[A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*/,
 			type: caseInsensitiveKeywords(mxsAPI)
 		}
 	],
 	unindexed: [
 		{
-			match: /(?:[^\"A-Za-z_\u00C0-\u00FF\s\t\r\n])+/,
+			match: /(?:[^\"A-Za-z_\p{L}\s\t\r\n])+/,
 			lineBreaks: true
 		}
 	],
