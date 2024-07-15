@@ -110,7 +110,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
 # ---------------------------------------------------------------
 # EXPRESSIONS LIST --- OK
     expr
-        -> simple_expr    {% id %}
+        -> SIMPLE_EXPR    {% id %}
         | VARIABLE_DECL   {% id %}
         | ASSIGNMENT      {% id %}
         | ATTRIBUTES_DEF  {% id %}
@@ -135,7 +135,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         # | item_group     {% id %}
         # | rollout_item   {% id %}
 
-    simple_expr
+    SIMPLE_EXPR
         -> MATH_EXPR      {% id %}
         | COMPARE_EXPR    {% id %}
         | LOGICAL_EXPR    {% id %}
@@ -586,43 +586,127 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         })%}
 #===============================================================
 # CONTEXT EXPRESSION --- OK
-    #---------------------------------------------------------------
-    CONTEXT_EXPR ->
-        context ( COMMA context ):* __:? expr
+
+    CONTEXT_EXPR
+        -> ctx_predicate ( COMMA ctx_predicate ):* __:? expr
             {% d => ({
                 type:    'ContextStatement',
                 context: merge(d[0], flatten(d[1])),
                 body:    d[3],
                 range:   getLoc(d[0], d[3])
             })%}
-
-
-    context
-        -> ((%kw_set | %kw_at) __):? (%kw_level | %kw_time) __:? uOPERAND
+        | ctx_set {% id %}
+    
+    ctx_set
+        -> %kw_set __:? (%kw_animate | %kw_time | %kw_in | %kw_level) __:? SIMPLE_EXPR
             {% d => ({
                 type:    'ContextExpression',
-                prefix :  (d[0] != null ? d[0][0][0] : null),
+                prefix : d[0],
                 context: d[2][0],
                 args:    d[4],
-                range:   getLoc(d[0] != null ? d[0][0][0] : d[1][0], d[3])
+                range:   getLoc(d[0], d[4])
             })%}
-        | (%kw_set __ ):? %kw_in __:? uOPERAND
+        | %kw_set __:? %kw_coordsys __:? (%kw_local | OPERAND)
             {% d => ({
                 type:    'ContextExpression',
-                prefix : (d[0] != null ? d[0][0] : null),
-                context: d[1],
-                args:    d[3],
-                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3])
+                prefix : d[0],
+                context: d[2],
+                args:    d[4][0],
+                range:   getLoc(d[0], d[4][0])
             })%}
-        | ((%kw_set | %kw_in) __ ):? %kw_coordsys __:? (%kw_local | OPERAND)
+        | %kw_set __:? %kw_about __:? (%kw_coordsys  | OPERAND)
             {% d => ({
-                type: 'ContextExpression',
-                prefix : (d[0] != null ? d[0][0][0] : null),
-                context: d[1],
-                args:    d[3][0],
-                range:   getLoc(d[0] != null ? d[0][0][0] : d[1], d[3][0])
+                type:    'ContextExpression',
+                prefix : d[0],
+                context: d[2],
+                args:    d[4][0],
+                range:   getLoc(d[0], d[4][0])
             })%}
-        | (%kw_set __ ):? %kw_about __:? (%kw_coordsys | OPERAND)
+        | %kw_set __:? %kw_undo __:? (STRING | VAR_NAME | parameter):? __:? SIMPLE_EXPR
+            {% d => ({
+                type:    'ContextExpression',
+                prefix : d[0],
+                context: d[2],
+                args:    filterNull(d[4]).concat(d[6]),
+                range:   getLoc(d[0], d[6])
+            })%}
+
+    # ctx_predicate
+    #     -> %kw_at __:? (%kw_level | %kw_time) __:? SIMPLE_EXPR
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : null,
+    #             context: d[0],
+    #             args:    filterNull(d[2]).concat(d[4]),
+    #             range:   getLoc(d[0], d[4])
+    #         })%}
+    #     | %kw_in __:? OPERAND
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : null,
+    #             context: d[0],
+    #             args:    d[3],
+    #             range:   getLoc(d[0], d[2])
+    #         })%}
+    #     | %kw_about __:? (%kw_coordsys | OPERAND)
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : null,
+    #             context: d[0],
+    #             args:    d[2][0],
+    #             range:   getLoc(d[0], d[2][0])
+    #         })%}
+    #     | %kw_in:?   __:? %kw_coordsys __:? (%kw_local | OPERAND)
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : d[0],
+    #             context: d[2],
+    #             args:    d[4][0],
+    #             range:   getLoc(d[0], d[4][0])
+    #         })%}
+    #     | %kw_with:? __:? %kw_undo __:? (STRING | VAR_NAME | parameter):? __:? SIMPLE_EXPR        
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : d[0],
+    #             context: d[2],
+    #             args:    filterNull(d[4]).concat(d[6]),
+    #             range:   getLoc(d[0], d[6])
+    #         })%}
+    #     | %kw_with:? __:? %kw_defaultAction __:? NAME_VALUE
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : d[0],
+    #             context: d[2],
+    #             args:    d[4],
+    #             range:   getLoc(d[0], d[4])
+    #         })%}
+    #     | %kw_with:? __:? (%kw_context | %kw_animate) __:? SIMPLE_EXPR
+    #         {% d => ({
+    #             type:    'ContextExpression',
+    #             prefix : d[0],
+    #             context: d[2][0],
+    #             args:    d[4],
+    #             range:   getLoc(d[0], d[4])
+    #         })%}
+
+    ctx_predicate
+        -> %kw_at __ (%kw_level | %kw_time) __:? uOPERAND
+            {% d => ({
+                type:    'ContextExpression',
+                prefix :  null,
+                context: d[0],
+                args:    filterNull(d[2]).concat(d[4]),
+                range:   getLoc(d[0], d[4])
+            })%}
+        | %kw_in __:? uOPERAND
+            {% d => ({
+                type:    'ContextExpression',
+                prefix : null,
+                context: d[0],
+                args:    d[2],
+                range:   getLoc(d[0], d[2])
+            })%}
+        | (%kw_in __):? %kw_coordsys __:? (%kw_local | OPERAND)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
@@ -630,29 +714,37 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 args:    d[3][0],
                 range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
-        | ((%kw_set | %kw_with) __):? %kw_context __:? simple_expr
+        |  %kw_about __:? (%kw_coordsys | OPERAND)
             {% d => ({
                 type: 'ContextExpression',
-                prefix :(d[0] != null ? d[0][0][0] : null),
+                prefix : null,
+                context: d[0],
+                args:    d[2][0],
+                range:   getLoc(d[0], d[2][0])
+            })%}
+        | (%kw_with __):? (%kw_context | %kw_animate) __:? SIMPLE_EXPR
+            {% d => ({
+                type: 'ContextExpression',
+                prefix :(d[0] != null ? d[0][0] : null),
                 context: d[1],
                 args:    d[3][0],
-                range: getLoc(d[0] != null ? d[0][0][0] : d[1],d[3][0])
+                range: getLoc(d[0] != null ? d[0][0] : d[1], d[3])
             })%}
-        | (%kw_with __):? %kw_defaultAction __:? ("#logmsg"|"#logtofile"|"#abort")
+        | (%kw_with __):? %kw_defaultAction __:? NAME_VALUE
             {% d => ({
                 type: 'ContextExpression',
                 prefix :  (d[0] != null ? d[0][0] : null),
                 context: d[1],
                 args:    d[3][0],
-                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3])
             })%}
-        | ((%kw_set | %kw_with) __ ):? %kw_undo __:? ( undo_label __:? ):? simple_expr
+        | (%kw_with __):? %kw_undo __:? ( undo_label __:? ):? SIMPLE_EXPR
             {% d => ({
                 type:    'ContextExpression',
-                prefix : (d[0] != null ? d[0][0][0] : null),
+                prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
                 args:    (filterNull(d[3])).concat(d[4]),
-                range:   getLoc(d[0] != null ? d[0][0][0] : d[1], d[4][0])
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
             })%}
 
     undo_label -> STRING {% id %} | parameter {% id %} | VAR_NAME {% id %}
