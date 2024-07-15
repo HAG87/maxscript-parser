@@ -50,8 +50,8 @@ const mxLexer = moo.compile({
 	],
 
 	sharp: /#/u,
+	amp: /&/u,
 	questionmark: /\?/u,
-
 	// PARENS, BRACKETS, BRACES
 	lparen:   /\(/u,
 	rparen:   /\)/u,
@@ -108,7 +108,7 @@ const mxLexer = moo.compile({
 	comma:    /,/u,
 	// statement: ';',
 	colon: /:/u,
-	amp:   /&/u,
+
 	// [\$?`] COMPLETE WITH UNWANTED CHARS HERE THAT CAN BREAK THE TOKENIZER
 	error: [
 		{ match: /[¿¡!`´]|[/?\\]{2,}/u, error: true },

@@ -7,8 +7,6 @@ const {mxsParseSource} = require('./mxsParser.js');
 const {TokenizeSource, TokenizeSourceFormat} = require('./mxsTokenize');
 
 const { FileWrite, JsonFileWrite, readDirR, prefixPath } = require('./utils.js');
-
-const { derive } = require('./deriveAST.js');
 //-----------------------------------------------------------------------------------
 // const traverse2 = require('ast-monkey-traverse');
 //-----------------------------------------------------------------------------------
@@ -52,8 +50,7 @@ async function Main(src) {
 		let parser = new mxsParseSource(source(src));
 		// parser.parseWithErrors();
 		var cst = parser.parsedCST;
-		// derive(cst);
-		// JsonFileWrite('test/CST.json', cst);
+		JsonFileWrite('test/CST.json', cst);
 		// terminate the workers...
 		return cst;
 	} catch (err) {
@@ -64,14 +61,14 @@ async function Main(src) {
 	}
 }
 Main(examples[21]);
-// console.log(TokenizeSource(source(examples[21])));
+// console.log(TokenizeSource(source(examples[1])));
 //-----------------------------------------------------------------------------------
 //	PRETTY PRINT - COMPRESS CODE
 //-----------------------------------------------------------------------------------
 /*
-let toks = TokenizeSource(source(examples[21]));
+let toks = TokenizeSourceFormat(source(examples[2]));
 JsonFileWrite('test/TOKENS.json', toks);
-// */
+*/
 // TEST
 /*
 Main(examples[14])

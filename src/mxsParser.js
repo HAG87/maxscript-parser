@@ -87,7 +87,7 @@ class mxsParseSource {
 		this.__source = source || '';
 		this.ParseSource();
 	}
-	/** Declare a new parser isntance */
+	/** Declare a new parser instance */
 	_declareParser() { this.parserInstance = declareParser(); }
 	/** get the source Stream */
 	get source() { return this.__source; }
