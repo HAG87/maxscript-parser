@@ -693,7 +693,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     #         })%}
 
     ctx_predicate
-        -> %kw_at __ (%kw_level | %kw_time) __:? uOPERAND
+        -> %kw_at __ (%kw_level | %kw_time) __:? unary
             {% d => ({
                 type:    'ContextExpression',
                 prefix :  null,
@@ -701,7 +701,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 args:    filterNull(d[2]).concat(d[4]),
                 range:   getLoc(d[0], d[4])
             })%}
-        | %kw_in __:? uOPERAND
+        | %kw_in __:? unary
             {% d => ({
                 type:    'ContextExpression',
                 prefix : null,
@@ -1068,7 +1068,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             | FN_CALL {% id %}
 
         # math_operand
-        #     -> uOPERAND     {% id %}
+        #     -> unary     {% id %}
         #     | FN_CALL       {% id %}
 
 #---------------------------------------------------------------
@@ -1109,7 +1109,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         -> (_:? UN_OP):+ {% flatten %}
         
     call_caller
-        # -> uOPERAND {% id %}
+        # -> unary {% id %}
         -> VAR_NAME {% id %}
         | property  {% id %}
         | index     {% id %}
@@ -1146,14 +1146,14 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
 #---------------------------------------------------------------
 # OPERANDS --- OK
 
-    uOPERAND -> "-" __:? uOPERAND
-            {% d => ({
-                type: 'UnaryExpression',
-                operator: d[0],
-                right:    d[2],
-                range: getLoc(d[0], d[2])
-            }) %}
-        | OPERAND {% id %}
+    # uOPERAND -> "-" __:? uOPERAND
+    #         {% d => ({
+    #             type: 'UnaryExpression',
+    #             operator: d[0],
+    #             right:    d[2],
+    #             range: getLoc(d[0], d[2])
+    #         }) %}
+    #     | OPERAND {% id %}
 
     OPERAND
         -> property    {% id %}

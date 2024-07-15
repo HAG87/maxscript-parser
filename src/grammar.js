@@ -710,7 +710,7 @@ var grammar = {
     {"name": "ctx_predicate$subexpression$1", "symbols": [(mxLexer.has("kw_time") ? {type: "kw_time"} : kw_time)]},
     {"name": "ctx_predicate$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "ctx_predicate$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "ctx_predicate", "symbols": [(mxLexer.has("kw_at") ? {type: "kw_at"} : kw_at), "__", "ctx_predicate$subexpression$1", "ctx_predicate$ebnf$1", "uOPERAND"], "postprocess":  d => ({
+    {"name": "ctx_predicate", "symbols": [(mxLexer.has("kw_at") ? {type: "kw_at"} : kw_at), "__", "ctx_predicate$subexpression$1", "ctx_predicate$ebnf$1", "unary"], "postprocess":  d => ({
             type:    'ContextExpression',
             prefix :  null,
             context: d[0],
@@ -719,7 +719,7 @@ var grammar = {
         })},
     {"name": "ctx_predicate$ebnf$2", "symbols": ["__"], "postprocess": id},
     {"name": "ctx_predicate$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "ctx_predicate", "symbols": [(mxLexer.has("kw_in") ? {type: "kw_in"} : kw_in), "ctx_predicate$ebnf$2", "uOPERAND"], "postprocess":  d => ({
+    {"name": "ctx_predicate", "symbols": [(mxLexer.has("kw_in") ? {type: "kw_in"} : kw_in), "ctx_predicate$ebnf$2", "unary"], "postprocess":  d => ({
             type:    'ContextExpression',
             prefix : null,
             context: d[0],
@@ -1252,9 +1252,9 @@ var grammar = {
             range: getLoc(d[0], d[2])
         }) },
     {"name": "uOPERAND", "symbols": ["OPERAND"], "postprocess": id},
-    {"name": "OPERAND", "symbols": ["factor"], "postprocess": id},
     {"name": "OPERAND", "symbols": ["property"], "postprocess": id},
     {"name": "OPERAND", "symbols": ["index"], "postprocess": id},
+    {"name": "OPERAND", "symbols": ["factor"], "postprocess": id},
     {"name": "property$subexpression$1$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "property$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "property$subexpression$1$ebnf$2", "symbols": ["__"], "postprocess": id},
