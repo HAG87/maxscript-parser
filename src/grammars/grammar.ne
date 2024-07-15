@@ -1275,6 +1275,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         -> %amp (VAR_NAME | PATH_NAME)
        {% d => ({
             type: 'refIdentifier',
+            operator: d[0],
             value: d[0],
             range:getLoc(d[0], d[1][0])
         })%}
