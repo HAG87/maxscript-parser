@@ -2,20 +2,23 @@
  * Check if value is node
  * @param {any} node CST node
  */
-function isNode(node) {
+function isNode(node)
+{
 	return (typeof node === 'object' && node != undefined);
 }
 /**
  * filter nodes by type property
  * @param {any} node CST node
  */
-function getNodeType(node) {
+function getNodeType(node)
+{
 	return ('type' in node) ? node.type : undefined;
 }
 /**
  * Apply node transform to PARENT KEY!
  */
-function editNode(callback, node, parent, key, level, index) {
+function editNode(callback, node, parent, key, level, index)
+{
 	let res = callback(node, parent, key, level, index);
 	// apply indentation to hig-level rules
 	// if (isNode(res) && 'indent' in res) { res.indent = level; }
@@ -29,15 +32,24 @@ function removeNode(node, parent, key, index) {
 }
 */
 
-/*
-{
-    start: startOffset,
-    end: endOffset
-}
-*/
 
-function derive(tree) {
-	function _visit(node, parent, key, level, index) {
+let startRange = (line, col) =>
+({
+	start: {
+		line: line,
+		character: col
+	},
+	end: {
+		line: line,
+		character: col
+	}
+});
+
+
+function derive(tree)
+{
+	function _visit(node, parent, key, level, index)
+	{
 		const keys = Object.keys(node);
 		for (let i = 0; i < keys.length; i++) {
 			let key = keys[i];
@@ -54,22 +66,28 @@ function derive(tree) {
 				_visit(child, node, key, level + 1, null);
 			}
 		}
-		let res;
+
 		if (getNodeType(node) && parent) {
-			// if ('indent' in node) { node.indent = level; }
-			// res = node.toString;
-            console.log(JSON.stringify(parent));
-            // console.log(node);
-            if ('line' in node || 'col' in node) {
-                // set in parent ??
-                // will this work? need to check if the pos is deeper, bc I dont know hot to pass only de deeper child...
-                // console.log(node.line);
-            }
-            // console.log(parent);
-		} else {
-			res = node;
+			if ('range' in node) {
+				if ('range' in parent) {
+					// console.log(`${JSON.stringify(node.range)} >> ${JSON.stringify(parent.range)}`);
+					if (node.range !== undefined && parent.range !== undefined) {
+						if (parent.range.start.line < node.range.start.line) parent.range.end.line = node.range.start.line;
+						if (parent.range.start.character < node.range.start.character) parent.range.end.character = node.range.start.character;
+
+						if (parent.range.end.line < node.range.end.line) parent.range.end.line = node.range.end.line;
+						if (parent.range.end.character < node.range.end.character) parent.range.end.character = node.range.end.character;
+					}
+				} else {
+					parent.range = node.range;
+				}
+			} else if ('line' in node) {
+				parent.range = startRange(node.line, node.col);
+				// console.log(`${node.line} : ${node.col}`);
+			}
 		}
-		index != null ? parent[key][index] = res : parent[key] = res;
+
+		index != null ? parent[key][index] = node : parent[key] = node;
 	}
 	_visit(tree, tree, null, 0, null);
 }
