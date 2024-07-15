@@ -60,7 +60,7 @@ async function Main(src) {
 		// ...
 	}
 }
-Main(examples[21]);
+Main(examples[19]);
 // console.log(TokenizeSource(source(examples[1])));
 //-----------------------------------------------------------------------------------
 //	PRETTY PRINT - COMPRESS CODE

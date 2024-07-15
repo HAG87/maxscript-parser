@@ -515,7 +515,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
 #---------------------------------------------------------------
 # FUNCTION DEFINITION --- OK
     FUNCTION_DEF
-        -> function_decl __ VAR_NAME (__:? VAR_NAME):+ (__:? fn_params):+ (__:? "=" __:?) expr
+        -> function_decl __ VAR_NAME (__:? fn_args):+ (__:? fn_params):+ (__:? "=" __:?) expr
             {% d => {
                 let res = {
                     ...d[0],
@@ -527,7 +527,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 addLoc(res, d[6]);
                 return res;
             }%}
-         | function_decl __ VAR_NAME (__:? VAR_NAME):+ (__:? "=" __:?) expr
+         | function_decl __ VAR_NAME (__:? fn_args):+ (__:? "=" __:?) expr
             {% d => {
                 let res = {
                     ...d[0],
@@ -572,7 +572,10 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 range: getLoc(d[0] != null ? d[0][0] : d[1])
             })%}
 
-    # This is for parameter declaration 
+    # This is for parameter declaration
+    fn_args
+        -> VAR_NAME {% id %}
+        | by_Ref    {% id %}
     fn_params
         -> parameter  {% id %}
         | param_name  {% id %}
@@ -949,9 +952,10 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
 
     destination
         -> VAR_NAME {% id %}
+        | PATH_NAME {% id %}
+        | by_Ref    {% id %}
         | property  {% id %}
         | index     {% id %}
-        | PATH_NAME {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     LOGICAL_EXPR
@@ -1152,9 +1156,9 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         | OPERAND {% id %}
 
     OPERAND
-        -> factor     {% id %}
-        | property    {% id %}
+        -> property    {% id %}
         | index       {% id %}
+        | factor     {% id %}
 
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
@@ -1184,6 +1188,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         | PATH_NAME  {% id %}
         | NAME_VALUE {% id %}
         | VAR_NAME   {% id %}
+        | by_Ref     {% id %}
         | RESOURCE   {% id %}
         | BOOL       {% id %}
         | VOID       {% id %}
@@ -1265,6 +1270,15 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     LBRACE ->       %lbrace wsl:*     {% id %}
     RBRACE -> wsl:* %rbrace           {% d => d[1] %}
 #===============================================================
+# REFERNCE VALS
+    by_Ref
+        -> %amp (VAR_NAME | PATH_NAME)
+       {% d => ({
+            type: 'refIdentifier',
+            value: d[0],
+            range:getLoc(d[0], d[1][0])
+        })%}
+
 # VARNAME --- IDENTIFIERS --- OK
     # some keywords can be VAR_NAME too...
     VAR_NAME
