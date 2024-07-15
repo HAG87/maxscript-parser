@@ -39,6 +39,8 @@ let examples = {
 	17: './examples/example-17.ms',
 	18: './examples/example-18.ms',
 	19: './examples/example-19.ms',
+	20: './examples/example-20.ms',
+	21: './examples/example-21.ms',
 }
 //-----------------------------------------------------------------------------------
 const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
@@ -58,7 +60,7 @@ async function Main(src) {
 		// ...
 	}
 }
-Main(examples[16]);
+Main(examples[21]);
 // console.log(TokenizeSource(source(examples[1])));
 //-----------------------------------------------------------------------------------
 //	PRETTY PRINT - COMPRESS CODE

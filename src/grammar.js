@@ -107,9 +107,7 @@ var grammar = {
     {"name": "Main$ebnf$3", "symbols": []},
     {"name": "Main$ebnf$3", "symbols": ["Main$ebnf$3", "anyws"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "Main", "symbols": ["Main$ebnf$1", "Main$ebnf$2", "Main$ebnf$3"], "postprocess": d => d[1]},
-    {"name": "expr", "symbols": ["MATH_EXPR"], "postprocess": id},
-    {"name": "expr", "symbols": ["COMPARE_EXPR"], "postprocess": id},
-    {"name": "expr", "symbols": ["LOGICAL_EXPR"], "postprocess": id},
+    {"name": "expr", "symbols": ["simple_expr"], "postprocess": id},
     {"name": "expr", "symbols": ["VARIABLE_DECL"], "postprocess": id},
     {"name": "expr", "symbols": ["ASSIGNMENT"], "postprocess": id},
     {"name": "expr", "symbols": ["ATTRIBUTES_DEF"], "postprocess": id},
@@ -130,6 +128,9 @@ var grammar = {
     {"name": "expr", "symbols": ["MACROSCRIPT_DEF"], "postprocess": id},
     {"name": "expr", "symbols": ["PLUGIN_DEF"], "postprocess": id},
     {"name": "expr", "symbols": ["CHANGE_HANDLER"], "postprocess": id},
+    {"name": "simple_expr", "symbols": ["MATH_EXPR"], "postprocess": id},
+    {"name": "simple_expr", "symbols": ["COMPARE_EXPR"], "postprocess": id},
+    {"name": "simple_expr", "symbols": ["LOGICAL_EXPR"], "postprocess": id},
     {"name": "expr_seq", "symbols": ["LPAREN", "_expr_seq", "RPAREN"], "postprocess":  d => ({
             type: 'BlockStatement',
             body: d[1],
@@ -343,7 +344,7 @@ var grammar = {
     {"name": "rollout_def$ebnf$2", "symbols": ["rollout_def$ebnf$2", "rollout_def$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "rollout_def$ebnf$3", "symbols": ["__"], "postprocess": id},
     {"name": "rollout_def$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "rollout_def", "symbols": ["rollout_def$subexpression$1", "VAR_NAME", "rollout_def$ebnf$1", "_OP", "rollout_def$ebnf$2", "rollout_def$ebnf$3", "LPAREN", "rollout_clauses", "RPAREN"], "postprocess":  d => ({
+    {"name": "rollout_def", "symbols": ["rollout_def$subexpression$1", "VAR_NAME", "rollout_def$ebnf$1", "OPERAND", "rollout_def$ebnf$2", "rollout_def$ebnf$3", "LPAREN", "rollout_clauses", "RPAREN"], "postprocess":  d => ({
             type:   d[0][0].type === 'kw_rollout' ? 'EntityRollout' : 'EntityUtility',
             id:     d[1],
             title:  d[3],
@@ -379,7 +380,7 @@ var grammar = {
     {"name": "group_clauses", "symbols": ["rollout_item"]},
     {"name": "rollout_item$ebnf$1$subexpression$1$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "rollout_item$ebnf$1$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "rollout_item$ebnf$1$subexpression$1", "symbols": ["rollout_item$ebnf$1$subexpression$1$ebnf$1", "_OP"]},
+    {"name": "rollout_item$ebnf$1$subexpression$1", "symbols": ["rollout_item$ebnf$1$subexpression$1$ebnf$1", "OPERAND"]},
     {"name": "rollout_item$ebnf$1", "symbols": ["rollout_item$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "rollout_item$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "rollout_item$ebnf$2", "symbols": []},
@@ -404,7 +405,7 @@ var grammar = {
     {"name": "MACROSCRIPT_DEF$ebnf$1", "symbols": []},
     {"name": "MACROSCRIPT_DEF$ebnf$1$subexpression$1$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "MACROSCRIPT_DEF$ebnf$1$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "MACROSCRIPT_DEF$ebnf$1$subexpression$1", "symbols": ["MACROSCRIPT_DEF$ebnf$1$subexpression$1$ebnf$1", "macro_script_param"]},
+    {"name": "MACROSCRIPT_DEF$ebnf$1$subexpression$1", "symbols": ["MACROSCRIPT_DEF$ebnf$1$subexpression$1$ebnf$1", "parameter"]},
     {"name": "MACROSCRIPT_DEF$ebnf$1", "symbols": ["MACROSCRIPT_DEF$ebnf$1", "MACROSCRIPT_DEF$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "MACROSCRIPT_DEF$ebnf$2", "symbols": ["__"], "postprocess": id},
     {"name": "MACROSCRIPT_DEF$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
@@ -416,15 +417,6 @@ var grammar = {
             params: flatten(d[2]),
             body:   d[5],
             range:  getLoc(d[0][0], d[6])
-        })},
-    {"name": "macro_script_param$ebnf$1", "symbols": ["__"], "postprocess": id},
-    {"name": "macro_script_param$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "macro_script_param$subexpression$1", "symbols": ["OP"]},
-    {"name": "macro_script_param$subexpression$1", "symbols": ["RESOURCE"]},
-    {"name": "macro_script_param", "symbols": ["param_name", "macro_script_param$ebnf$1", "macro_script_param$subexpression$1"], "postprocess":  d => ({
-            type: 'ParameterAssignment',
-            param: d[0],
-            value: d[2][0]
         })},
     {"name": "macro_script_body$ebnf$1", "symbols": []},
     {"name": "macro_script_body$ebnf$1$subexpression$1", "symbols": ["EOL", "macro_script_clause"]},
@@ -494,13 +486,13 @@ var grammar = {
     {"name": "CHANGE_HANDLER$ebnf$2$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "CHANGE_HANDLER$ebnf$2$subexpression$1", "symbols": ["parameter", "CHANGE_HANDLER$ebnf$2$subexpression$1$ebnf$1"]},
     {"name": "CHANGE_HANDLER$ebnf$2", "symbols": ["CHANGE_HANDLER$ebnf$2", "CHANGE_HANDLER$ebnf$2$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "CHANGE_HANDLER$ebnf$3", "symbols": ["_OP"], "postprocess": id},
+    {"name": "CHANGE_HANDLER$ebnf$3", "symbols": ["OPERAND"], "postprocess": id},
     {"name": "CHANGE_HANDLER$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "CHANGE_HANDLER$ebnf$4", "symbols": ["__"], "postprocess": id},
     {"name": "CHANGE_HANDLER$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "CHANGE_HANDLER$ebnf$5", "symbols": ["__"], "postprocess": id},
     {"name": "CHANGE_HANDLER$ebnf$5", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "CHANGE_HANDLER", "symbols": [(mxLexer.has("kw_when") ? {type: "kw_when"} : kw_when), "__", "CHANGE_HANDLER$subexpression$1", "CHANGE_HANDLER$ebnf$1", "_OP", "__", "VAR_NAME", "__", "CHANGE_HANDLER$ebnf$2", "CHANGE_HANDLER$ebnf$3", "CHANGE_HANDLER$ebnf$4", (mxLexer.has("kw_do") ? {type: "kw_do"} : kw_do), "CHANGE_HANDLER$ebnf$5", "expr"], "postprocess":  d=> ({
+    {"name": "CHANGE_HANDLER", "symbols": [(mxLexer.has("kw_when") ? {type: "kw_when"} : kw_when), "__", "CHANGE_HANDLER$subexpression$1", "CHANGE_HANDLER$ebnf$1", "OPERAND", "__", "VAR_NAME", "__", "CHANGE_HANDLER$ebnf$2", "CHANGE_HANDLER$ebnf$3", "CHANGE_HANDLER$ebnf$4", (mxLexer.has("kw_do") ? {type: "kw_do"} : kw_do), "CHANGE_HANDLER$ebnf$5", "expr"], "postprocess":  d=> ({
             type:  'WhenStatement',
             args:  merge(...d.slice(2,9)),
             body:  d[13],
@@ -515,13 +507,13 @@ var grammar = {
     {"name": "CHANGE_HANDLER$ebnf$8$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "CHANGE_HANDLER$ebnf$8$subexpression$1", "symbols": ["parameter", "CHANGE_HANDLER$ebnf$8$subexpression$1$ebnf$1"]},
     {"name": "CHANGE_HANDLER$ebnf$8", "symbols": ["CHANGE_HANDLER$ebnf$8", "CHANGE_HANDLER$ebnf$8$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "CHANGE_HANDLER$ebnf$9", "symbols": ["_OP"], "postprocess": id},
+    {"name": "CHANGE_HANDLER$ebnf$9", "symbols": ["OPERAND"], "postprocess": id},
     {"name": "CHANGE_HANDLER$ebnf$9", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "CHANGE_HANDLER$ebnf$10", "symbols": ["__"], "postprocess": id},
     {"name": "CHANGE_HANDLER$ebnf$10", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "CHANGE_HANDLER$ebnf$11", "symbols": ["__"], "postprocess": id},
     {"name": "CHANGE_HANDLER$ebnf$11", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "CHANGE_HANDLER", "symbols": [(mxLexer.has("kw_when") ? {type: "kw_when"} : kw_when), "CHANGE_HANDLER$ebnf$6", "_OP", "CHANGE_HANDLER$ebnf$7", "VAR_NAME", "__", "CHANGE_HANDLER$ebnf$8", "CHANGE_HANDLER$ebnf$9", "CHANGE_HANDLER$ebnf$10", (mxLexer.has("kw_do") ? {type: "kw_do"} : kw_do), "CHANGE_HANDLER$ebnf$11", "expr"], "postprocess":  d=> ({
+    {"name": "CHANGE_HANDLER", "symbols": [(mxLexer.has("kw_when") ? {type: "kw_when"} : kw_when), "CHANGE_HANDLER$ebnf$6", "OPERAND", "CHANGE_HANDLER$ebnf$7", "VAR_NAME", "__", "CHANGE_HANDLER$ebnf$8", "CHANGE_HANDLER$ebnf$9", "CHANGE_HANDLER$ebnf$10", (mxLexer.has("kw_do") ? {type: "kw_do"} : kw_do), "CHANGE_HANDLER$ebnf$11", "expr"], "postprocess":  d=> ({
             type:  'WhenStatement',
             args:  merge(...d.slice(2,7)),
             body:  d[11],
@@ -661,7 +653,7 @@ var grammar = {
     {"name": "context$subexpression$1", "symbols": [(mxLexer.has("kw_time") ? {type: "kw_time"} : kw_time)]},
     {"name": "context$ebnf$2", "symbols": ["__"], "postprocess": id},
     {"name": "context$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "context", "symbols": ["context$ebnf$1", "context$subexpression$1", "context$ebnf$2", "OP"], "postprocess":  d => ({
+    {"name": "context", "symbols": ["context$ebnf$1", "context$subexpression$1", "context$ebnf$2", "uOPERAND"], "postprocess":  d => ({
             type:    'ContextExpression',
             prefix :  (d[0] != null ? d[0][0][0] : null),
             context: d[2][0],
@@ -673,7 +665,7 @@ var grammar = {
     {"name": "context$ebnf$3", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "context$ebnf$4", "symbols": ["__"], "postprocess": id},
     {"name": "context$ebnf$4", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "context", "symbols": ["context$ebnf$3", (mxLexer.has("kw_in") ? {type: "kw_in"} : kw_in), "context$ebnf$4", "OP"], "postprocess":  d => ({
+    {"name": "context", "symbols": ["context$ebnf$3", (mxLexer.has("kw_in") ? {type: "kw_in"} : kw_in), "context$ebnf$4", "uOPERAND"], "postprocess":  d => ({
             type:    'ContextExpression',
             prefix : (d[0] != null ? d[0][0] : null),
             context: d[1],
@@ -688,7 +680,7 @@ var grammar = {
     {"name": "context$ebnf$6", "symbols": ["__"], "postprocess": id},
     {"name": "context$ebnf$6", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "context$subexpression$2", "symbols": [(mxLexer.has("kw_local") ? {type: "kw_local"} : kw_local)]},
-    {"name": "context$subexpression$2", "symbols": ["OP"]},
+    {"name": "context$subexpression$2", "symbols": ["OPERAND"]},
     {"name": "context", "symbols": ["context$ebnf$5", (mxLexer.has("kw_coordsys") ? {type: "kw_coordsys"} : kw_coordsys), "context$ebnf$6", "context$subexpression$2"], "postprocess":  d => ({
             type: 'ContextExpression',
             prefix : (d[0] != null ? d[0][0][0] : null),
@@ -702,7 +694,7 @@ var grammar = {
     {"name": "context$ebnf$8", "symbols": ["__"], "postprocess": id},
     {"name": "context$ebnf$8", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "context$subexpression$3", "symbols": [(mxLexer.has("kw_coordsys") ? {type: "kw_coordsys"} : kw_coordsys)]},
-    {"name": "context$subexpression$3", "symbols": ["OP"]},
+    {"name": "context$subexpression$3", "symbols": ["OPERAND"]},
     {"name": "context", "symbols": ["context$ebnf$7", (mxLexer.has("kw_about") ? {type: "kw_about"} : kw_about), "context$ebnf$8", "context$subexpression$3"], "postprocess":  d => ({
             type: 'ContextExpression',
             prefix : (d[0] != null ? d[0][0] : null),
@@ -717,9 +709,7 @@ var grammar = {
     {"name": "context$ebnf$9", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "context$ebnf$10", "symbols": ["__"], "postprocess": id},
     {"name": "context$ebnf$10", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "context$subexpression$4", "symbols": ["LOGICAL_EXPR"]},
-    {"name": "context$subexpression$4", "symbols": ["BOOL"]},
-    {"name": "context", "symbols": ["context$ebnf$9", (mxLexer.has("kw_context") ? {type: "kw_context"} : kw_context), "context$ebnf$10", "context$subexpression$4"], "postprocess":  d => ({
+    {"name": "context", "symbols": ["context$ebnf$9", (mxLexer.has("kw_context") ? {type: "kw_context"} : kw_context), "context$ebnf$10", "simple_expr"], "postprocess":  d => ({
             type: 'ContextExpression',
             prefix :(d[0] != null ? d[0][0][0] : null),
             context: d[1],
@@ -731,10 +721,10 @@ var grammar = {
     {"name": "context$ebnf$11", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "context$ebnf$12", "symbols": ["__"], "postprocess": id},
     {"name": "context$ebnf$12", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "context$subexpression$5", "symbols": [{"literal":"#logmsg"}]},
-    {"name": "context$subexpression$5", "symbols": [{"literal":"#logtofile"}]},
-    {"name": "context$subexpression$5", "symbols": [{"literal":"#abort"}]},
-    {"name": "context", "symbols": ["context$ebnf$11", (mxLexer.has("kw_defaultAction") ? {type: "kw_defaultAction"} : kw_defaultAction), "context$ebnf$12", "context$subexpression$5"], "postprocess":  d => ({
+    {"name": "context$subexpression$4", "symbols": [{"literal":"#logmsg"}]},
+    {"name": "context$subexpression$4", "symbols": [{"literal":"#logtofile"}]},
+    {"name": "context$subexpression$4", "symbols": [{"literal":"#abort"}]},
+    {"name": "context", "symbols": ["context$ebnf$11", (mxLexer.has("kw_defaultAction") ? {type: "kw_defaultAction"} : kw_defaultAction), "context$ebnf$12", "context$subexpression$4"], "postprocess":  d => ({
             type: 'ContextExpression',
             prefix :  (d[0] != null ? d[0][0] : null),
             context: d[1],
@@ -753,9 +743,7 @@ var grammar = {
     {"name": "context$ebnf$15$subexpression$1", "symbols": ["undo_label", "context$ebnf$15$subexpression$1$ebnf$1"]},
     {"name": "context$ebnf$15", "symbols": ["context$ebnf$15$subexpression$1"], "postprocess": id},
     {"name": "context$ebnf$15", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "context$subexpression$6", "symbols": ["LOGICAL_EXPR"]},
-    {"name": "context$subexpression$6", "symbols": ["BOOL"]},
-    {"name": "context", "symbols": ["context$ebnf$13", (mxLexer.has("kw_undo") ? {type: "kw_undo"} : kw_undo), "context$ebnf$14", "context$ebnf$15", "context$subexpression$6"], "postprocess":  d => ({
+    {"name": "context", "symbols": ["context$ebnf$13", (mxLexer.has("kw_undo") ? {type: "kw_undo"} : kw_undo), "context$ebnf$14", "context$ebnf$15", "simple_expr"], "postprocess":  d => ({
             type:    'ContextExpression',
             prefix : (d[0] != null ? d[0][0][0] : null),
             context: d[1],
@@ -1026,68 +1014,6 @@ var grammar = {
     {"name": "destination", "symbols": ["property"], "postprocess": id},
     {"name": "destination", "symbols": ["index"], "postprocess": id},
     {"name": "destination", "symbols": ["PATH_NAME"], "postprocess": id},
-    {"name": "MATH_EXPR", "symbols": ["rest"], "postprocess": id},
-    {"name": "rest", "symbols": ["rest", "minus_opt", "sum"], "postprocess":  d => ({
-            type:     'MathExpression',
-            operator: d[1],
-            left:     d[0],
-            right:    d[2],
-            range: getLoc(Array.isArray(d[0]) ? d[0][0] : d[0], d[2] ) 
-        })},
-    {"name": "rest", "symbols": ["sum"], "postprocess": id},
-    {"name": "minus_opt", "symbols": ["_", {"literal":"-"}, "__"], "postprocess": d => d[1]},
-    {"name": "minus_opt", "symbols": [{"literal":"-"}, "__"], "postprocess": id},
-    {"name": "minus_opt", "symbols": [{"literal":"-"}], "postprocess": id},
-    {"name": "sum$ebnf$1", "symbols": ["_"], "postprocess": id},
-    {"name": "sum$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "sum$ebnf$2", "symbols": ["__"], "postprocess": id},
-    {"name": "sum$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "sum", "symbols": ["sum", "sum$ebnf$1", {"literal":"+"}, "sum$ebnf$2", "prod"], "postprocess":  d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4],
-            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-        })},
-    {"name": "sum", "symbols": ["prod"], "postprocess": id},
-    {"name": "prod$ebnf$1", "symbols": ["_"], "postprocess": id},
-    {"name": "prod$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "prod$subexpression$1", "symbols": [{"literal":"*"}]},
-    {"name": "prod$subexpression$1", "symbols": [{"literal":"/"}]},
-    {"name": "prod$ebnf$2", "symbols": ["__"], "postprocess": id},
-    {"name": "prod$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "prod", "symbols": ["prod", "prod$ebnf$1", "prod$subexpression$1", "prod$ebnf$2", "exp"], "postprocess":  d => ({
-            type:     'MathExpression',
-            operator: d[2][0],
-            left:     d[0],
-            right:    d[4],
-            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
-        })},
-    {"name": "prod", "symbols": ["exp"], "postprocess": id},
-    {"name": "exp$ebnf$1", "symbols": ["_"], "postprocess": id},
-    {"name": "exp$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "exp$ebnf$2", "symbols": ["__"], "postprocess": id},
-    {"name": "exp$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "exp", "symbols": ["as", "exp$ebnf$1", {"literal":"^"}, "exp$ebnf$2", "exp"], "postprocess":  d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4],
-            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
-        })},
-    {"name": "exp", "symbols": ["as"], "postprocess": id},
-    {"name": "as$ebnf$1", "symbols": ["_"], "postprocess": id},
-    {"name": "as$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "as", "symbols": ["math_operand", "as$ebnf$1", (mxLexer.has("kw_as") ? {type: "kw_as"} : kw_as), "__", "VAR_NAME"], "postprocess":  d => ({
-            type:     'MathExpression',
-            operator: d[2],
-            left:     d[0],
-            right:    d[4],
-            range: getLoc(d[0], d[4])
-        })},
-    {"name": "as", "symbols": ["math_operand"], "postprocess": id},
-    {"name": "math_operand", "symbols": ["OP"], "postprocess": id},
-    {"name": "math_operand", "symbols": ["FN_CALL"], "postprocess": id},
     {"name": "LOGICAL_EXPR$ebnf$1", "symbols": ["_"], "postprocess": id},
     {"name": "LOGICAL_EXPR$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "LOGICAL_EXPR$ebnf$2", "symbols": ["__"], "postprocess": id},
@@ -1123,9 +1049,8 @@ var grammar = {
             right:    d[2],
             range: getLoc(d[0], d[2])
         }) },
-    {"name": "logical_operand", "symbols": ["OP"], "postprocess": id},
+    {"name": "logical_operand", "symbols": ["MATH_EXPR"], "postprocess": id},
     {"name": "logical_operand", "symbols": ["COMPARE_EXPR"], "postprocess": id},
-    {"name": "logical_operand", "symbols": ["FN_CALL"], "postprocess": id},
     {"name": "COMPARE_EXPR$ebnf$1", "symbols": ["_"], "postprocess": id},
     {"name": "COMPARE_EXPR$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "COMPARE_EXPR$ebnf$2", "symbols": ["__"], "postprocess": id},
@@ -1149,6 +1074,67 @@ var grammar = {
             range: getLoc(d[0], d[4])
         }) },
     {"name": "compare_operand", "symbols": ["MATH_EXPR"], "postprocess": id},
+    {"name": "MATH_EXPR", "symbols": ["sum"], "postprocess": id},
+    {"name": "sum$ebnf$1", "symbols": ["_"], "postprocess": id},
+    {"name": "sum$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "sum$subexpression$1", "symbols": [{"literal":"+"}]},
+    {"name": "sum$subexpression$1", "symbols": [{"literal":"-"}]},
+    {"name": "sum$ebnf$2", "symbols": ["__"], "postprocess": id},
+    {"name": "sum$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "sum", "symbols": ["sum", "sum$ebnf$1", "sum$subexpression$1", "sum$ebnf$2", "prod"], "postprocess":  d => ({
+            type:     'MathExpression',
+            operator: d[2][0],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+        })},
+    {"name": "sum", "symbols": ["prod"], "postprocess": id},
+    {"name": "prod$ebnf$1", "symbols": ["_"], "postprocess": id},
+    {"name": "prod$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "prod$subexpression$1", "symbols": [{"literal":"*"}]},
+    {"name": "prod$subexpression$1", "symbols": [{"literal":"/"}]},
+    {"name": "prod$ebnf$2", "symbols": ["__"], "postprocess": id},
+    {"name": "prod$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "prod", "symbols": ["prod", "prod$ebnf$1", "prod$subexpression$1", "prod$ebnf$2", "exp"], "postprocess":  d => ({
+            type:     'MathExpression',
+            operator: d[2][0],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
+        })},
+    {"name": "prod", "symbols": ["exp"], "postprocess": id},
+    {"name": "exp$ebnf$1", "symbols": ["_"], "postprocess": id},
+    {"name": "exp$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "exp$ebnf$2", "symbols": ["__"], "postprocess": id},
+    {"name": "exp$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "exp", "symbols": ["exp", "exp$ebnf$1", {"literal":"^"}, "exp$ebnf$2", "as"], "postprocess":  d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
+        })},
+    {"name": "exp", "symbols": ["as"], "postprocess": id},
+    {"name": "as$ebnf$1", "symbols": ["_"], "postprocess": id},
+    {"name": "as$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "as", "symbols": ["unary", "as$ebnf$1", (mxLexer.has("kw_as") ? {type: "kw_as"} : kw_as), "__", "VAR_NAME"], "postprocess":  d => ({
+            type:     'MathExpression',
+            operator: d[2],
+            left:     d[0],
+            right:    d[4],
+            range: getLoc(d[0], d[4])
+        })},
+    {"name": "as", "symbols": ["unary"], "postprocess": id},
+    {"name": "unary$ebnf$1", "symbols": ["__"], "postprocess": id},
+    {"name": "unary$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "unary", "symbols": [{"literal":"-"}, "unary$ebnf$1", "unary"], "postprocess":  d => ({
+            type: 'UnaryExpression',
+            operator: d[0],
+            right:    d[2],
+            range: getLoc(d[0], d[2])
+        }) },
+    {"name": "unary", "symbols": ["OPERAND"], "postprocess": id},
+    {"name": "unary", "symbols": ["FN_CALL"], "postprocess": id},
     {"name": "FN_CALL$ebnf$1", "symbols": ["call_params"], "postprocess": id},
     {"name": "FN_CALL$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "FN_CALL", "symbols": ["call_caller", "call_args", "FN_CALL$ebnf$1"], "postprocess":  d => {
@@ -1190,13 +1176,13 @@ var grammar = {
     {"name": "call_caller", "symbols": ["property"], "postprocess": id},
     {"name": "call_caller", "symbols": ["index"], "postprocess": id},
     {"name": "call_caller", "symbols": ["expr_seq"], "postprocess": id},
-    {"name": "UN_OP", "symbols": [{"literal":"-"}, "_OP"], "postprocess":  d => ({
+    {"name": "UN_OP", "symbols": [{"literal":"-"}, "OPERAND"], "postprocess":  d => ({
             type: 'UnaryExpression',
             operator: d[0],
             right:    d[1],
             range: getLoc(d[0], d[1])
         }) },
-    {"name": "UN_OP", "symbols": ["_OP"], "postprocess": id},
+    {"name": "UN_OP", "symbols": ["OPERAND"], "postprocess": id},
     {"name": "parameter$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "parameter$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "parameter", "symbols": ["param_name", "parameter$ebnf$1", "UN_OP"], "postprocess":  d => ({
@@ -1212,18 +1198,18 @@ var grammar = {
             value: d[0][0],
             range: getLoc(d[0], d[1])
         }) },
-    {"name": "OP$ebnf$1", "symbols": ["__"], "postprocess": id},
-    {"name": "OP$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "OP", "symbols": [{"literal":"-"}, "OP$ebnf$1", "OP"], "postprocess":  d => ({
+    {"name": "uOPERAND$ebnf$1", "symbols": ["__"], "postprocess": id},
+    {"name": "uOPERAND$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "uOPERAND", "symbols": [{"literal":"-"}, "uOPERAND$ebnf$1", "uOPERAND"], "postprocess":  d => ({
             type: 'UnaryExpression',
             operator: d[0],
             right:    d[2],
             range: getLoc(d[0], d[2])
         }) },
-    {"name": "OP", "symbols": ["_OP"], "postprocess": id},
-    {"name": "_OP", "symbols": ["factor"], "postprocess": id},
-    {"name": "_OP", "symbols": ["property"], "postprocess": id},
-    {"name": "_OP", "symbols": ["index"], "postprocess": id},
+    {"name": "uOPERAND", "symbols": ["OPERAND"], "postprocess": id},
+    {"name": "OPERAND", "symbols": ["factor"], "postprocess": id},
+    {"name": "OPERAND", "symbols": ["property"], "postprocess": id},
+    {"name": "OPERAND", "symbols": ["index"], "postprocess": id},
     {"name": "property$subexpression$1$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "property$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "property$subexpression$1$ebnf$2", "symbols": ["__"], "postprocess": id},
@@ -1233,7 +1219,7 @@ var grammar = {
     {"name": "property$subexpression$2", "symbols": ["VOID"]},
     {"name": "property$subexpression$2", "symbols": ["kw_override"]},
     {"name": "property$subexpression$2", "symbols": [(mxLexer.has("kw_compare") ? {type: "kw_compare"} : kw_compare)]},
-    {"name": "property", "symbols": ["_OP", "property$subexpression$1", "property$subexpression$2"], "postprocess":  d => ({
+    {"name": "property", "symbols": ["OPERAND", "property$subexpression$1", "property$subexpression$2"], "postprocess":  d => ({
             type:     'AccessorProperty',
             operand:  d[0],
             property: d[2][0],
@@ -1241,7 +1227,7 @@ var grammar = {
         })},
     {"name": "index$ebnf$1", "symbols": ["__"], "postprocess": id},
     {"name": "index$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "index", "symbols": ["_OP", "index$ebnf$1", "LBRACKET", "expr", "RBRACKET"], "postprocess":  d => ({
+    {"name": "index", "symbols": ["OPERAND", "index$ebnf$1", "LBRACKET", "expr", "RBRACKET"], "postprocess":  d => ({
             type:    'AccessorIndex',
             operand: d[0],
             index:   d[3],
@@ -1252,6 +1238,7 @@ var grammar = {
     {"name": "factor", "symbols": ["PATH_NAME"], "postprocess": id},
     {"name": "factor", "symbols": ["NAME_VALUE"], "postprocess": id},
     {"name": "factor", "symbols": ["VAR_NAME"], "postprocess": id},
+    {"name": "factor", "symbols": ["RESOURCE"], "postprocess": id},
     {"name": "factor", "symbols": ["BOOL"], "postprocess": id},
     {"name": "factor", "symbols": ["VOID"], "postprocess": id},
     {"name": "factor", "symbols": ["TIME"], "postprocess": id},
