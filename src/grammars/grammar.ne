@@ -1131,7 +1131,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         -> %amp (VAR_NAME | PATH_NAME)
        {% d => ({
             type: 'refIdentifier',
-            value: d[0]
+            operator: d[0],
+            value: d[1]
         })%}
 
 # VARNAME --- IDENTIFIERS --- OK
