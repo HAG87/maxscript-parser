@@ -1066,11 +1066,19 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 }) %}
             | OPERAND {% id %}
             | FN_CALL {% id %}
+            | de_ref  {% id %}
 
         # math_operand
         #     -> unary     {% id %}
         #     | FN_CALL       {% id %}
-
+        
+        de_ref -> "*" _:? (VAR_NAME | PATH_NAME)
+            {% d => ({
+                type: 'deRefIdentifier',
+                operator: d[0],
+                right:    d[2][0],
+                range: getLoc(d[0], d[2][0])
+            }) %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     FN_CALL

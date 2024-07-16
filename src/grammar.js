@@ -1180,6 +1180,17 @@ var grammar = {
         }) },
     {"name": "unary", "symbols": ["OPERAND"], "postprocess": id},
     {"name": "unary", "symbols": ["FN_CALL"], "postprocess": id},
+    {"name": "unary", "symbols": ["de_ref"], "postprocess": id},
+    {"name": "de_ref$ebnf$1", "symbols": ["_"], "postprocess": id},
+    {"name": "de_ref$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "de_ref$subexpression$1", "symbols": ["VAR_NAME"]},
+    {"name": "de_ref$subexpression$1", "symbols": ["PATH_NAME"]},
+    {"name": "de_ref", "symbols": [{"literal":"*"}, "de_ref$ebnf$1", "de_ref$subexpression$1"], "postprocess":  d => ({
+            type: 'deRefIdentifier',
+            operator: d[0],
+            right:    d[2][0],
+            range: getLoc(d[0], d[2][0])
+        }) },
     {"name": "FN_CALL$ebnf$1", "symbols": ["call_params"], "postprocess": id},
     {"name": "FN_CALL$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "FN_CALL", "symbols": ["call_caller", "call_args", "FN_CALL$ebnf$1"], "postprocess":  d => {
@@ -1243,15 +1254,6 @@ var grammar = {
             value: d[0][0],
             range: getLoc(d[0], d[1])
         }) },
-    {"name": "uOPERAND$ebnf$1", "symbols": ["__"], "postprocess": id},
-    {"name": "uOPERAND$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "uOPERAND", "symbols": [{"literal":"-"}, "uOPERAND$ebnf$1", "uOPERAND"], "postprocess":  d => ({
-            type: 'UnaryExpression',
-            operator: d[0],
-            right:    d[2],
-            range: getLoc(d[0], d[2])
-        }) },
-    {"name": "uOPERAND", "symbols": ["OPERAND"], "postprocess": id},
     {"name": "OPERAND", "symbols": ["property"], "postprocess": id},
     {"name": "OPERAND", "symbols": ["index"], "postprocess": id},
     {"name": "OPERAND", "symbols": ["factor"], "postprocess": id},
@@ -1378,6 +1380,7 @@ var grammar = {
     {"name": "by_Ref$subexpression$1", "symbols": ["PATH_NAME"]},
     {"name": "by_Ref", "symbols": [(mxLexer.has("amp") ? {type: "amp"} : amp), "by_Ref$subexpression$1"], "postprocess":  d => ({
             type: 'refIdentifier',
+            operator: d[0],
             value: d[0],
             range:getLoc(d[0], d[1][0])
         })},
