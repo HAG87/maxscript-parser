@@ -1,4 +1,4 @@
-# @preprocessor typescript
+@preprocessor typescript
 @{%
     //Tokens
     /*
