@@ -1,12 +1,10 @@
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 //-----------------------------------------------------------------------------------
-const {mxsParseSource} = require('./mxsParser.js');
-
-const {TokenizeSource, TokenizeSourceFormat} = require('./mxsTokenize');
-
-const { FileWrite, JsonFileWrite, readDirR, prefixPath } = require('./utils.js');
+import { parseSource } from './mxsParser';
+import {TokenizeSource, TokenizeSourceFormat} from './mxsTokenize'
+import { FileWrite, JsonFileWrite, readDirR, prefixPath } from './utils';
 //-----------------------------------------------------------------------------------
 // const traverse2 = require('ast-monkey-traverse');
 //-----------------------------------------------------------------------------------
@@ -43,13 +41,16 @@ let examples = {
 	21: './examples/example-21.ms',
 }
 //-----------------------------------------------------------------------------------
-const source = (input_file) => (fs.readFileSync(input_file, 'utf8')).toString();
+const source = (input_file: string) => (fs.readFileSync(input_file, 'utf8')).toString();
 //-----------------------------------------------------------------------------------
-async function Main(src) {
+/*
+
+*/
+async function Main(src: string) {
 	try {
-		let parser = new mxsParseSource(source(src));
+		let parser = parseSource(source(src));
 		// parser.parseWithErrors();
-		var cst = parser.parsedCST;
+		var cst = parser.result;
 		JsonFileWrite('test/CST.json', cst);
 		// terminate the workers...
 		return cst;

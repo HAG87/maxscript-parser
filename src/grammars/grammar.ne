@@ -956,6 +956,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         | by_Ref    {% id %}
         | property  {% id %}
         | index     {% id %}
+        | de_ref    {% id %}
 #---------------------------------------------------------------
 # LOGIC EXPRESSION --- OK
     LOGICAL_EXPR
@@ -1068,17 +1069,17 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             | FN_CALL {% id %}
             | de_ref  {% id %}
 
+    de_ref -> "*" _:? OPERAND
+        {% d => ({
+            type: 'deRefIdentifier',
+            operator: d[0],
+            value:    d[2],
+            range: getLoc(d[0], d[2])
+        }) %}
         # math_operand
         #     -> unary     {% id %}
         #     | FN_CALL       {% id %}
-        
-        de_ref -> "*" _:? (VAR_NAME | PATH_NAME)
-            {% d => ({
-                type: 'deRefIdentifier',
-                operator: d[0],
-                right:    d[2][0],
-                range: getLoc(d[0], d[2][0])
-            }) %}
+
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     FN_CALL
@@ -1164,9 +1165,9 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     #     | OPERAND {% id %}
 
     OPERAND
-        -> property    {% id %}
-        | index       {% id %}
-        | factor     {% id %}
+        -> property {% id %}
+        | index     {% id %}
+        | factor    {% id %}
 
 #---------------------------------------------------------------
 # ACCESSOR - PROPERTY --- OK
@@ -1176,7 +1177,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type:     'AccessorProperty',
                 operand:  d[0],
                 property: d[2][0],
-                range:    getLoc(d[0], d[2])
+                range:    getLoc(d[0], d[2][0])
             })%}
 #---------------------------------------------------------------
 # ACCESSOR - INDEX --- OK
@@ -1185,7 +1186,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             type:    'AccessorIndex',
             operand: d[0],
             index:   d[3],
-            range:   getLoc(d[2], d[4])
+            range:   getLoc(d[0], d[4])
         })%}
 
 #---------------------------------------------------------------

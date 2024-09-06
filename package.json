@@ -1,5 +1,5 @@
 {
-  "name": "maxscript-lexer",
+  "name": "maxscript-parser",
   "version": "1.0.0",
   "description": "parser for maxscript language",
   "main": "src/index.js",
@@ -20,13 +20,14 @@
     "@types/nearley": "^2.11.1",
     "@types/node": "^12.19.3",
     "@types/object-path": "^0.11.0",
-    "eslint": "^7.12.1"
+    "eslint": "^7.12.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^5.0.2"
   },
   "scripts": {
     "run": "node .",
     "grammar:JS": "nearleyc ./src/grammars/grammar.ne -o ./src/grammar.js",
-    "grammar:TS": "nearleyc ./src/grammars/grammar-ts.ne -o ./src/grammar.ts",
-    "build": "node ./src/export.js"
+    "grammar:TS": "nearleyc ./src/grammars/grammar-ts.ne -o ./src/grammar.ts"
   },
   "repository": {
     "type": "git",
