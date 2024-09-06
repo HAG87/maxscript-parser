@@ -27,23 +27,73 @@
 
     const merge = (...args) => args.reduce((acc, val) => acc.concat(val), []).filter(e => e != null);
 
-    const range = (start, end) => ({
-        start: {
-                line: start.line,
-                character: start.col
-            },
-            end:{
-                line: end.line,
-                character: end.character
+    // Offset is not reilable, changed to line - character
+    const getLoc = (start, end) => {
+        if (!start) {return null;}
+        
+        // start could be an array...TODO: how to deal with nested arrays?
+        let first = Array.isArray(start) ? start[0] : start;
+
+        if (!first) {return null;}
+
+        let startOffset = first.range ? first.range.start : {line: first.line, character: first.col};
+        let endOffset;
+
+        if (!end) {
+            if (first.range) {
+                endOffset = first.range.end;
+            } else {
+                endOffset = {
+                    line: first.line,
+                    character: (first.text != null ? first.col + first.text.length : first.col)
+                };                
             }
-        });
+        } else {
+            // end could be an array...
+            let last = Array.isArray(end) ? end[end.length-1] : end;
+
+            if (last) {
+                if (last.range) {
+                    endOffset = last.range.end;
+                } else {
+                    endOffset = {
+                        line: last.line,
+                        character: (last.text != null ? last.col + last.text.length : last.col)                
+                    };
+                }
+            }
+        }
+        
+        return {
+            start: startOffset,
+            end: endOffset
+        };
+    };
+
+    const addLoc = (a, ...loc) => {
+        if (!a.range || !loc) {return;}
+
+        let last = loc[loc.length - 1];
+        
+        if (Array.isArray(last)) {
+            last = last[last.length - 1]
+        }
+
+        if (!last || !last.range || !last.range.end) {return;}
+
+        Object.assign(
+            a.range,
+            {
+                start: {...a.range.start},
+                end: {...last.range.end}
+            });
+        return;
+    };
     //----------------------------------------------------------
     // RULES
     //----------------------------------------------------------
-    const Literal    = x => ({ type: 'Literal',    value: x[0]});
-    const Identifier = x => ({ type: 'Identifier', value: x[0]});
-    const Keyword    = x => ({ type: 'Keyword',    value: x[0]});
- 
+    const Literal = x => ({ type: 'Literal', value: x[0], range:getLoc(x[0]) });
+    const Identifier = x => ({ type: 'Identifier', value: x[0], range:getLoc(x[0]) });
 %}
 # USING MOO LEXER
 @lexer mxLexer
@@ -96,13 +146,13 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type: 'BlockStatement',
                 body: d[1],
-                range: range(d[0], d[2])                
+                range: getLoc(d[0], d[2])
             })%}
         | "(" __:? ")"
             {% d => ({
                 type: 'EmptyParens',
                 body: [],
-                range: range(d[0], d[2])
+                range: getLoc(d[0], d[2])
             })%}
    
     _expr_seq
@@ -122,7 +172,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             type: 'EntityRcmenu',
             id:   d[1],
             body: d[4],
-            range: range(d[0][0], d[5])
+            range: getLoc(d[0][0], d[5])
         })%}
     
     rcmenu_clauses -> rcmenu_clause (EOL rcmenu_clause):* {% flatten %}
@@ -150,25 +200,35 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 label:  d[1],
                 params: flatten(d[2]),
                 body:   d[5],
-                range: range(d[0][0], d[6])
+                range: getLoc(d[0][0], d[6])
             })%}
             
     rcmenu_sep
         -> (%kw_separator __ ) VAR_NAME ( __:? parameter):*
-        {% d => ({
-            type:   'EntityRcmenu_separator',
-            id:     d[1],
-            params: flatten(d[2])
-        })%}
+        {% d => {
+            let res = {
+                type:   'EntityRcmenu_separator',
+                id:     d[1],
+                params: flatten(d[2]),
+                range: getLoc(d[0][0], d[1])
+            };
+            addLoc(res, res.params);
+            return res;
+        }%}
     
     rcmenu_item
         -> (%kw_menuitem __ ) VAR_NAME __:? STRING ( __:? parameter):*
-        {% d => ({
-            type:   'EntityRcmenu_menuitem',
-            id:     d[1],
-            label:  d[3],
-            params: flatten(d[4])
-        })%}
+        {% d => {
+            let res = {
+                type:   'EntityRcmenu_menuitem',
+                id:     d[1],
+                label:  d[3],
+                params: flatten(d[4]),
+                range: getLoc(d[0][0], d[3])
+            };
+            addLoc(res, res.params);
+            return res;
+        }%}
 #---------------------------------------------------------------
 # ATTRIBUTES DEFINITION
 # attributes <name> [version:n] [silentErrors:t/f] [initialRollupState:0xnnnnn] [remap:#(<old_param_names_array>, <new_param_names_array>)]
@@ -182,7 +242,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             id:     d[1],
             params: flatten(d[2]),
             body:   d[5],
-            range: range(d[0], d[6])
+            range:  getLoc(d[0][0], d[6])
         })%}
 
     attributes_clauses -> attributes_clause (EOL attributes_clause):* {% flatten %}
@@ -206,7 +266,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 id:         d[3],
                 params:     flatten(d[4]),
                 body:       d[7],
-                range: range(d[0][0], d[8])
+                range:    getLoc(d[0][0], d[8])
             })%}
 
     plugin_clauses -> plugin_clause (EOL plugin_clause):* {% flatten %}
@@ -230,7 +290,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 id:     d[1],
                 params: flatten(d[2]),
                 body:   d[5],
-                range: range(d[0][0], d[6])
+                range: getLoc(d[0][0], d[6])
             })%}
 
     param_clauses -> param_clause (EOL param_clause):* {% flatten %}
@@ -244,11 +304,16 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         | event_handler {% id %}
 
     param_defs -> VAR_NAME ( __:? parameter):*
-    {% d => ({
-        type:   'PluginParam',
-        id:     d[0],
-        params: flatten(d[1])
-    })%}
+    {% d => {
+        let res = {
+            type:   'PluginParam',
+            id:     d[0],
+            params: flatten(d[1]),
+            range: getLoc(d[0])
+        };
+        addLoc(res, res.params);
+        return res;
+    }%}
 #---------------------------------------------------------------
 # TOOL - MOUSE TOOL DEFINITION --- OK
     TOOL_DEF
@@ -261,7 +326,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 id:     d[2],
                 params: flatten(d[3]),
                 body:   d[6],
-                range: range(d[0], d[7])
+                range:  getLoc(d[0], d[7])
             })%}
     
     tool_clauses -> tool_clause (EOL tool_clause):* {% flatten %}
@@ -284,7 +349,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 title:  d[3],
                 params: flatten(d[4]),
                 body:   d[7],
-                range: range(d[0][0], d[8])
+                range:  getLoc(d[0][0], d[8])
             })%}
     #---------------------------------------------------------------
     uistatement_def -> %kw_rollout {% id %} | %kw_utility {% id %}
@@ -317,7 +382,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type: 'EntityRolloutGroup',
                 id:   d[2],
                 body: d[5],
-                range: range(d[0], d[6])
+                range:getLoc(d[0], d[6])
             })%}
     
     group_clauses
@@ -327,13 +392,19 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     #---------------------------------------------------------------
     rollout_item
         -> %kw_uicontrols __ VAR_NAME ( __:? OPERAND):? ( __:? parameter):*
-            {% d => ({
-                type:   'EntityRolloutControl',
-                class:  d[0],
-                id:     d[2],
-                text:   d[3] != null ? d[3][1] : null,
-                params: flatten(d[4])
-            })%}
+            {% d => {
+             let res = {
+                    type:   'EntityRolloutControl',
+                    class:  d[0],
+                    id:     d[2],
+                    text:   d[3] != null ? d[3][1] : null,
+                    params: flatten(d[4]),
+                    range:  getLoc(d[0])
+                };
+                if (res.params != null) { addLoc(res, res.params); }
+                else if (res.text != null) { addLoc(res, res.text); }
+                return res;
+            }%}
 #---------------------------------------------------------------
 # MACROSCRIPT --- SHOULD AVOID LEFT RECURSION ?
     MACROSCRIPT_DEF
@@ -346,7 +417,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 id:     d[1],
                 params: flatten(d[2]),
                 body:   d[5],
-                range: range(d[0][0], d[6])
+                range:  getLoc(d[0][0], d[6])
             })%}
 
     macro_script_body -> macro_script_clause ( EOL macro_script_clause ):* {% flatten %}
@@ -370,7 +441,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type: 'Struct',
                 id:   d[1],
                 body: flatten(d[4]),
-                range: range(d[0][0], d[5])
+                range: getLoc(d[0][0], d[5])
             })%}
 
     struct_members -> struct_member ( EOL_COMMA struct_member ):* {% flatten %}
@@ -397,7 +468,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 id:       d[1].target || d[1].event,
                 args:     d[1],
                 modifier: d[3][0],
-                body:     d[5]
+                body:     d[5],
+                range:    getLoc(d[0][0], d[5])
             }) %}
 
     event_args
@@ -429,56 +501,75 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d=> ({
                 type:  'WhenStatement',
                 args:  merge(...d.slice(2,9)),
-                body:  d[13]
+                body:  d[13],
+                range: getLoc(d[0], d[13])
             })%}
         #  when       <objects>  deleted  [ id:<name> ] [handleAt:#redrawViews|#timeChange] [ <object_parameter> ] do <expr> 
         | %kw_when __:? OPERAND __:? VAR_NAME __ (parameter __:?):* OPERAND:? __:? %kw_do __:? expr
             {% d=> ({
                 type:  'WhenStatement',
                 args:  merge(...d.slice(2,7)),
-                body:  d[11]
+                body:  d[11],
+                range: getLoc(d[0], d[11])
             })%}
 #---------------------------------------------------------------
 # FUNCTION DEFINITION --- OK
     FUNCTION_DEF
         -> function_decl __ VAR_NAME (__:? fn_args):+ (__:? fn_params):+ (__:? "=" __:?) expr
-            {% d => ({
-                ...d[0],
-                id:     d[2],
-                args:   d[3].map(x => x[1]),
-                params: d[4].map(x => x[1]),
-                body:   d[6],
-            })%}
+            {% d => {
+                let res = {
+                    ...d[0],
+                    id:     d[2],
+                    args:   d[3].map(x => x[1]),
+                    params: d[4].map(x => x[1]),
+                    body:   d[6],
+                };
+                addLoc(res, d[6]);
+                return res;
+            }%}
          | function_decl __ VAR_NAME (__:? fn_args):+ (__:? "=" __:?) expr
-            {% d => ({
-                ...d[0],
-                id:     d[2],
-                args:   d[3].map(x => x[1]),
-                params: [],
-                body:   d[5],
-            })%}
+            {% d => {
+                let res = {
+                    ...d[0],
+                    id:     d[2],
+                    args:   d[3].map(x => x[1]),
+                    params: [],
+                    body:   d[5],
+                };
+                addLoc(res, d[5]);
+                return res;
+            }%}
          | function_decl __ VAR_NAME (__:? fn_params):+ (__:? "=" __:?) expr
-            {% d => ({
-                ...d[0],
-                id:     d[2],
-                args:   [],
-                params: d[3].map(x => x[1]),
-                body:   d[5],
-            })%}
+            {% d => {
+                let res = {
+                    ...d[0],
+                    id:     d[2],
+                    args:   [],
+                    params: d[3].map(x => x[1]),
+                    body:   d[5],
+                };
+                addLoc(res, d[5])
+                return res;
+            }%}
          | function_decl __ VAR_NAME (__:? "=" __:?) expr
-            {% d => ({
-                ...d[0],
-                id:     d[2],
-                args:   [],
-                params: [],
-                body:   d[4],
-            })%}
+            {% d => {
+                let res = {
+                    ...d[0],
+                    id:     d[2],
+                    args:   [],
+                    params: [],
+                    body:   d[4],
+                };
+                addLoc(res, d[4]);
+                return res;
+            }%}
     function_decl
         -> (%kw_mapped __ ):?  %kw_function
             {% d => ({
                 type:   'Function',
                 modifier: d[0] != null ? d[0][0] : null,
-                keyword: d[1]
+                keyword: d[1],
+                range: getLoc(d[0] != null ? d[0][0] : d[1])
             })%}
 
     # This is for parameter declaration
@@ -493,7 +584,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     FN_RETURN -> %kw_return __:? expr
         {% d => ({
             type: 'FunctionReturn',
-            body: d[2]
+            body: d[2],
+            range: getLoc(d[0], d[2])
         })%}
 #===============================================================
 # CONTEXT EXPRESSION --- OK
@@ -503,7 +595,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type:    'ContextStatement',
                 context: merge(d[0], flatten(d[1])),
-                body:    d[3]
+                body:    d[3],
+                range:   getLoc(d[0], d[3])
             })%}
         | ctx_set {% id %}
     
@@ -513,28 +606,32 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type:    'ContextExpression',
                 prefix : d[0],
                 context: d[2][0],
-                args:    d[4]
+                args:    d[4],
+                range:   getLoc(d[0], d[4])
             })%}
         | %kw_set __:? %kw_coordsys __:? (%kw_local | OPERAND)
             {% d => ({
                 type:    'ContextExpression',
                 prefix : d[0],
                 context: d[2],
-                args:    d[4][0]
+                args:    d[4][0],
+                range:   getLoc(d[0], d[4][0])
             })%}
         | %kw_set __:? %kw_about __:? (%kw_coordsys  | OPERAND)
             {% d => ({
                 type:    'ContextExpression',
                 prefix : d[0],
                 context: d[2],
-                args:    d[4][0]
+                args:    d[4][0],
+                range:   getLoc(d[0], d[4][0])
             })%}
         | %kw_set __:? %kw_undo __:? (STRING | VAR_NAME | parameter):? __:? SIMPLE_EXPR
             {% d => ({
                 type:    'ContextExpression',
                 prefix : d[0],
                 context: d[2],
-                args:    filterNull(d[4]).concat(d[6])
+                args:    filterNull(d[4]).concat(d[6]),
+                range:   getLoc(d[0], d[6])
             })%}
 
     # ctx_predicate
@@ -543,49 +640,56 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     #             type:    'ContextExpression',
     #             prefix : null,
     #             context: d[0],
-    #             args:    filterNull(d[2]).concat(d[4])
+    #             args:    filterNull(d[2]).concat(d[4]),
+    #             range:   getLoc(d[0], d[4])
     #         })%}
     #     | %kw_in __:? OPERAND
     #         {% d => ({
     #             type:    'ContextExpression',
     #             prefix : null,
     #             context: d[0],
-    #             args:    d[3]
+    #             args:    d[3],
+    #             range:   getLoc(d[0], d[2])
     #         })%}
     #     | %kw_about __:? (%kw_coordsys | OPERAND)
     #         {% d => ({
     #             type:    'ContextExpression',
     #             prefix : null,
     #             context: d[0],
-    #             args:    d[2][0]
+    #             args:    d[2][0],
+    #             range:   getLoc(d[0], d[2][0])
     #         })%}
     #     | %kw_in:?   __:? %kw_coordsys __:? (%kw_local | OPERAND)
     #         {% d => ({
     #             type:    'ContextExpression',
     #             prefix : d[0],
     #             context: d[2],
-    #             args:    d[4][0]
+    #             args:    d[4][0],
+    #             range:   getLoc(d[0], d[4][0])
     #         })%}
     #     | %kw_with:? __:? %kw_undo __:? (STRING | VAR_NAME | parameter):? __:? SIMPLE_EXPR        
     #         {% d => ({
     #             type:    'ContextExpression',
     #             prefix : d[0],
     #             context: d[2],
-    #             args:    filterNull(d[4]).concat(d[6])
+    #             args:    filterNull(d[4]).concat(d[6]),
+    #             range:   getLoc(d[0], d[6])
     #         })%}
     #     | %kw_with:? __:? %kw_defaultAction __:? NAME_VALUE
     #         {% d => ({
     #             type:    'ContextExpression',
     #             prefix : d[0],
     #             context: d[2],
-    #             args:    d[4]
+    #             args:    d[4],
+    #             range:   getLoc(d[0], d[4])
     #         })%}
     #     | %kw_with:? __:? (%kw_context | %kw_animate) __:? SIMPLE_EXPR
     #         {% d => ({
     #             type:    'ContextExpression',
     #             prefix : d[0],
     #             context: d[2][0],
-    #             args:    d[4]
+    #             args:    d[4],
+    #             range:   getLoc(d[0], d[4])
     #         })%}
 
     ctx_predicate
@@ -594,49 +698,56 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type:    'ContextExpression',
                 prefix :  null,
                 context: d[0],
-                args:    filterNull(d[2]).concat(d[4])
+                args:    filterNull(d[2]).concat(d[4]),
+                range:   getLoc(d[0], d[4])
             })%}
         | %kw_in __:? unary
             {% d => ({
                 type:    'ContextExpression',
                 prefix : null,
                 context: d[0],
-                args:    d[2]
+                args:    d[2],
+                range:   getLoc(d[0], d[2])
             })%}
         | (%kw_in __):? %kw_coordsys __:? (%kw_local | OPERAND)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args:    d[3][0]
+                args:    d[3][0],
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3][0])
             })%}
         |  %kw_about __:? (%kw_coordsys | OPERAND)
             {% d => ({
                 type: 'ContextExpression',
                 prefix : null,
                 context: d[0],
-                args:    d[2][0]
+                args:    d[2][0],
+                range:   getLoc(d[0], d[2][0])
             })%}
         | (%kw_with __):? (%kw_context | %kw_animate) __:? SIMPLE_EXPR
             {% d => ({
                 type: 'ContextExpression',
                 prefix :(d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args:    d[3][0]
+                args:    d[3][0],
+                range: getLoc(d[0] != null ? d[0][0] : d[1], d[3])
             })%}
         | (%kw_with __):? %kw_defaultAction __:? NAME_VALUE
             {% d => ({
                 type: 'ContextExpression',
                 prefix :  (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args:    d[3][0]
+                args:    d[3][0],
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[3])
             })%}
         | (%kw_with __):? %kw_undo __:? ( undo_label __:? ):? SIMPLE_EXPR
             {% d => ({
                 type:    'ContextExpression',
                 prefix : (d[0] != null ? d[0][0] : null),
                 context: d[1],
-                args:    (filterNull(d[3])).concat(d[4])
+                args:    (filterNull(d[3])).concat(d[4]),
+                range:   getLoc(d[0] != null ? d[0][0] : d[1], d[4][0])
             })%}
 
     undo_label -> STRING {% id %} | parameter {% id %} | VAR_NAME {% id %}
@@ -652,7 +763,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type:  'CaseStatement',
                 test:  d[1],
                 cases: merge(d[5], flatten(d[6])),
-                range: range(d[0][0], d[7])
+                range: getLoc(d[0][0], d[7])
             })%}
 
     case_src -> expr __:?  {% id %} | __ {% id %}
@@ -662,7 +773,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type:  'CaseClause',
                 case:  d[0],
-                body:  d[2]
+                body:  d[2],
+                range: getLoc(d[0], d[2])
             })%}
 #---------------------------------------------------------------
 # FOR EXPRESSION --- OK # TODO: FINISH LOCATION
@@ -675,7 +787,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 value:     d[5],
                 sequence:  filterNull(d[6]),
                 action:    d[8][0],
-                body:      d[10]
+                body:      d[10],
+                range:     getLoc(d[0][0], d[10])
             })%}
 
     for_sequence
@@ -740,12 +853,14 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         -> %kw_exit
             {% d => ({
                 type : 'LoopExit',
-                body:  null
+                body:  null,
+                range: getLoc(d[0])
             })%}
         | %kw_exit (__ %kw_with __:?) expr
             {% d => ({
                 type : 'LoopExit',
-                body:  d[2]
+                body:  d[2],
+                range: getLoc(d[0], d[2])
             })%}
 #---------------------------------------------------------------
 # DO LOOP --- OK
@@ -753,7 +868,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         {% d => ({
             type:  'DoWhileStatement',
             body:  d[2],
-            test:  d[6]
+            test:  d[6],
+            range: getLoc(d[0], d[6])
         })%}
 #---------------------------------------------------------------
 # WHILE LOOP --- OK
@@ -761,7 +877,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         {% d => ({
             type:  'WhileStatement',
             test:  d[2],
-            body:  d[6]
+            body:  d[6],
+            range: getLoc(d[0], d[6])
         })%}
 #---------------------------------------------------------------
 # IF EXPRESSION --- OK
@@ -771,7 +888,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 type:       'IfStatement',
                 test:       d[1],
                 operator:   d[3],
-                consequent: d[5]
+                consequent: d[5],
+                range:      getLoc(d[0][0], d[5])
             })%}
         | (%kw_if __:?) expr (__:? %kw_then __:?) expr (__:? %kw_else __:?) expr
             {% d => ({
@@ -779,7 +897,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 test:       d[1],
                 operator:   d[2][1],
                 consequent: d[3],
-                alternate:  d[5]
+                alternate:  d[5],
+                range:      getLoc(d[0][0], d[5])
             })%}
     if_action
         -> %kw_do  {% id %}
@@ -791,22 +910,27 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type:      'TryStatement',
                 body:      d[2],
-                finalizer: d[6]
+                finalizer: d[6],
+                range:     getLoc(d[0], d[6])
             })%}
 #---------------------------------------------------------------
 # VARIABLE DECLARATION --- OK
     VARIABLE_DECL
         -> kw_decl __:? decl_list
-            {% d => ({
-                type: 'VariableDeclaration',
-                ...d[0],
-                decls: d[2],
-            })%}
+            {% d => {
+                let res = {
+                    type: 'VariableDeclaration',
+                    ...d[0],
+                    decls: d[2],
+                };
+                addLoc(res, ...d[2]);
+                return res;
+            }%}
 
     kw_decl
-        -> %kw_local {% d => ({modifier:null, scope: d[0]}) %}
-        | %kw_global {% d => ({modifier:null, scope: d[0]}) %}
-        | %kw_persistent __ %kw_global {% d => ({modifier: d[0], scope: d[2]}) %}
+        -> %kw_local {% d => ({modifier:null, scope: d[0], range:getLoc(d[0])}) %}
+        | %kw_global {% d => ({modifier:null, scope: d[0], range:getLoc(d[0])}) %}
+        | %kw_persistent __ %kw_global {% d => ({modifier: d[0], scope: d[2], range:getLoc(d[0], d[2])}) %}
 
     decl_list -> decl (COMMA decl):*  {% flatten %}
     # decl_list -> decl  | decl_list COMMA decl  {% flatten %}
@@ -822,7 +946,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             type:     'AssignmentExpression',
             operand:  d[0],
             operator: d[2],
-            value:    d[4]
+            value:    d[4],
+            range: getLoc(d[0], d[4])
         })%}
 
     destination
@@ -839,14 +964,16 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             type :    'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4][0]
+            right:    d[4][0],
+            range: getLoc(d[0], d[4][0])
         }) %}
         | logical_operand _:? %kw_compare __:?  (logical_operand | not_operand)
         {% d => ({
             type :    'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4][0]
+            right:    d[4][0],
+            range: getLoc(d[0], d[4][0])
         }) %}
         | not_operand {% id %}
 
@@ -854,7 +981,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         {% d => ({
             type :    'LogicalExpression',
             operator: d[0],
-            right:    d[2]
+            right:    d[2],
+            range: getLoc(d[0], d[2])
         }) %}
 
     logical_operand
@@ -868,14 +996,16 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             type:     'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4]
+            right:    d[4],
+            range: getLoc(d[0], d[4])
         }) %}
         | compare_operand _:? %comparison __:? compare_operand
         {% d => ({
             type:     'LogicalExpression',
             operator: d[2],
             left:     d[0],
-            right:    d[4]
+            right:    d[4],
+            range: getLoc(d[0], d[4])
         }) %}
 
     compare_operand
@@ -889,7 +1019,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                     type:     'MathExpression',
                     operator: d[2][0],
                     left:     d[0],
-                    right:    d[4]
+                    right:    d[4],
+                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
                 })%}
             | prod {% id %}
             
@@ -898,7 +1029,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                     type:     'MathExpression',
                     operator: d[2][0],
                     left:     d[0],
-                    right:    d[4]
+                    right:    d[4],
+                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] ) 
                 })%}
             | exp {% id %}
 
@@ -907,7 +1039,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                     type:     'MathExpression',
                     operator: d[2],
                     left:     d[0],
-                    right:    d[4]
+                    right:    d[4],
+                    range: getLoc( Array.isArray(d[0]) ? d[0][0] : d[0], d[4] )
                 })%}
             | as {% id %}
             # | unary {% id %}
@@ -918,7 +1051,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                     type:     'MathExpression',
                     operator: d[2],
                     left:     d[0],
-                    right:    d[4]
+                    right:    d[4],
+                    range: getLoc(d[0], d[4])
                 })%}
             | unary {% id %}
             # | math_operand {% id %}
@@ -927,15 +1061,24 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 {% d => ({
                     type: 'UnaryExpression',
                     operator: d[0],
-                    right:    d[2]
+                    right:    d[2],
+                    range: getLoc(d[0], d[2])
                 }) %}
             | OPERAND {% id %}
             | FN_CALL {% id %}
+            | de_ref  {% id %}
 
         # math_operand
         #     -> unary     {% id %}
         #     | FN_CALL       {% id %}
-
+        
+        de_ref -> "*" _:? (VAR_NAME | PATH_NAME)
+            {% d => ({
+                type: 'deRefIdentifier',
+                operator: d[0],
+                right:    d[2][0],
+                range: getLoc(d[0], d[2][0])
+            }) %}
 #---------------------------------------------------------------
 # FUNCTION CALL --- OK
     FN_CALL
@@ -945,15 +1088,18 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
                 let res = {
                     type:  'CallExpression',
                     operand: d[0],
-                    args:  args
+                    args:  args,
+                    range: null
                 };
+                res.range = getLoc(d[0], res.args);
                 return res;
             } %}
         | call_caller call_params
             {% d => ({
                 type:  'CallExpression',
                 operand: d[0],
-                args:  d[1]
+                args:  d[1],
+                range: getLoc(d[0], d[1])
             })%}
         # Disabled because it conflicts with empty expr_seq
         #| call_caller LPAREN RPAREN
@@ -961,6 +1107,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         #        type:  'CallExpression',
         #        operand: d[0],
         #        args:  null,
+        #        range: getLoc(d[0], d[2])
         #    })%}
 
     call_params
@@ -981,7 +1128,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type: 'UnaryExpression',
                 operator: d[0],
-                right:    d[1]
+                right:    d[1],
+                range: getLoc(d[0], d[1])
             }) %}
         | OPERAND {% id %}
 #---------------------------------------------------------------
@@ -991,14 +1139,16 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type: 'ParameterAssignment',
                 param: d[0],
-                value: d[2]
+                value: d[2],
+                range: getLoc (d[0], d[2])
             }) %}
 
     param_name
         -> (VAR_NAME | kw_override) %colon
             {% d => ({
                 type:'Parameter',
-                value: d[0][0]
+                value: d[0][0],
+                range: getLoc(d[0], d[1])
             }) %}
 
 #---------------------------------------------------------------
@@ -1009,6 +1159,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
     #             type: 'UnaryExpression',
     #             operator: d[0],
     #             right:    d[2],
+    #             range: getLoc(d[0], d[2])
     #         }) %}
     #     | OPERAND {% id %}
 
@@ -1024,7 +1175,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type:     'AccessorProperty',
                 operand:  d[0],
-                property: d[2][0]
+                property: d[2][0],
+                range:    getLoc(d[0], d[2])
             })%}
 #---------------------------------------------------------------
 # ACCESSOR - INDEX --- OK
@@ -1033,7 +1185,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             type:    'AccessorIndex',
             operand: d[0],
             index:   d[3],
-            range: range(d[2], d[4])
+            range:   getLoc(d[2], d[4])
         })%}
 
 #---------------------------------------------------------------
@@ -1054,7 +1206,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         | point4     {% id %}
         | point3     {% id %}
         | point2     {% id %}
-        | %questionmark {% Keyword %}
+        | %questionmark {% d => ({type: 'Keyword', value: d[0], range: getLoc(d[0]) })%}
         # BLOCKSTATEMENT
         | expr_seq   {% id %}
         | %error     {% id %}
@@ -1067,7 +1219,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type: 'ObjectPoint4',
                 elements: [].concat(d[1], d[3], d[5], d[7]),
-                range: range(d[0], d[8])
+                range: getLoc(d[0], d[8])
             }) %}
 
     point3
@@ -1075,7 +1227,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type: 'ObjectPoint3',
                 elements: [].concat(d[1], d[3], d[5]),
-                range: range(d[0], d[6])
+                range: getLoc(d[0], d[6])
             }) %}
  
     point2
@@ -1083,7 +1235,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type: 'ObjectPoint2',
                 elements: [].concat(d[1], d[3]),
-                range: range(d[0], d[4])
+                range: getLoc(d[0], d[4])
             }) %}
 #===============================================================
 # ARRAY --- OK
@@ -1092,7 +1244,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
             {% d => ({
                 type:     'ObjectArray',
                 elements: d[2] != null ? d[2] : [],
-                range: range(d[0][0], d[3])
+                range:      getLoc(d[0][0], d[3])
             }) %}
 
     array_expr -> expr ( EOL_COMMA expr ):*  {% flatten %}
@@ -1103,7 +1255,7 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
         {% d => ({
             type:     'ObjectBitArray',
             elements: d[2] != null ? d[2] : [],
-            range: range(d[0][0], d[3])
+            range:    getLoc(d[0][0], d[3])
         }) %}
 
     bitarray_expr -> bitarray_item ( EOL_COMMA bitarray_item ):*  {% flatten %}
@@ -1132,7 +1284,8 @@ Main -> anyws:* _expr_seq:? anyws:* {% d => d[1] %}
        {% d => ({
             type: 'refIdentifier',
             operator: d[0],
-            value: d[1]
+            value: d[0],
+            range:getLoc(d[0], d[1][0])
         })%}
 
 # VARNAME --- IDENTIFIERS --- OK
